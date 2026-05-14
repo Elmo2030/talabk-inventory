@@ -167,8 +167,8 @@ export default function DashboardPage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-900">لوحة التحكم</h1>
-        <p className="text-sm text-slate-500 mt-1">نظرة شاملة على حالة المخزون والحركات اليومية</p>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-900">لوحة التحكم</h1>
+        <p className="text-xs sm:text-sm text-slate-500 mt-1">نظرة شاملة على حالة المخزون والحركات اليومية</p>
       </div>
 
       {/* KPI Cards */}
@@ -179,13 +179,13 @@ export default function DashboardPage() {
             <Link
               key={kpi.label}
               href={kpi.href}
-              className="bg-white border border-slate-200 rounded-xl p-5 hover:shadow-md hover:border-slate-300 transition-all"
+              className="bg-white border border-slate-200 rounded-xl p-3 sm:p-5 hover:shadow-md hover:border-slate-300 transition-all"
             >
               <div className={`w-10 h-10 rounded-lg ${kpi.color} flex items-center justify-center mb-3`}>
                 <Icon className="w-5 h-5" />
               </div>
               <p className="text-xs text-slate-500">{kpi.label}</p>
-              <p className="text-3xl font-bold text-slate-900 mt-1">{kpi.value}</p>
+              <p className="text-2xl sm:text-3xl font-bold text-slate-900 mt-1">{kpi.value}</p>
             </Link>
           );
         })}
@@ -253,7 +253,8 @@ export default function DashboardPage() {
           {lastMovements.length === 0 ? (
             <div className="py-8 text-center text-slate-400 text-sm">لا توجد حركات مسجلة</div>
           ) : (
-            <table className="w-full text-xs">
+            <div className="overflow-x-auto">
+            <table className="w-full text-xs min-w-[400px]">
               <thead className="bg-slate-50">
                 <tr>
                   <th className="px-3 py-2 text-right font-medium text-slate-600">النوع</th>
@@ -289,6 +290,7 @@ export default function DashboardPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
 

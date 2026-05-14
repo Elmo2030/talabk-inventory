@@ -268,7 +268,7 @@ export default function SettingsPage() {
           </div>
           <div>
             <h1 className="text-xl font-bold text-slate-900">إعدادات النظام</h1>
-            <p className="text-sm text-slate-500">إدارة القوائم والبيانات المرجعية</p>
+            <p className="text-xs sm:text-sm text-slate-500">إدارة القوائم والبيانات المرجعية</p>
           </div>
         </div>
       </div>
@@ -276,18 +276,20 @@ export default function SettingsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* القائمة الجانبية للتبويبات */}
         <div className="lg:col-span-1">
+
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
             <div className="px-4 py-3 bg-slate-50 border-b border-slate-200">
               <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
                 القوائم المرجعية
               </p>
             </div>
-            <nav className="p-2 space-y-1">
+            <nav className="p-2 space-y-1 overflow-x-auto lg:overflow-x-visible">
+              <div className="flex lg:flex-col gap-1 min-w-max lg:min-w-0">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-right transition-colors ${
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-right transition-colors whitespace-nowrap lg:w-full ${
                     activeTab === tab.id
                       ? 'bg-brand-50 text-brand-700'
                       : 'text-slate-700 hover:bg-slate-100'
@@ -306,6 +308,7 @@ export default function SettingsPage() {
                   </span>
                 </button>
               ))}
+              </div>
             </nav>
           </div>
         </div>

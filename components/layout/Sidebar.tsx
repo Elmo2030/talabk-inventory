@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -14,6 +15,8 @@ import {
   BookOpen,
   Store,
   LogOut,
+  Menu,
+  X,
 } from 'lucide-react';
 import { useStock } from '@/lib/StockContext';
 import { useAuth } from '@/lib/AuthContext';
@@ -80,23 +83,29 @@ export default function Sidebar() {
   const router = useRouter();
   const { currentStock } = useStock();
   const { username, logout } = useAuth();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const alertCount = currentStock.filter(
     (s) => s.status === 'OUT_OF_STOCK' || s.status === 'NEEDS_REORDER'
   ).length;
 
-  return (
-    <aside
-      className="fixed right-0 top-0 h-screen w-64 flex flex-col"
-      style={{ background: '#1C1C1E' }}
-    >
+  const sidebarContent = (
+    <>
       {/* Brand header */}
       <div className="h-16 flex items-center gap-3 px-5 border-b border-white/10">
         <TalabkLogo size={38} />
-        <div>
+        <div className="flex-1">
           <h1 className="text-base font-bold text-white leading-tight">طلبك</h1>
           <p className="text-[11px] text-white/40 leading-tight">نظام المخازن</p>
         </div>
+        {/* Close button — mobile only */}
+        <button
+          onClick={() => setMobileOpen(false)}
+          className="md:hidden flex items-center justify-center w-8 h-8 rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-all"
+          aria-label="إغلاق القائمة"
+        >
+          <X className="w-5 h-5" />
+        </button>
       </div>
 
       {/* Navigation */}
@@ -110,6 +119,7 @@ export default function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
+              onClick={() => setMobileOpen(false)}
               className={`
                 flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all
                 ${isActive
@@ -158,6 +168,52 @@ export default function Sidebar() {
           </button>
         </div>
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Mobile top bar */}
+      <div className="md:hidden fixed top-0 right-0 left-0 z-40 h-14 flex items-center justify-between px-4" style={{ background: '#1C1C1E' }}>
+        {/* Right side: hamburger */}
+        <button
+          onClick={() => setMobileOpen(true)}
+          className="flex items-center justify-center w-10 h-10 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-all"
+          aria-label="فتح القائمة"
+        >
+          <Menu className="w-6 h-6" />
+        </button>
+
+        {/* Center: logo + name */}
+        <div className="flex items-center gap-2">
+          <TalabkLogo size={28} />
+          <span className="text-base font-bold text-white">طلبك</span>
+        </div>
+
+        {/* Left: spacer for balance */}
+        <div className="w-10" />
+      </div>
+
+      {/* Mobile backdrop */}
+      {mobileOpen && (
+        <div
+          className="md:hidden fixed inset-0 z-40 bg-black/60"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
+      {/* Sidebar panel */}
+      <aside
+        className={`
+          fixed top-0 h-screen w-72 md:w-64 flex flex-col z-50
+          transition-transform duration-300 ease-in-out
+          md:right-0 md:translate-x-0 right-0
+          ${mobileOpen ? 'translate-x-0' : 'translate-x-full md:translate-x-0'}
+        `}
+        style={{ background: '#1C1C1E' }}
+      >
+        {sidebarContent}
+      </aside>
+    </>
   );
 }

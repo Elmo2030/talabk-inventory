@@ -85,13 +85,13 @@ export default function ItemsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 flex items-center gap-2">
             <Package className="w-6 h-6 text-brand-600" />
             الأصناف
           </h1>
-          <p className="text-sm text-slate-500 mt-1">السجل الرئيسي لجميع أصناف المخزون</p>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">السجل الرئيسي لجميع أصناف المخزون</p>
         </div>
         <Button onClick={() => setIsModalOpen(true)} icon={<Plus className="w-4 h-4" />}>
           إضافة صنف جديد
@@ -107,7 +107,7 @@ export default function ItemsPage() {
 
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm min-w-[700px]">
             <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
                 <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">الكود</th>

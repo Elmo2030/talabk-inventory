@@ -31,14 +31,15 @@ export default function ReportsPage() {
     <div>
       {/* Page Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-900">التقارير والتحليلات</h1>
-        <p className="text-sm text-slate-500 mt-1">
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-900">التقارير والتحليلات</h1>
+        <p className="text-xs sm:text-sm text-slate-500 mt-1">
           تقارير تحليلية آلية لمتابعة أداء المخزون واتخاذ القرارات
         </p>
       </div>
 
       {/* Tabs Navigation */}
-      <div className="bg-white border border-slate-200 rounded-xl p-2 mb-6 flex gap-1 overflow-x-auto">
+      <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0 mb-6">
+      <div className="bg-white border border-slate-200 rounded-xl p-2 flex gap-1 min-w-max sm:min-w-0">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -62,6 +63,7 @@ export default function ReportsPage() {
             </button>
           );
         })}
+      </div>
       </div>
 
       {/* Active Report */}

@@ -82,13 +82,13 @@ export default function SuppliersPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 flex items-center gap-2">
             <Users className="w-6 h-6 text-brand-600" />
             الموردين
           </h1>
-          <p className="text-sm text-slate-500 mt-1">قاعدة بيانات الموردين والشركاء التجاريين</p>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">قاعدة بيانات الموردين والشركاء التجاريين</p>
         </div>
         <Button onClick={() => setIsModalOpen(true)} icon={<Plus className="w-4 h-4" />}>
           إضافة مورد جديد
@@ -104,7 +104,7 @@ export default function SuppliersPage() {
 
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm min-w-[600px]">
             <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
                 <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">الكود</th>

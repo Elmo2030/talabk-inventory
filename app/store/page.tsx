@@ -144,12 +144,12 @@ export default function StorePage() {
   return (
     <div className="space-y-6">
       {/* Page header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-[#1C1C1E]">بيانات المتجر</h1>
-          <p className="text-sm text-[#6C6C70] mt-0.5">إدارة معلومات متجرك وإعدادات الحساب</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-[#1C1C1E]">بيانات المتجر</h1>
+          <p className="text-xs sm:text-sm text-[#6C6C70] mt-0.5">إدارة معلومات متجرك وإعدادات الحساب</p>
         </div>
-        <span className="px-3 py-1.5 bg-white border border-[#E5E5EA] rounded-xl text-sm font-medium text-[#6C6C70]">
+        <span className="self-start sm:self-auto px-3 py-1.5 bg-white border border-[#E5E5EA] rounded-xl text-sm font-medium text-[#6C6C70]">
           رقم المتجر: {profile.storeId}
         </span>
       </div>
