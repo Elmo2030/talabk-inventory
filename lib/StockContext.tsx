@@ -33,8 +33,14 @@ import {
 import { seedMockDataIfNeeded } from '@/lib/storage/seedData';
 
 // ── Service selector ──────────────────────────────────────────────────────────
-// Evaluated once at module load — Next.js replaces NEXT_PUBLIC_* at build time.
-const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === 'true';
+// Use mock mode when:
+//   1. NEXT_PUBLIC_USE_MOCK=true  (explicit flag), OR
+//   2. Supabase URL is missing or placeholder (no real DB configured)
+const _supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
+const USE_MOCK =
+  process.env.NEXT_PUBLIC_USE_MOCK === 'true' ||
+  !_supabaseUrl ||
+  _supabaseUrl.includes('placeholder');
 
 const _items      = USE_MOCK ? mockItemsService      : itemsService;
 const _suppliers  = USE_MOCK ? mockSuppliersService  : suppliersService;
