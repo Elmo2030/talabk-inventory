@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard,
   Users,
@@ -12,8 +12,11 @@ import {
   FileText,
   Settings,
   BookOpen,
+  Store,
+  LogOut,
 } from 'lucide-react';
 import { useStock } from '@/lib/StockContext';
+import { useAuth } from '@/lib/AuthContext';
 
 const navItems = [
   { href: '/', label: 'لوحة التحكم', icon: LayoutDashboard },
@@ -24,6 +27,7 @@ const navItems = [
   { href: '/current-stock', label: 'الرصيد الحالي', icon: BarChart3 },
   { href: '/reports', label: 'التقارير', icon: FileText },
   { href: '/settings', label: 'الإعدادات', icon: Settings },
+  { href: '/store', label: 'بيانات المتجر', icon: Store },
   { href: '/guide', label: 'دليل المستخدم', icon: BookOpen },
 ];
 
@@ -73,7 +77,9 @@ function TalabkLogo({ size = 40 }: { size?: number }) {
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { currentStock } = useStock();
+  const { username, logout } = useAuth();
 
   const alertCount = currentStock.filter(
     (s) => s.status === 'OUT_OF_STOCK' || s.status === 'NEEDS_REORDER'
@@ -137,12 +143,19 @@ export default function Sidebar() {
             className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
             style={{ background: '#E5302A' }}
           >
-            ط
+            {username ? username.charAt(0).toUpperCase() : 'ط'}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-white/90 truncate">مدير النظام</p>
+            <p className="text-sm font-medium text-white/90 truncate">{username ?? 'مدير النظام'}</p>
             <p className="text-xs text-white/35 truncate">talabk.system</p>
           </div>
+          <button
+            onClick={() => { logout(); router.push('/login'); }}
+            title="تسجيل الخروج"
+            className="flex items-center justify-center w-7 h-7 rounded-lg text-white/40 hover:text-white/80 hover:bg-white/10 transition-all flex-shrink-0"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
       </div>
     </aside>
