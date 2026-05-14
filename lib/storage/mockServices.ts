@@ -133,3 +133,23 @@ export const mockPurchaseInvoicesService = {
   delete: async (id: string): Promise<void> =>
     Promise.resolve(purchaseInvoicesStorage.delete(id)),
 };
+
+// ── Sales Orders ──────────────────────────────────────────────────────────────
+
+import { salesOrdersStorage } from './salesOrdersStorage';
+import { SalesOrder } from '@/lib/types';
+
+export const mockSalesOrdersService = {
+  getAll: async (): Promise<SalesOrder[]> =>
+    Promise.resolve(salesOrdersStorage.getAll()),
+  getById: async (id: string): Promise<SalesOrder | null> =>
+    Promise.resolve(salesOrdersStorage.getById(id)),
+  create: async (
+    order: Omit<SalesOrder, 'id' | 'orderNumber' | 'createdAt'>
+  ): Promise<SalesOrder> =>
+    Promise.resolve(salesOrdersStorage.create(order)),
+  update: async (id: string, updates: Partial<SalesOrder>): Promise<SalesOrder> =>
+    Promise.resolve(salesOrdersStorage.update(id, updates)),
+  delete: async (id: string): Promise<void> =>
+    Promise.resolve(salesOrdersStorage.delete(id)),
+};

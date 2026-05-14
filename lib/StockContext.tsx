@@ -16,6 +16,7 @@ import {
   StockOutMovement,
   CurrentStock,
   PurchaseInvoice,
+  SalesOrder,
 } from '@/lib/types';
 import { computeInvoiceItems } from '@/lib/landedCost';
 import { suppliersService } from '@/lib/services/suppliersService';
@@ -32,6 +33,7 @@ import {
   mockStockOutService,
   mockCurrentStockService,
   mockPurchaseInvoicesService,
+  mockSalesOrdersService,
 } from '@/lib/storage/mockServices';
 import { seedMockDataIfNeeded } from '@/lib/storage/seedData';
 
@@ -51,6 +53,7 @@ const _stockIn    = USE_MOCK ? mockStockInService     : stockInService;
 const _stockOut   = USE_MOCK ? mockStockOutService    : stockOutService;
 const _stockView  = USE_MOCK ? mockCurrentStockService : currentStockService;
 const _purchases  = USE_MOCK ? mockPurchaseInvoicesService : mockPurchaseInvoicesService; // TODO: real service
+const _orders     = USE_MOCK ? mockSalesOrdersService : mockSalesOrdersService; // TODO: real service
 
 // ============================================
 // Context Type
@@ -109,6 +112,17 @@ interface StockContextType {
   deletePurchaseInvoice: (id: string) => Promise<void>;
   receivePurchaseInvoice: (id: string) => Promise<{ success: boolean; error?: string }>;
 
+  // Sales Orders
+  salesOrders: SalesOrder[];
+  addSalesOrder: (
+    order: Omit<SalesOrder, 'id' | 'orderNumber' | 'createdAt'>
+  ) => Promise<{ success: boolean; data?: SalesOrder; error?: string }>;
+  updateSalesOrder: (
+    id: string,
+    updates: Partial<SalesOrder>
+  ) => Promise<{ success: boolean; error?: string }>;
+  deleteSalesOrder: (id: string) => Promise<void>;
+
   // Manual refresh
   refresh: () => Promise<void>;
 }
@@ -125,6 +139,7 @@ export function StockProvider({ children }: { children: ReactNode }) {
   const [stockOut, setStockOut] = useState<StockOutMovement[]>([]);
   const [currentStock, setCurrentStock] = useState<CurrentStock[]>([]);
   const [purchaseInvoices, setPurchaseInvoices] = useState<PurchaseInvoice[]>([]);
+  const [salesOrders, setSalesOrders] = useState<SalesOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -139,7 +154,7 @@ export function StockProvider({ children }: { children: ReactNode }) {
       // Seed demo data on first run in mock mode
       if (USE_MOCK) seedMockDataIfNeeded();
 
-      const [itemsData, suppliersData, stockInData, stockOutData, stockData, purchasesData] =
+      const [itemsData, suppliersData, stockInData, stockOutData, stockData, purchasesData, ordersData] =
         await Promise.all([
           _items.getAll(),
           _suppliers.getAll(),
@@ -147,6 +162,7 @@ export function StockProvider({ children }: { children: ReactNode }) {
           _stockOut.getAll(),
           _stockView.getAll(),
           _purchases.getAll(),
+          _orders.getAll(),
         ]);
 
       setItems(itemsData);
@@ -155,6 +171,7 @@ export function StockProvider({ children }: { children: ReactNode }) {
       setStockOut(stockOutData);
       setCurrentStock(stockData);
       setPurchaseInvoices(purchasesData);
+      setSalesOrders(ordersData);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'حدث خطأ غير متوقع';
       setError(message);
@@ -364,6 +381,64 @@ export function StockProvider({ children }: { children: ReactNode }) {
     setPurchaseInvoices((prev) => prev.filter((p) => p.id !== id));
   }, []);
 
+  // ============================================
+  // Mutations - Sales Orders
+  // ============================================
+  const addSalesOrder = useCallback(
+    async (order: Parameters<StockContextType['addSalesOrder']>[0]) => {
+      try {
+        const data = await _orders.create(order);
+
+        // Decrement stock for each item
+        for (const item of order.items) {
+          await _stockOut.create({
+            date: new Date().toISOString().split('T')[0],
+            itemId: item.itemId,
+            recipientDept: order.customerName,
+            quantity: item.quantity,
+            unitPrice: item.sellingPrice,
+            reason: 'بيع',
+            responsibleEmployee: 'نظام المبيعات',
+            notes: `طلب مبيعات ${data.orderNumber}`,
+          });
+        }
+
+        // Refresh sales orders + stock
+        const [newOrders, newStockOut, newStock] = await Promise.all([
+          _orders.getAll(),
+          _stockOut.getAll(),
+          _stockView.getAll(),
+        ]);
+        setSalesOrders(newOrders);
+        setStockOut(newStockOut);
+        setCurrentStock(newStock);
+
+        return { success: true, data };
+      } catch (err) {
+        return { success: false, error: err instanceof Error ? err.message : 'فشل حفظ الطلب' };
+      }
+    },
+    []
+  );
+
+  const updateSalesOrder = useCallback(
+    async (id: string, updates: Partial<SalesOrder>) => {
+      try {
+        const updated = await _orders.update(id, updates);
+        setSalesOrders((prev) => prev.map((o) => (o.id === id ? updated : o)));
+        return { success: true };
+      } catch (err) {
+        return { success: false, error: err instanceof Error ? err.message : 'فشل التعديل' };
+      }
+    },
+    []
+  );
+
+  const deleteSalesOrder = useCallback(async (id: string) => {
+    await _orders.delete(id);
+    setSalesOrders((prev) => prev.filter((o) => o.id !== id));
+  }, []);
+
   // The key function: receive an invoice → create StockIn movements + update MACs
   const receivePurchaseInvoice = useCallback(
     async (id: string) => {
@@ -470,6 +545,10 @@ export function StockProvider({ children }: { children: ReactNode }) {
       updatePurchaseInvoice,
       deletePurchaseInvoice,
       receivePurchaseInvoice,
+      salesOrders,
+      addSalesOrder,
+      updateSalesOrder,
+      deleteSalesOrder,
       refresh: loadData,
     }),
     [
@@ -499,6 +578,10 @@ export function StockProvider({ children }: { children: ReactNode }) {
       updatePurchaseInvoice,
       deletePurchaseInvoice,
       receivePurchaseInvoice,
+      salesOrders,
+      addSalesOrder,
+      updateSalesOrder,
+      deleteSalesOrder,
       loadData,
     ]
   );

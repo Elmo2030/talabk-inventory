@@ -139,3 +139,65 @@ export type PurchaseInvoice = {
   createdAt: string;
   receivedAt?: string;
 };
+
+// ── Sales Orders ──────────────────────────────────────────────────────────────
+
+export type OrderStatus = 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
+
+export type SalesOrderItem = {
+  id: string;
+  itemId: string;
+  itemName: string;
+  itemCode: string;
+  category: string;
+  quantity: number;
+  sellingPrice: number;       // سعر البيع للعميل
+  lineTotal: number;          // quantity * sellingPrice
+  costSnapshot: number;       // MAC at time of order (for profit calc)
+  lineCost: number;           // quantity * costSnapshot
+};
+
+export type SalesOrder = {
+  id: string;
+  orderNumber: string;        // SO-YYYY-NNNN
+
+  // Customer
+  customerName: string;
+  customerPhone: string;
+  customerCity: string;
+  deliveryType: 'home' | 'office' | 'female';
+
+  // Items
+  items: SalesOrderItem[];
+
+  // Shipping details
+  shippingLength: number;
+  shippingWidth: number;
+  shippingHeight: number;
+  shippingWeight: number;
+  needsPackaging: boolean;
+
+  // Computed costs
+  subtotalProducts: number;   // sum of lineTotals
+  shippingCost: number;
+  packagingCost: number;
+
+  // Who pays
+  shippingOnStore: boolean;   // true = store absorbs shipping cost
+  packagingOnStore: boolean;  // true = store absorbs packaging cost
+
+  // Customer invoice total
+  customerTotal: number;
+
+  // Profit (internal)
+  totalCOGS: number;          // sum of lineCosts
+  storeShippingExpense: number; // shippingCost if shippingOnStore else 0
+  storePackagingExpense: number; // packagingCost if packagingOnStore else 0
+  grossProfit: number;        // subtotalProducts - totalCOGS
+  netProfit: number;          // grossProfit - storeShippingExpense - storePackagingExpense
+  profitMargin: number;       // netProfit / subtotalProducts * 100
+
+  status: OrderStatus;
+  notes: string;
+  createdAt: string;
+};
