@@ -11,6 +11,7 @@ import {
   BarChart3,
   FileText,
   Settings,
+  BookOpen,
 } from 'lucide-react';
 import { useStock } from '@/lib/StockContext';
 
@@ -23,6 +24,7 @@ const navItems = [
   { href: '/current-stock', label: 'الرصيد الحالي', icon: BarChart3 },
   { href: '/reports', label: 'التقارير', icon: FileText },
   { href: '/settings', label: 'الإعدادات', icon: Settings },
+  { href: '/guide', label: 'دليل المستخدم', icon: BookOpen },
 ];
 
 // Talabk T-pin SVG logo
