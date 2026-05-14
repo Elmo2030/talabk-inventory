@@ -113,3 +113,23 @@ export const mockStockOutService = {
 export const mockCurrentStockService = {
   getAll: () => mockStorageAdapter.currentStock.getAll(),
 };
+
+// ── Purchase Invoices ─────────────────────────────────────────────────────────
+
+import { purchaseInvoicesStorage } from './purchaseInvoicesStorage';
+import { PurchaseInvoice } from '@/lib/types';
+
+export const mockPurchaseInvoicesService = {
+  getAll: async (): Promise<PurchaseInvoice[]> =>
+    Promise.resolve(purchaseInvoicesStorage.getAll()),
+  getById: async (id: string): Promise<PurchaseInvoice | null> =>
+    Promise.resolve(purchaseInvoicesStorage.getById(id)),
+  create: async (
+    invoice: Omit<PurchaseInvoice, 'id' | 'invoiceNumber' | 'createdAt'>
+  ): Promise<PurchaseInvoice> =>
+    Promise.resolve(purchaseInvoicesStorage.create(invoice)),
+  update: async (id: string, updates: Partial<PurchaseInvoice>): Promise<PurchaseInvoice> =>
+    Promise.resolve(purchaseInvoicesStorage.update(id, updates)),
+  delete: async (id: string): Promise<void> =>
+    Promise.resolve(purchaseInvoicesStorage.delete(id)),
+};

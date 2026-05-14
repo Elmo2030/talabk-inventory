@@ -17,6 +17,7 @@ import {
   LogOut,
   Menu,
   X,
+  ShoppingCart,
 } from 'lucide-react';
 import { useStock } from '@/lib/StockContext';
 import { useAuth } from '@/lib/AuthContext';
@@ -29,6 +30,7 @@ const navItems = [
   { href: '/stock-out', label: 'سجل الصادر', icon: ArrowUpFromLine },
   { href: '/current-stock', label: 'الرصيد الحالي', icon: BarChart3 },
   { href: '/reports', label: 'التقارير', icon: FileText },
+  { href: '/purchases', label: 'المشتريات', icon: ShoppingCart },
   { href: '/settings', label: 'الإعدادات', icon: Settings },
   { href: '/store', label: 'بيانات المتجر', icon: Store },
   { href: '/guide', label: 'دليل المستخدم', icon: BookOpen },

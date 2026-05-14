@@ -15,7 +15,9 @@ import {
   StockInMovement,
   StockOutMovement,
   CurrentStock,
+  PurchaseInvoice,
 } from '@/lib/types';
+import { computeInvoiceItems } from '@/lib/landedCost';
 import { suppliersService } from '@/lib/services/suppliersService';
 import { itemsService } from '@/lib/services/itemsService';
 import { stockInService } from '@/lib/services/stockInService';
@@ -29,6 +31,7 @@ import {
   mockStockInService,
   mockStockOutService,
   mockCurrentStockService,
+  mockPurchaseInvoicesService,
 } from '@/lib/storage/mockServices';
 import { seedMockDataIfNeeded } from '@/lib/storage/seedData';
 
@@ -47,6 +50,7 @@ const _suppliers  = USE_MOCK ? mockSuppliersService  : suppliersService;
 const _stockIn    = USE_MOCK ? mockStockInService     : stockInService;
 const _stockOut   = USE_MOCK ? mockStockOutService    : stockOutService;
 const _stockView  = USE_MOCK ? mockCurrentStockService : currentStockService;
+const _purchases  = USE_MOCK ? mockPurchaseInvoicesService : mockPurchaseInvoicesService; // TODO: real service
 
 // ============================================
 // Context Type
@@ -93,6 +97,18 @@ interface StockContextType {
   updateSupplier: (id: string, updates: Partial<Supplier>) => Promise<void>;
   deleteSupplier: (id: string) => Promise<void>;
 
+  // Purchase Invoices
+  purchaseInvoices: PurchaseInvoice[];
+  addPurchaseInvoice: (
+    invoice: Omit<PurchaseInvoice, 'id' | 'invoiceNumber' | 'createdAt' | 'status'>
+  ) => Promise<{ success: boolean; data?: PurchaseInvoice; error?: string }>;
+  updatePurchaseInvoice: (
+    id: string,
+    updates: Partial<PurchaseInvoice>
+  ) => Promise<{ success: boolean; error?: string }>;
+  deletePurchaseInvoice: (id: string) => Promise<void>;
+  receivePurchaseInvoice: (id: string) => Promise<{ success: boolean; error?: string }>;
+
   // Manual refresh
   refresh: () => Promise<void>;
 }
@@ -108,6 +124,7 @@ export function StockProvider({ children }: { children: ReactNode }) {
   const [stockIn, setStockIn] = useState<StockInMovement[]>([]);
   const [stockOut, setStockOut] = useState<StockOutMovement[]>([]);
   const [currentStock, setCurrentStock] = useState<CurrentStock[]>([]);
+  const [purchaseInvoices, setPurchaseInvoices] = useState<PurchaseInvoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -122,13 +139,14 @@ export function StockProvider({ children }: { children: ReactNode }) {
       // Seed demo data on first run in mock mode
       if (USE_MOCK) seedMockDataIfNeeded();
 
-      const [itemsData, suppliersData, stockInData, stockOutData, stockData] =
+      const [itemsData, suppliersData, stockInData, stockOutData, stockData, purchasesData] =
         await Promise.all([
           _items.getAll(),
           _suppliers.getAll(),
           _stockIn.getAll(),
           _stockOut.getAll(),
           _stockView.getAll(),
+          _purchases.getAll(),
         ]);
 
       setItems(itemsData);
@@ -136,6 +154,7 @@ export function StockProvider({ children }: { children: ReactNode }) {
       setStockIn(stockInData);
       setStockOut(stockOutData);
       setCurrentStock(stockData);
+      setPurchaseInvoices(purchasesData);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'حدث خطأ غير متوقع';
       setError(message);
@@ -311,6 +330,118 @@ export function StockProvider({ children }: { children: ReactNode }) {
     setSuppliers((prev) => prev.filter((s) => s.id !== id));
   }, []);
 
+  // ============================================
+  // Mutations - Purchase Invoices
+  // ============================================
+  const addPurchaseInvoice = useCallback(
+    async (invoice: Parameters<StockContextType['addPurchaseInvoice']>[0]) => {
+      try {
+        const data = await _purchases.create({ ...invoice, status: 'DRAFT' });
+        setPurchaseInvoices((prev) => [data, ...prev]);
+        return { success: true, data };
+      } catch (err) {
+        return { success: false, error: err instanceof Error ? err.message : 'فشل الحفظ' };
+      }
+    },
+    []
+  );
+
+  const updatePurchaseInvoice = useCallback(
+    async (id: string, updates: Partial<PurchaseInvoice>) => {
+      try {
+        const updated = await _purchases.update(id, updates);
+        setPurchaseInvoices((prev) => prev.map((p) => (p.id === id ? updated : p)));
+        return { success: true };
+      } catch (err) {
+        return { success: false, error: err instanceof Error ? err.message : 'فشل التعديل' };
+      }
+    },
+    []
+  );
+
+  const deletePurchaseInvoice = useCallback(async (id: string) => {
+    await _purchases.delete(id);
+    setPurchaseInvoices((prev) => prev.filter((p) => p.id !== id));
+  }, []);
+
+  // The key function: receive an invoice → create StockIn movements + update MACs
+  const receivePurchaseInvoice = useCallback(
+    async (id: string) => {
+      try {
+        const invoice = purchaseInvoices.find((p) => p.id === id);
+        if (!invoice) return { success: false, error: 'الفاتورة غير موجودة' };
+        if (invoice.status === 'RECEIVED') return { success: false, error: 'تم استلام هذه الفاتورة مسبقاً' };
+
+        // 1. Re-compute items with current balances & MACs
+        const currentBalances: Record<string, number> = {};
+        const currentMACs: Record<string, number> = {};
+        currentStock.forEach((s) => { currentBalances[s.itemId] = s.currentBalance; });
+        items.forEach((it) => {
+          currentMACs[it.id] = it.movingAverageCost ?? it.purchasePrice ?? 0;
+        });
+
+        const totalLandedCosts =
+          invoice.intlShipping + invoice.localShipping +
+          invoice.customsDuties + invoice.clearanceFees + invoice.otherExpenses;
+
+        const computedItems = computeInvoiceItems(
+          invoice.items.map((r) => ({
+            id: r.id,
+            itemId: r.itemId,
+            itemName: r.itemName,
+            itemCode: r.itemCode,
+            category: r.category,
+            quantity: r.quantity,
+            unitPrice: r.unitPrice,
+          })),
+          totalLandedCosts,
+          invoice.allocationMethod,
+          currentBalances,
+          currentMACs
+        );
+
+        // 2. Create StockIn movement for each item
+        for (const ci of computedItems) {
+          await _stockIn.create({
+            date: new Date().toISOString().split('T')[0],
+            invoiceNo: invoice.invoiceNumber,
+            itemId: ci.itemId,
+            supplierId: invoice.supplierId,
+            quantity: ci.quantity,
+            unitPrice: ci.totalUnitCost,
+            responsibleEmployee: 'نظام المشتريات',
+            notes: `فاتورة مشتريات ${invoice.invoiceNumber} — تكلفة استيرادية: ${ci.totalUnitCost.toFixed(2)}`,
+          });
+          // Update item's movingAverageCost
+          await _items.update(ci.itemId, { movingAverageCost: ci.newMAC });
+        }
+
+        // 3. Mark invoice as RECEIVED with final computed items
+        const receivedInvoice = await _purchases.update(id, {
+          status: 'RECEIVED',
+          receivedAt: new Date().toISOString(),
+          items: computedItems,
+        });
+
+        // 4. Refresh local state
+        setPurchaseInvoices((prev) => prev.map((p) => (p.id === id ? receivedInvoice : p)));
+        const [newItems, newStockIn, newStock] = await Promise.all([
+          _items.getAll(),
+          _stockIn.getAll(),
+          _stockView.getAll(),
+        ]);
+        setItems(newItems);
+        setStockIn(newStockIn);
+        setCurrentStock(newStock);
+
+        return { success: true };
+      } catch (err) {
+        return { success: false, error: err instanceof Error ? err.message : 'فشل الاستلام' };
+      }
+    },
+    [purchaseInvoices, currentStock, items]
+  );
+
   const value = useMemo<StockContextType>(
     () => ({
       items,
@@ -334,6 +465,11 @@ export function StockProvider({ children }: { children: ReactNode }) {
       addSupplier,
       updateSupplier,
       deleteSupplier,
+      purchaseInvoices,
+      addPurchaseInvoice,
+      updatePurchaseInvoice,
+      deletePurchaseInvoice,
+      receivePurchaseInvoice,
       refresh: loadData,
     }),
     [
@@ -358,6 +494,11 @@ export function StockProvider({ children }: { children: ReactNode }) {
       addSupplier,
       updateSupplier,
       deleteSupplier,
+      purchaseInvoices,
+      addPurchaseInvoice,
+      updatePurchaseInvoice,
+      deletePurchaseInvoice,
+      receivePurchaseInvoice,
       loadData,
     ]
   );

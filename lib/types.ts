@@ -30,6 +30,7 @@ export type Item = {
   openingQty: number;
   minStockLevel: number;
   reorderLevel: number;
+  movingAverageCost?: number;
   location: string;
   status: 'ACTIVE' | 'SUSPENDED' | 'UNDER_REVIEW';
 };
@@ -84,3 +85,57 @@ export type CurrentStock = {
 };
 
 export type StockStatus = CurrentStock['status'];
+
+// ── Purchase Invoice ──────────────────────────────────────────────────────────
+
+export type LandedCostMethod = 'VALUE' | 'QUANTITY' | 'EQUAL';
+
+export type PurchaseInvoiceStatus = 'DRAFT' | 'CONFIRMED' | 'RECEIVED';
+
+export type PurchaseInvoiceItem = {
+  id: string;
+  itemId: string;
+  itemName: string;
+  itemCode: string;
+  category: string;
+  quantity: number;
+  unitPrice: number;           // سعر الوحدة من المورد
+  lineTotal: number;           // quantity * unitPrice
+
+  // Landed cost (computed)
+  allocatedLandedCost: number; // المصاريف الموزعة على هذا الصنف
+  landedCostPerUnit: number;   // allocatedLandedCost / quantity
+  totalUnitCost: number;       // unitPrice + landedCostPerUnit — تكلفة الوحدة الفعلية
+
+  // MAC snapshot (filled when received)
+  previousMAC: number;
+  newMAC: number;
+};
+
+export type PurchaseInvoice = {
+  id: string;
+  invoiceNumber: string;
+  supplierId: string;
+  supplierName: string;
+  invoiceDate: string;          // YYYY-MM-DD
+  currency: string;             // SAR | USD | EUR | AED | GBP
+  exchangeRate: number;         // 1.0 for SAR
+  // Landed cost fields
+  intlShipping: number;
+  localShipping: number;
+  customsDuties: number;
+  clearanceFees: number;
+  otherExpenses: number;
+  allocationMethod: LandedCostMethod;
+  // Items
+  items: PurchaseInvoiceItem[];
+  // Computed totals
+  subtotal: number;
+  totalLandedCosts: number;
+  grandTotal: number;
+  // Meta
+  status: PurchaseInvoiceStatus;
+  notes: string;
+  createdAt: string;
+  receivedAt?: string;
+};
