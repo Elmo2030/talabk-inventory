@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --brand-primary: #E5302A;
+  --brand-dark:    #C42B24;
+  --brand-light:   #FEF2F1;
+  --sidebar-bg:    #1C1C1E;
+  --sidebar-text:  rgba(255,255,255,0.75);
+  --sidebar-active:#E5302A;
+  --surface-bg: #F2F2F7;
+  --surface-card: #FFFFFF;
+  --separator: #E5E5EA;
+  --ink-primary: #1C1C1E;
+  --ink-secondary: #6C6C70;
+}
+
+* {
+  font-family: 'Cairo', sans-serif;
+}
+
+body {
+  font-family: 'Cairo', sans-serif;
+  background-color: #F2F2F7;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #F2F2F7;
+}
+::-webkit-scrollbar-thumb {
+  background: #C6C6C8;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--brand-primary);
+}
+
+/* Modal animation */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.modal-content {
+  animation: slideUp 0.2s ease-out;
+}
+
+/* Sidebar dark scrollbar */
+aside ::-webkit-scrollbar-track  { background: #2a2a2c; }
+aside ::-webkit-scrollbar-thumb  { background: #4a4a4c; }
+aside ::-webkit-scrollbar-thumb:hover { background: var(--brand-primary); }
+
+/* Print */
+@media print {
+  aside, .print\:hidden { display: none !important; }
+  main { margin: 0 !important; padding: 0 !important; }
+}
