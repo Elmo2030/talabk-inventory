@@ -1,14 +1,14 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { authService } from '@/lib/auth/authService';
+import { getSupabaseClient } from '@/lib/supabase/client';
 
 interface AuthContextType {
   isLoggedIn: boolean;
   isSetupDone: boolean;
   initialized: boolean;
   username: string | null;
-  login: (username: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
   setup: (username: string, password: string) => Promise<void>;
   changePassword: (oldPassword: string, newPassword: string) => Promise<boolean>;
@@ -18,52 +18,64 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isSetupDone, setIsSetupDone] = useState(false);
-  const [initialized, setInitialized] = useState(false);
-  const [username, setUsername] = useState<string | null>(null);
+  const supabase = getSupabaseClient();
+
+  const [isLoggedIn,   setIsLoggedIn]   = useState(false);
+  const [initialized,  setInitialized]  = useState(false);
+  const [username,     setUsername]     = useState<string | null>(null);
 
   useEffect(() => {
-    setIsSetupDone(authService.isSetupDone());
-    setIsLoggedIn(authService.isLoggedIn());
-    setUsername(authService.getUsername());
-    setInitialized(true);
-  }, []);
+    // Check current session on mount
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsLoggedIn(!!session);
+      setUsername(session?.user?.email ?? null);
+      setInitialized(true);
+    });
 
-  const login = async (u: string, p: string): Promise<boolean> => {
-    const ok = await authService.login(u, p);
-    if (ok) {
-      setIsLoggedIn(true);
-      setUsername(authService.getUsername());
-    }
-    return ok;
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsLoggedIn(!!session);
+      setUsername(session?.user?.email ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [supabase.auth]);
+
+  const login = async (email: string, password: string): Promise<boolean> => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    return !error;
   };
 
   const logout = () => {
-    authService.logout();
+    supabase.auth.signOut();
     setIsLoggedIn(false);
+    setUsername(null);
   };
 
-  const setup = async (u: string, p: string): Promise<void> => {
-    await authService.setup(u, p);
-    setIsSetupDone(true);
-    setIsLoggedIn(true);
-    setUsername(u);
+  // No longer needed — users are created via Supabase Dashboard / Super Admin
+  const setup = async (_u: string, _p: string): Promise<void> => {};
+
+  const changePassword = async (_old: string, newPassword: string): Promise<boolean> => {
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    return !error;
   };
 
-  const changePassword = async (oldPassword: string, newPassword: string): Promise<boolean> => {
-    return authService.changePassword(oldPassword, newPassword);
-  };
-
-  const changeUsername = (newUsername: string) => {
-    authService.changeUsername(newUsername);
-    setUsername(newUsername);
+  const changeUsername = (_newUsername: string) => {
+    // Username is now the email — managed via Supabase
   };
 
   return (
-    <AuthContext.Provider
-      value={{ isLoggedIn, isSetupDone, initialized, username, login, logout, setup, changePassword, changeUsername }}
-    >
+    <AuthContext.Provider value={{
+      isLoggedIn,
+      isSetupDone: true,   // Always true — Supabase is always set up
+      initialized,
+      username,
+      login,
+      logout,
+      setup,
+      changePassword,
+      changeUsername,
+    }}>
       {children}
     </AuthContext.Provider>
   );

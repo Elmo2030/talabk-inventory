@@ -2,31 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/lib/AuthContext';
-import { storeProfileService } from '@/lib/store/storeProfileService';
+import { getSupabaseClient } from '@/lib/supabase/client';
 import { Eye, EyeOff, AlertCircle } from 'lucide-react';
+import Link from 'next/link';
 
 function TalabkLogo({ size = 56 }: { size?: number }) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 56 72"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M28 2C13 2 2 13 2 26C2 40 13 52 21 61L28 69L35 61C43 52 54 40 54 26C54 13 43 2 28 2Z"
-        fill="#E5302A"
-      />
-      <path
-        d="M17 9C11 14 8 20 8 27C8 35 13 43 20 50"
-        stroke="#C42B24"
-        strokeWidth="5"
-        strokeLinecap="round"
-        opacity="0.55"
-        fill="none"
-      />
+    <svg width={size} height={size} viewBox="0 0 56 72" fill="none">
+      <path d="M28 2C13 2 2 13 2 26C2 40 13 52 21 61L28 69L35 61C43 52 54 40 54 26C54 13 43 2 28 2Z" fill="#E5302A" />
+      <path d="M17 9C11 14 8 20 8 27C8 35 13 43 20 50" stroke="#C42B24" strokeWidth="5" strokeLinecap="round" opacity="0.55" fill="none" />
       <rect x="12" y="17" width="32" height="9" rx="3.5" fill="white" />
       <rect x="22" y="17" width="12" height="26" rx="3.5" fill="white" />
       <polygon points="28,69 22,60 34,60" fill="#E5302A" />
@@ -36,46 +20,88 @@ function TalabkLogo({ size = 56 }: { size?: number }) {
 }
 
 export default function LoginPage() {
-  const router = useRouter();
-  const { isSetupDone, isLoggedIn, initialized, login } = useAuth();
+  const router   = useRouter();
+  const supabase = getSupabaseClient();
 
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [email,        setEmail]        = useState('');
+  const [password,     setPassword]     = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
-  const [storeName, setStoreName] = useState('');
+  const [loading,      setLoading]      = useState(false);
+  const [errorMsg,     setErrorMsg]     = useState('');
 
+  // Redirect if already logged in
   useEffect(() => {
-    if (initialized) {
-      if (!isSetupDone) {
-        router.replace('/setup');
-        return;
-      }
-      if (isLoggedIn) {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!session) return;
+
+      // Check role and redirect accordingly
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('role, tenant_id')
+        .eq('id', session.user.id)
+        .single();
+
+      const p = profile as unknown as { role: string; tenant_id: string | null } | null;
+
+      if (p?.role === 'super_admin') {
+        router.replace('/superadmin');
+      } else if (p?.tenant_id) {
+        // Get tenant slug
+        const { data: tenant } = await supabase
+          .from('tenants')
+          .select('slug')
+          .eq('id', p.tenant_id)
+          .single();
+        const t = tenant as unknown as { slug: string } | null;
+        router.replace(t ? `/app/${t.slug}/dashboard` : '/');
+      } else {
         router.replace('/');
-        return;
       }
-    }
-    // Get store name for display
-    const profile = storeProfileService.getProfile();
-    if (profile?.name) setStoreName(profile.name);
-  }, [initialized, isSetupDone, isLoggedIn, router]);
+    });
+  }, [supabase, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
-    if (!username.trim() || !password) {
-      setErrorMsg('يرجى إدخال اسم المستخدم وكلمة المرور');
+
+    if (!email.trim() || !password) {
+      setErrorMsg('يرجى إدخال البريد الإلكتروني وكلمة المرور');
       return;
     }
+
     setLoading(true);
     try {
-      const ok = await login(username.trim(), password);
-      if (ok) {
-        router.push('/');
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email:    email.trim().toLowerCase(),
+        password,
+      });
+
+      if (error || !data.session) {
+        setErrorMsg('البريد الإلكتروني أو كلمة المرور غير صحيحة');
+        return;
+      }
+
+      // Fetch profile to determine redirect
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('role, tenant_id')
+        .eq('id', data.session.user.id)
+        .single();
+
+      const p = profile as unknown as { role: string; tenant_id: string | null } | null;
+
+      if (p?.role === 'super_admin') {
+        router.push('/superadmin');
+      } else if (p?.tenant_id) {
+        const { data: tenant } = await supabase
+          .from('tenants')
+          .select('slug')
+          .eq('id', p.tenant_id)
+          .single();
+        const t = tenant as unknown as { slug: string } | null;
+        router.push(t ? `/app/${t.slug}/dashboard` : '/');
       } else {
-        setErrorMsg('اسم المستخدم أو كلمة المرور غير صحيحة');
+        router.push('/');
       }
     } catch {
       setErrorMsg('حدث خطأ أثناء تسجيل الدخول، حاول مجدداً');
@@ -87,21 +113,18 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-[#F2F2F7] flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Logo & Header */}
+
+        {/* Logo */}
         <div className="flex flex-col items-center mb-8">
           <TalabkLogo size={64} />
           <h1 className="mt-4 text-2xl font-bold text-[#1C1C1E]">تسجيل الدخول</h1>
-          {storeName ? (
-            <p className="mt-1 text-sm text-[#6C6C70]">{storeName}</p>
-          ) : (
-            <p className="mt-1 text-sm text-[#6C6C70]">طلبك — للمتاجر الإلكترونية</p>
-          )}
+          <p className="mt-1 text-sm text-[#6C6C70]">طلبك — للمتاجر الإلكترونية</p>
         </div>
 
         {/* Card */}
         <div className="bg-white rounded-2xl border border-[#E5E5EA] shadow-sm p-6">
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Error message */}
+
             {errorMsg && (
               <div className="flex items-center gap-2 px-3 py-2.5 bg-red-50 border border-red-200 rounded-xl text-sm text-[#E5302A]">
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -109,17 +132,17 @@ export default function LoginPage() {
               </div>
             )}
 
-            {/* Username */}
+            {/* Email */}
             <div>
               <label className="block text-sm font-medium text-[#6C6C70] mb-1.5">
-                اسم المستخدم
+                البريد الإلكتروني
               </label>
               <input
-                type="text"
-                value={username}
-                onChange={(e) => { setUsername(e.target.value); setErrorMsg(''); }}
-                placeholder="أدخل اسم المستخدم"
-                autoComplete="username"
+                type="email"
+                value={email}
+                onChange={e => { setEmail(e.target.value); setErrorMsg(''); }}
+                placeholder="example@email.com"
+                autoComplete="email"
                 className="w-full px-4 py-2.5 rounded-xl border border-[#E5E5EA] text-[#1C1C1E] text-sm bg-white placeholder-[#AEAEB2] outline-none transition-all focus:border-[#E5302A] focus:ring-2 focus:ring-[#E5302A]/20"
               />
             </div>
@@ -133,7 +156,7 @@ export default function LoginPage() {
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
-                  onChange={(e) => { setPassword(e.target.value); setErrorMsg(''); }}
+                  onChange={e => { setPassword(e.target.value); setErrorMsg(''); }}
                   placeholder="أدخل كلمة المرور"
                   autoComplete="current-password"
                   className="w-full px-4 py-2.5 rounded-xl border border-[#E5E5EA] text-[#1C1C1E] text-sm bg-white placeholder-[#AEAEB2] outline-none transition-all focus:border-[#E5302A] focus:ring-2 focus:ring-[#E5302A]/20 pl-10"
@@ -141,7 +164,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-[#AEAEB2] hover:text-[#6C6C70] transition-colors"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-[#AEAEB2] hover:text-[#6C6C70]"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -152,17 +175,20 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 rounded-xl bg-[#E5302A] hover:bg-[#C42B24] active:bg-[#B02520] text-white font-semibold text-sm transition-colors disabled:opacity-60 disabled:cursor-not-allowed mt-2"
+              className="w-full py-3 rounded-xl bg-[#E5302A] hover:bg-[#C42B24] text-white font-semibold text-sm transition-colors disabled:opacity-60 disabled:cursor-not-allowed mt-2"
             >
               {loading ? 'جاري التحقق...' : 'تسجيل الدخول'}
             </button>
           </form>
         </div>
 
-        {/* Forgot password note */}
         <p className="text-center text-xs text-[#AEAEB2] mt-6">
-          نسيت كلمة المرور؟ تواصل مع مدير النظام لإعادة تعيين كلمة المرور
+          متجر جديد؟{' '}
+          <Link href="/register" className="text-[#E5302A] hover:underline">
+            سجّل متجرك
+          </Link>
         </p>
+
       </div>
     </div>
   );
