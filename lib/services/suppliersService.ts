@@ -1,5 +1,3 @@
-'use client';
-
 import { getSupabaseClient } from '@/lib/supabase/client';
 import type { Supplier } from '@/lib/types';
 import type { Database } from '@/lib/supabase/database.types';

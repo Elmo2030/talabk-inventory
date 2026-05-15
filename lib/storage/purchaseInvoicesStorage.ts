@@ -1,14 +1,18 @@
 import { PurchaseInvoice } from '@/lib/types';
 
-const KEY = 'talabk_purchase_invoices_v1';
+// Tenant-isolated key — call setTenantPrefix(tenantId) on login to scope data
+let _tenantPrefix = 'shared';
+export function setInvoicesTenantPrefix(prefix: string) { _tenantPrefix = prefix; }
+
+function key() { return `talabk_purchase_invoices_v1_${_tenantPrefix}`; }
 
 function readAll(): PurchaseInvoice[] {
   if (typeof window === 'undefined') return [];
-  try { return JSON.parse(localStorage.getItem(KEY) ?? '[]'); } catch { return []; }
+  try { return JSON.parse(localStorage.getItem(key()) ?? '[]'); } catch { return []; }
 }
 function writeAll(data: PurchaseInvoice[]): void {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(KEY, JSON.stringify(data));
+  localStorage.setItem(key(), JSON.stringify(data));
 }
 function genId(): string {
   return `pi-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;

@@ -16,7 +16,7 @@ export default async function SuperAdminLayout({ children }: { children: ReactNo
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) redirect('/login');
+  if (!user) redirect('/superadmin/login');
 
   const { data: profileRaw } = await supabase
     .from('user_profiles')

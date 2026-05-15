@@ -36,6 +36,9 @@ import {
   mockSalesOrdersService,
 } from '@/lib/storage/mockServices';
 import { seedMockDataIfNeeded } from '@/lib/storage/seedData';
+import { setInvoicesTenantPrefix } from '@/lib/storage/purchaseInvoicesStorage';
+import { setOrdersTenantPrefix }   from '@/lib/storage/salesOrdersStorage';
+import { getSupabaseClient } from '@/lib/supabase/client';
 
 // ── Service selector ──────────────────────────────────────────────────────────
 // Use mock mode when:
@@ -189,6 +192,16 @@ export function StockProvider({ children }: { children: ReactNode }) {
     } catch (err) {
       console.error('Error refreshing stock:', err);
     }
+  }, []);
+
+  // Set tenant-isolated localStorage keys for purchases/orders
+  // Uses Supabase session user ID as prefix to prevent cross-tenant data leaks
+  useEffect(() => {
+    getSupabaseClient().auth.getSession().then(({ data: { session } }) => {
+      const prefix = session?.user?.id ?? 'anon';
+      setInvoicesTenantPrefix(prefix);
+      setOrdersTenantPrefix(prefix);
+    });
   }, []);
 
   useEffect(() => {

@@ -9,9 +9,14 @@
  *   talabk.app/app/store1/dashboard  →  protected, no rewrite
  *
  * Auth guards:
- *   /superadmin/*  →  must be super_admin
- *   /app/[slug]/*  →  must be authenticated & tenant matches slug
- *   /login, /register  →  redirect to dashboard if already logged in
+ *   /superadmin/*        →  must be super_admin (redirect to /superadmin/login)
+ *   /app/[slug]/*        →  must be authenticated & tenant matches slug
+ *   /login, /register    →  redirect to dashboard if already logged in
+ *
+ * JWT claims strategy:
+ *   Custom claims (user_role, tenant_id, tenant_slug) are injected by the
+ *   custom_access_token_hook into app_metadata. Server layouts also verify
+ *   via direct DB lookup as defence-in-depth.
  */
 
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
@@ -66,12 +71,13 @@ export async function middleware(req: NextRequest) {
   const { data: { session } } = await supabase.auth.getSession();
   const isAuthenticated = !!session?.user;
 
-  // Custom claims injected by our Postgres hook
-  const jwtClaims   = (session?.user?.user_metadata ?? {}) as Record<string, string>;
-  const userRole    = jwtClaims['user_role']   as string | undefined;
-  const jwtTenantId = jwtClaims['tenant_id']   as string | undefined;
-  // We also store the tenant slug in user_metadata on account creation
-  const tenantSlug  = jwtClaims['tenant_slug'] as string | undefined;
+  // Custom claims injected by our Postgres custom_access_token_hook.
+  // The hook writes into app_metadata (server-only, not user-editable).
+  // user_metadata is user-editable and must NEVER be trusted for authz.
+  const appMeta     = (session?.user?.app_metadata  ?? {}) as Record<string, string>;
+  const userRole    = appMeta['user_role']   as string | undefined;
+  const jwtTenantId = appMeta['tenant_id']   as string | undefined;
+  const tenantSlug  = appMeta['tenant_slug'] as string | undefined;
 
   // ── 2. Subdomain extraction ───────────────────────────────────────────────
   //   store1.talabk.app → subSlug = 'store1'
@@ -129,11 +135,18 @@ export async function middleware(req: NextRequest) {
       return redirectTo(req, '/login', { redirect: pathname });
     }
 
-    // Verify the authenticated user belongs to this tenant
-    // (super_admin may browse any tenant's path in debug mode)
-    if (userRole !== 'super_admin' && tenantSlug && tenantSlug !== routeSlug) {
-      // Wrong tenant — redirect to the user's own dashboard
-      return redirectTo(req, `/app/${tenantSlug}/dashboard`);
+    // Verify the authenticated user belongs to this tenant.
+    // super_admin may browse any tenant path.
+    // If tenantSlug is missing from JWT (new user without tenant), deny access.
+    if (userRole !== 'super_admin') {
+      if (!tenantSlug) {
+        // No tenant assigned yet — send to landing page
+        return redirectTo(req, '/');
+      }
+      if (tenantSlug !== routeSlug) {
+        // Wrong tenant — redirect to the user's own dashboard
+        return redirectTo(req, `/app/${tenantSlug}/dashboard`);
+      }
     }
 
     const response = NextResponse.next();

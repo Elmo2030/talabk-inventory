@@ -1,5 +1,3 @@
-'use client';
-
 import { getSupabaseClient } from '@/lib/supabase/client';
 import type { CurrentStock } from '@/lib/types';
 
