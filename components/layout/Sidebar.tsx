@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -24,21 +24,52 @@ import {
 import { useStock } from '@/lib/StockContext';
 import { useAuth } from '@/lib/AuthContext';
 
-const navItems = [
-  { href: '/', label: 'لوحة التحكم', icon: LayoutDashboard },
-  { href: '/suppliers', label: 'الموردين', icon: Users },
-  { href: '/items', label: 'الأصناف', icon: Package },
-  { href: '/stock-in', label: 'سجل الوارد', icon: ArrowDownToLine },
-  { href: '/stock-out', label: 'سجل الصادر', icon: ArrowUpFromLine },
-  { href: '/purchases', label: 'المشتريات', icon: ShoppingCart },
-  { href: '/orders', label: 'الطلبات والمبيعات', icon: ShoppingBag },
-  { href: '/current-stock', label: 'الرصيد الحالي', icon: BarChart3 },
-  { href: '/reports', label: 'التقارير', icon: FileText },
-  { href: '/settings', label: 'الإعدادات', icon: Settings },
-  { href: '/store', label: 'بيانات المتجر', icon: Store },
-  { href: '/guide', label: 'دليل المستخدم', icon: BookOpen },
-  { href: '/shipping-calculator', label: 'حاسبة الشحن', icon: Truck },
+type NavItem = { href: string; label: string; icon: React.ElementType };
+type NavGroup = { label: string | null; items: NavItem[] };
+
+const navGroups: NavGroup[] = [
+  {
+    label: null,
+    items: [
+      { href: '/', label: 'لوحة التحكم', icon: LayoutDashboard },
+    ],
+  },
+  {
+    label: 'المخزون',
+    items: [
+      { href: '/items', label: 'الأصناف', icon: Package },
+      { href: '/suppliers', label: 'الموردين', icon: Users },
+      { href: '/stock-in', label: 'إضافة مخزون', icon: ArrowDownToLine },
+      { href: '/stock-out', label: 'صرف مخزون', icon: ArrowUpFromLine },
+      { href: '/current-stock', label: 'المخزون الحالي', icon: BarChart3 },
+    ],
+  },
+  {
+    label: 'المبيعات',
+    items: [
+      { href: '/purchases', label: 'فواتير الشراء', icon: ShoppingCart },
+      { href: '/orders', label: 'طلبات البيع', icon: ShoppingBag },
+    ],
+  },
+  {
+    label: 'التقارير والأدوات',
+    items: [
+      { href: '/reports', label: 'التقارير', icon: FileText },
+      { href: '/shipping-calculator', label: 'حاسبة الشحن', icon: Truck },
+    ],
+  },
+  {
+    label: 'الإعدادات',
+    items: [
+      { href: '/settings', label: 'الإعدادات', icon: Settings },
+      { href: '/store', label: 'الملف التجاري', icon: Store },
+      { href: '/guide', label: 'دليل المستخدم', icon: BookOpen },
+    ],
+  },
 ];
+
+// Flat list for any code that still needs it
+const navItems = navGroups.flatMap((g) => g.items);
 
 // Talabk T-pin SVG logo
 function TalabkLogo({ size = 40 }: { size?: number }) {
@@ -115,41 +146,57 @@ export default function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-3 py-5 space-y-0.5 overflow-y-auto">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = pathname === item.href;
-          const isStockAlert = item.href === '/current-stock' && alertCount > 0;
+      <nav className="flex-1 px-3 py-5 overflow-y-auto">
+        {navGroups.map((group, groupIdx) => (
+          <div key={groupIdx}>
+            {/* Separator before every group except the first */}
+            {groupIdx > 0 && (
+              <div className="h-px bg-white/8 mx-3 my-1" />
+            )}
+            {/* Section label (skip for group 1 — dashboard) */}
+            {group.label && (
+              <p className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-white/25">
+                {group.label}
+              </p>
+            )}
+            <div className="space-y-0.5">
+              {group.items.map((item) => {
+                const Icon = item.icon;
+                const isActive = pathname === item.href;
+                const isStockAlert = item.href === '/current-stock' && alertCount > 0;
 
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={() => setMobileOpen(false)}
-              className={`
-                flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all
-                ${isActive
-                  ? 'bg-brand-600 text-white shadow-sm'
-                  : 'text-white/65 hover:bg-white/10 hover:text-white/90'
-                }
-              `}
-            >
-              <div className="flex items-center gap-3">
-                <Icon
-                  className={`w-[18px] h-[18px] flex-shrink-0 ${
-                    isActive ? 'text-white' : 'text-white/50'
-                  }`}
-                />
-                <span>{item.label}</span>
-              </div>
-              {isStockAlert && (
-                <span className="px-2 py-0.5 text-xs font-bold bg-amber-500 text-white rounded-full">
-                  {alertCount}
-                </span>
-              )}
-            </Link>
-          );
-        })}
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setMobileOpen(false)}
+                    className={`
+                      flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all
+                      ${isActive
+                        ? 'bg-brand-600 text-white shadow-sm'
+                        : 'text-white/65 hover:bg-white/10 hover:text-white/90'
+                      }
+                    `}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Icon
+                        className={`w-[18px] h-[18px] flex-shrink-0 ${
+                          isActive ? 'text-white' : 'text-white/50'
+                        }`}
+                      />
+                      <span>{item.label}</span>
+                    </div>
+                    {isStockAlert && (
+                      <span className="px-2 py-0.5 text-xs font-bold bg-amber-500 text-white rounded-full">
+                        {alertCount}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </nav>
 
       {/* Footer user strip */}

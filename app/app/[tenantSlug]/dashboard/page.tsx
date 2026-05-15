@@ -10,12 +10,15 @@ import {
   Layers, DollarSign,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import { useStock } from '@/lib/StockContext';
 import { useTheme } from '@/lib/ThemeContext';
 
 export default function DashboardPage() {
   const { items, currentStock, salesOrders, purchaseInvoices, stockIn } = useStock();
   const { isDark, toggleTheme } = useTheme();
+  const params = useParams();
+  const tenantSlug = params?.tenantSlug as string ?? '';
 
   // ── Last 30 days labels ───────────────────────────────────────────────────────
   const last30Days = useMemo(() => {
@@ -150,6 +153,37 @@ export default function DashboardPage() {
           {isDark ? 'فاتح' : 'داكن'}
         </button>
       </div>
+
+      {/* Getting Started — only shown when no real data */}
+      {items.length === 0 && salesOrders.length === 0 && (
+        <div className="mb-8 bg-[#FEF2F1] dark:bg-[#E5302A]/10 border border-[#E5302A]/20 rounded-2xl p-6">
+          <div className="flex items-start gap-4">
+            <div className="text-3xl">👋</div>
+            <div className="flex-1">
+              <h2 className="text-lg font-bold text-[#1C1C1E] dark:text-[#F4F4F5] mb-1">مرحباً بك في طلبك!</h2>
+              <p className="text-[#6C6C70] dark:text-white/50 text-sm mb-5">ابدأ بثلاث خطوات بسيطة للاستفادة الكاملة من النظام</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {[
+                  { step: '1', icon: '🏭', title: 'أضف موردك الأول', desc: 'سجّل بيانات موردك من القائمة الجانبية', href: `/app/${tenantSlug}/suppliers`, label: 'إضافة مورد' },
+                  { step: '2', icon: '📦', title: 'أضف منتجاتك', desc: 'أدخل أصنافك مع الأسعار والكميات', href: `/app/${tenantSlug}/items`, label: 'إضافة صنف' },
+                  { step: '3', icon: '🛒', title: 'سجّل أول طلب', desc: 'ابدأ البيع وتتبع أرباحك لحظياً', href: `/app/${tenantSlug}/orders/new`, label: 'طلب جديد' },
+                ].map(({ step, icon, title, desc, href, label }) => (
+                  <a key={step} href={href}
+                    className="flex flex-col gap-2 p-4 bg-white dark:bg-white/5 hover:bg-[#F9F9FB] dark:hover:bg-white/10 border border-[#E5E5EA] dark:border-white/10 hover:border-[#E5302A]/40 dark:hover:border-[#E5302A]/30 rounded-xl transition-all group">
+                    <div className="flex items-center gap-2">
+                      <span className="w-5 h-5 rounded-full bg-[#E5302A] text-white text-[10px] font-bold flex items-center justify-center">{step}</span>
+                      <span className="text-lg">{icon}</span>
+                    </div>
+                    <p className="font-semibold text-[#1C1C1E] dark:text-white text-sm">{title}</p>
+                    <p className="text-[#6C6C70] dark:text-white/40 text-xs">{desc}</p>
+                    <span className="mt-auto text-xs text-[#E5302A] group-hover:underline">{label} ←</span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── KPI Cards ──────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

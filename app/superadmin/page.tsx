@@ -75,16 +75,23 @@ function RegRow({
   req,
   onApprove,
   onReject,
+  actionLoading,
 }: {
   req: RegistrationRequest;
   onApprove: (id: string) => void;
   onReject:  (id: string) => void;
+  actionLoading?: string | null; // id currently being processed
 }) {
+  const isLoading = actionLoading === req.id;
+
   return (
     <tr className="border-t border-[#F2F2F7] dark:border-[#27272A] hover:bg-[#F9F9FB] dark:hover:bg-[#27272A] transition-colors">
       <td className="px-4 py-3">
         <p className="font-medium text-sm text-[#1C1C1E] dark:text-[#F4F4F5]">{req.store_name}</p>
         <p className="text-xs text-[#6C6C70] dark:text-[#A1A1AA]">{req.owner_name}</p>
+        {req.phone && (
+          <p className="text-xs text-[#6C6C70] dark:text-[#A1A1AA] mt-0.5 dir-ltr text-right">{req.phone}</p>
+        )}
       </td>
       <td className="px-4 py-3 text-sm text-[#6C6C70] dark:text-[#A1A1AA]">{req.email}</td>
       <td className="px-4 py-3">
@@ -100,14 +107,20 @@ function RegRow({
           <div className="flex items-center gap-2">
             <button
               onClick={() => onApprove(req.id)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-500 hover:bg-green-600 text-white text-xs font-semibold transition-colors"
+              disabled={isLoading}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-500 hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-semibold transition-colors"
             >
-              <CheckCircle2 className="w-3.5 h-3.5" />
+              {isLoading ? (
+                <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <CheckCircle2 className="w-3.5 h-3.5" />
+              )}
               قبول
             </button>
             <button
               onClick={() => onReject(req.id)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#F2F2F7] dark:bg-[#27272A] hover:bg-[#E5E5EA] dark:hover:bg-[#3A3A3C] text-[#1C1C1E] dark:text-[#F4F4F5] text-xs font-semibold transition-colors"
+              disabled={isLoading}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#F2F2F7] dark:bg-[#27272A] hover:bg-[#E5E5EA] dark:hover:bg-[#3A3A3C] disabled:opacity-50 disabled:cursor-not-allowed text-[#1C1C1E] dark:text-[#F4F4F5] text-xs font-semibold transition-colors"
             >
               <XCircle className="w-3.5 h-3.5" />
               رفض
@@ -131,10 +144,12 @@ function RegRow({
 export default function SuperAdminDashboard() {
   const supabase = getSupabaseClient();
 
-  const [stats,        setStats]        = useState<TenantStats[]>([]);
-  const [requests,     setRequests]     = useState<RegistrationRequest[]>([]);
-  const [isLoading,    setIsLoading]    = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [stats,          setStats]          = useState<TenantStats[]>([]);
+  const [requests,       setRequests]       = useState<RegistrationRequest[]>([]);
+  const [isLoading,      setIsLoading]      = useState(true);
+  const [isRefreshing,   setIsRefreshing]   = useState(false);
+  const [actionLoading,  setActionLoading]  = useState<string | null>(null);
+  const [actionError,    setActionError]    = useState<string>('');
 
   // ── Derived KPIs ──────────────────────────────────────────────────────────
   const activeTenants  = stats.filter(t => t.status === 'active').length;
@@ -205,42 +220,34 @@ export default function SuperAdminDashboard() {
     const req = requests.find(r => r.id === id);
     if (!req) return;
 
-    // 1. Create tenant
-    const slug = req.store_name
-      .toLowerCase()
-      .replace(/\s+/g, '-')
-      .replace(/[^a-z0-9-]/g, '')
-      .slice(0, 48) + '-' + Date.now().toString(36);
+    setActionLoading(id);
+    setActionError('');
 
-    const { data: newTenant } = await supabase
-      .from('tenants')
-      .insert({
-        slug,
-        store_name:        req.store_name,
-        owner_email:       req.email,
-        subscription_plan: req.requested_plan,
-        status:            'active',
-      })
-      .select()
-      .single();
+    try {
+      const res = await fetch('/api/admin/approve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          requestId:  req.id,
+          storeName:  req.store_name,
+          ownerName:  req.owner_name,
+          email:      req.email,
+          plan:       req.requested_plan,
+        }),
+      });
 
-    if (!newTenant) return;
+      const data = await res.json();
 
-    // 2. Mark request as approved
-    await supabase
-      .from('registration_requests')
-      .update({ status: 'approved', tenant_id: newTenant.id, reviewed_at: new Date().toISOString() })
-      .eq('id', id);
-
-    // 3. Log subscription event
-    await supabase.from('subscription_events').insert({
-      tenant_id:  newTenant.id,
-      event_type: 'created',
-      plan_to:    req.requested_plan,
-      notes:      'Created via registration request approval',
-    });
-
-    fetchData(true);
+      if (!res.ok) {
+        setActionError(data.error ?? 'فشلت العملية، حاول مجدداً');
+      } else {
+        fetchData(true);
+      }
+    } catch {
+      setActionError('خطأ في الاتصال، حاول مجدداً');
+    } finally {
+      setActionLoading(null);
+    }
   };
 
   const handleReject = async (id: string) => {
@@ -422,6 +429,12 @@ export default function SuperAdminDashboard() {
           </Link>
         </div>
 
+        {actionError && (
+          <div className="mx-5 mt-4 flex items-center gap-2 px-4 py-2.5 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/50 rounded-xl text-sm text-red-600 dark:text-red-400">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            {actionError}
+          </div>
+        )}
         {requests.length === 0 ? (
           <div className="px-5 py-10 text-center text-sm text-[#AEAEB2]">
             لا توجد طلبات تسجيل جديدة
@@ -431,7 +444,7 @@ export default function SuperAdminDashboard() {
             <table className="w-full text-right">
               <thead>
                 <tr className="bg-[#F9F9FB] dark:bg-[#27272A]">
-                  {['المتجر', 'البريد الإلكتروني', 'الخطة', 'التاريخ', 'الإجراء'].map(h => (
+                  {['المتجر / جهة الاتصال', 'البريد الإلكتروني', 'الخطة', 'التاريخ', 'الإجراء'].map(h => (
                     <th key={h} className="px-4 py-2.5 text-xs font-semibold text-[#6C6C70] dark:text-[#A1A1AA]">{h}</th>
                   ))}
                 </tr>
@@ -443,6 +456,7 @@ export default function SuperAdminDashboard() {
                     req={req}
                     onApprove={handleApprove}
                     onReject={handleReject}
+                    actionLoading={actionLoading}
                   />
                 ))}
               </tbody>

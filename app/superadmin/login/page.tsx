@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getSupabaseClient } from '@/lib/supabase/client';
-import { Eye, EyeOff, AlertCircle, ShieldCheck, Lock } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle, ShieldCheck, Lock, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 import TalabkLogo from '@/components/ui/TalabkLogo';
 
@@ -17,6 +17,11 @@ export default function SuperAdminLoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading,      setLoading]      = useState(false);
   const [errorMsg,     setErrorMsg]     = useState('');
+
+  const [forgotMode,    setForgotMode]    = useState(false);
+  const [forgotEmail,   setForgotEmail]   = useState('');
+  const [forgotSent,    setForgotSent]    = useState(false);
+  const [forgotLoading, setForgotLoading] = useState(false);
 
   // Redirect if already logged in as super_admin
   useEffect(() => {
@@ -34,6 +39,20 @@ export default function SuperAdminLoginPage() {
       }
     });
   }, [supabase, router, searchParams]);
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forgotEmail.trim()) return;
+    setForgotLoading(true);
+    try {
+      await supabase.auth.resetPasswordForEmail(forgotEmail.trim().toLowerCase(), {
+        redirectTo: 'https://inventory-app-nine-lilac.vercel.app/auth/callback?type=recovery',
+      });
+      setForgotSent(true);
+    } finally {
+      setForgotLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -120,70 +139,138 @@ export default function SuperAdminLoginPage() {
             <p className="text-xs text-[#E5302A]/90">منطقة مقيّدة — للمسؤولين فقط</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-
-            {errorMsg && (
-              <div className="flex items-center gap-2 px-3 py-2.5 bg-red-950/60 border border-red-800/50 rounded-xl text-sm text-red-400">
-                <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                {errorMsg}
-              </div>
-            )}
-
-            {/* Email */}
-            <div>
-              <label className="block text-xs font-semibold text-white/40 mb-2 uppercase tracking-wider">
-                البريد الإلكتروني
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={e => { setEmail(e.target.value); setErrorMsg(''); }}
-                placeholder="admin@talabk.ly"
-                autoComplete="email"
-                className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white text-sm placeholder-white/20 outline-none transition-all focus:border-[#E5302A]/50 focus:ring-2 focus:ring-[#E5302A]/10 focus:bg-white/8"
-              />
-            </div>
-
-            {/* Password */}
-            <div>
-              <label className="block text-xs font-semibold text-white/40 mb-2 uppercase tracking-wider">
-                كلمة المرور
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={e => { setPassword(e.target.value); setErrorMsg(''); }}
-                  placeholder="••••••••••••"
-                  autoComplete="current-password"
-                  className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white text-sm placeholder-white/20 outline-none transition-all focus:border-[#E5302A]/50 focus:ring-2 focus:ring-[#E5302A]/10 focus:bg-white/8 pl-11"
-                />
+          {forgotMode ? (
+            /* ── Forgot-password panel ── */
+            forgotSent ? (
+              <div className="flex flex-col items-center gap-4 py-4 text-center">
+                <CheckCircle className="w-10 h-10 text-green-400" />
+                <p className="text-sm text-green-400 leading-relaxed">
+                  أُرسل لك رابط إعادة تعيين كلمة المرور، تحقق من بريدك الإلكتروني
+                </p>
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
+                  onClick={() => { setForgotMode(false); setForgotSent(false); setForgotEmail(''); }}
+                  className="text-sm text-white/40 hover:text-white/70 transition-colors"
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  العودة لتسجيل الدخول
                 </button>
               </div>
-            </div>
+            ) : (
+              <form onSubmit={handleForgotPassword} className="space-y-5">
+                <h2 className="text-base font-bold text-white">إعادة تعيين كلمة المرور</h2>
 
-            {/* Submit */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 rounded-xl bg-[#E5302A] hover:bg-[#C42B24] text-white font-bold text-sm transition-all hover:shadow-lg hover:shadow-[#E5302A]/20 disabled:opacity-50 disabled:cursor-not-allowed mt-2"
-            >
-              {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  جاري التحقق...
-                </span>
-              ) : (
-                'دخول لوحة الإدارة'
+                <div>
+                  <label className="block text-xs font-semibold text-white/40 mb-2 uppercase tracking-wider">
+                    البريد الإلكتروني
+                  </label>
+                  <input
+                    type="email"
+                    value={forgotEmail}
+                    onChange={e => setForgotEmail(e.target.value)}
+                    placeholder="admin@talabk.ly"
+                    autoComplete="email"
+                    className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white text-sm placeholder-white/20 outline-none transition-all focus:border-[#E5302A]/50 focus:ring-2 focus:ring-[#E5302A]/10 focus:bg-white/8"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={forgotLoading}
+                  className="w-full py-3 rounded-xl bg-[#E5302A] hover:bg-[#C42B24] text-white font-bold text-sm transition-all hover:shadow-lg hover:shadow-[#E5302A]/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {forgotLoading ? 'جاري الإرسال...' : 'إرسال الرابط'}
+                </button>
+
+                <div className="text-center">
+                  <button
+                    type="button"
+                    onClick={() => { setForgotMode(false); setForgotEmail(''); }}
+                    className="text-sm text-white/40 hover:text-white/70 transition-colors"
+                  >
+                    العودة لتسجيل الدخول
+                  </button>
+                </div>
+              </form>
+            )
+          ) : (
+            /* ── Normal login form ── */
+            <form onSubmit={handleSubmit} className="space-y-5">
+
+              {errorMsg && (
+                <div className="flex items-center gap-2 px-3 py-2.5 bg-red-950/60 border border-red-800/50 rounded-xl text-sm text-red-400">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  {errorMsg}
+                </div>
               )}
-            </button>
-          </form>
+
+              {/* Email */}
+              <div>
+                <label className="block text-xs font-semibold text-white/40 mb-2 uppercase tracking-wider">
+                  البريد الإلكتروني
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={e => { setEmail(e.target.value); setErrorMsg(''); }}
+                  placeholder="admin@talabk.ly"
+                  autoComplete="email"
+                  className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white text-sm placeholder-white/20 outline-none transition-all focus:border-[#E5302A]/50 focus:ring-2 focus:ring-[#E5302A]/10 focus:bg-white/8"
+                />
+              </div>
+
+              {/* Password */}
+              <div>
+                <label className="block text-xs font-semibold text-white/40 mb-2 uppercase tracking-wider">
+                  كلمة المرور
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={e => { setPassword(e.target.value); setErrorMsg(''); }}
+                    placeholder="••••••••••••"
+                    autoComplete="current-password"
+                    className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white text-sm placeholder-white/20 outline-none transition-all focus:border-[#E5302A]/50 focus:ring-2 focus:ring-[#E5302A]/10 focus:bg-white/8 pl-11"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Forgot password link */}
+              <div className="flex justify-start">
+                <button
+                  type="button"
+                  onClick={() => setForgotMode(true)}
+                  className="text-xs text-[#E5302A] hover:underline"
+                >
+                  نسيت كلمة المرور؟
+                </button>
+              </div>
+
+              {/* Submit */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3 rounded-xl bg-[#E5302A] hover:bg-[#C42B24] text-white font-bold text-sm transition-all hover:shadow-lg hover:shadow-[#E5302A]/20 disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+              >
+                {loading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    جاري التحقق...
+                  </span>
+                ) : (
+                  'دخول لوحة الإدارة'
+                )}
+              </button>
+            </form>
+          )}
+
         </div>
 
         {/* Back to store login */}

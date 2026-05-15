@@ -134,8 +134,8 @@ export default function LandingPage() {
           {/* Stats */}
           <div className="flex items-center justify-center gap-8 mt-14 flex-wrap">
             {[
-              { n: '+500', label: 'متجر نشط' },
-              { n: '+50K', label: 'طلب مُعالَج' },
+              { n: '100%', label: 'عربي بالكامل' },
+              { n: '71', label: 'مدينة ليبية' },
               { n: '99.9%', label: 'وقت تشغيل' },
             ].map(s => (
               <div key={s.label} className="text-center">
@@ -144,6 +144,80 @@ export default function LandingPage() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* ── App Preview ──────────────────────────────────────────────────── */}
+      <section className="pb-16 px-5">
+        <div className="max-w-5xl mx-auto">
+          {/* Browser chrome */}
+          <div className="rounded-2xl overflow-hidden border border-white/10 shadow-2xl shadow-black/50">
+            {/* Browser bar */}
+            <div className="bg-[#1a1d26] px-4 py-3 flex items-center gap-3 border-b border-white/8">
+              <div className="flex gap-1.5">
+                <div className="w-3 h-3 rounded-full bg-red-500/70" />
+                <div className="w-3 h-3 rounded-full bg-yellow-500/70" />
+                <div className="w-3 h-3 rounded-full bg-green-500/70" />
+              </div>
+              <div className="flex-1 bg-white/5 rounded-lg px-3 py-1 text-xs text-white/30 text-center">
+                talabk.ly/app/متجرك/dashboard
+              </div>
+            </div>
+            {/* Mock dashboard */}
+            <div className="bg-[#0D1017] p-4 flex gap-3" style={{ minHeight: 280 }}>
+              {/* Sidebar strip */}
+              <div className="w-10 flex flex-col gap-2 pt-1">
+                {[...Array(7)].map((_, i) => (
+                  <div key={i} className={`h-2 rounded-full ${i === 0 ? 'bg-[#E5302A] w-8' : 'bg-white/10 w-6'}`} />
+                ))}
+              </div>
+              {/* Content */}
+              <div className="flex-1 flex flex-col gap-3">
+                {/* KPI row */}
+                <div className="grid grid-cols-4 gap-2">
+                  {[
+                    { label: 'الإيرادات', value: '84,500 د.ل', color: 'text-green-400' },
+                    { label: 'صافي الربح', value: '23,200 د.ل', color: 'text-emerald-400' },
+                    { label: 'قيمة المخزون', value: '156,000 د.ل', color: 'text-blue-400' },
+                    { label: 'الطلبات', value: '47', color: 'text-[#E5302A]' },
+                  ].map(kpi => (
+                    <div key={kpi.label} className="bg-white/5 rounded-xl p-3 border border-white/8">
+                      <p className="text-white/40 text-[9px] mb-1">{kpi.label}</p>
+                      <p className={`font-bold text-sm ${kpi.color}`}>{kpi.value}</p>
+                    </div>
+                  ))}
+                </div>
+                {/* Chart area */}
+                <div className="flex gap-2 flex-1">
+                  <div className="flex-1 bg-white/5 rounded-xl border border-white/8 p-3">
+                    <p className="text-white/30 text-[9px] mb-2">المبيعات مقابل الأرباح</p>
+                    <div className="flex items-end gap-1 h-16">
+                      {[40,65,45,80,55,90,70,85,60,95,75,100].map((h, i) => (
+                        <div key={i} className="flex-1 flex flex-col gap-0.5 items-center">
+                          <div className="w-full rounded-sm bg-[#E5302A]/60" style={{ height: `${h * 0.4}%` }} />
+                          <div className="w-full rounded-sm bg-blue-500/40" style={{ height: `${h * 0.25}%` }} />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="w-32 bg-white/5 rounded-xl border border-white/8 p-3 flex flex-col items-center justify-center gap-2">
+                    <p className="text-white/30 text-[9px]">حالة الطلبات</p>
+                    <div className="w-14 h-14 rounded-full border-4 border-[#E5302A]/60" style={{ background: 'conic-gradient(#E5302A 60%, #3B82F6 60% 80%, #10B981 80%)' }} />
+                    <div className="space-y-1 w-full">
+                      {[['مكتمل','#E5302A','60%'],['شحن','#3B82F6','20%'],['جديد','#10B981','20%']].map(([l,c,v])=>(
+                        <div key={l} className="flex items-center gap-1">
+                          <div className="w-1.5 h-1.5 rounded-full" style={{ background: c }} />
+                          <span className="text-white/30 text-[8px]">{l}</span>
+                          <span className="text-white/50 text-[8px] mr-auto">{v}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p className="text-center text-white/25 text-xs mt-3">داشبورد حقيقي — كل ما تراه بياناتك الفعلية</p>
         </div>
       </section>
 

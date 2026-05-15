@@ -3,6 +3,7 @@ import { useState, useCallback } from 'react';
 import { Plus, Minus, Trash2, Search, X, ShoppingCart, User, MapPin, Package } from 'lucide-react';
 import { useStock } from '@/lib/StockContext';
 import { Item } from '@/lib/types';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { ShippingCalcResult } from '@/lib/data/talabkCities';
 import { SORTED_CITIES, DeliveryType, getBasePrice, TALABK_CITIES } from '@/lib/data/talabkCities';
 import TalabkCalculator from '@/components/shipping/TalabkCalculator';
@@ -38,6 +39,7 @@ function fmt(n: number) {
 
 export default function SalesOrderForm({ onSuccess, onCancel }: Props) {
   const { items, addSalesOrder } = useStock();
+  const { confirm } = useConfirm();
 
   // Customer
   const [customerName, setCustomerName] = useState('');
@@ -154,6 +156,16 @@ export default function SalesOrderForm({ onSuccess, onCancel }: Props) {
     const errs = validate();
     if (errs.length > 0) { setErrors(errs); return; }
     setErrors([]);
+
+    const confirmed = await confirm({
+      title: 'تأكيد حفظ الطلب',
+      description: 'سيتم خصم الكميات المطلوبة من المخزون ولا يمكن التراجع عن هذه العملية. هل تريد المتابعة؟',
+      variant: 'warning',
+      confirmLabel: 'نعم، حفظ الطلب',
+      cancelLabel: 'إلغاء',
+    });
+    if (!confirmed) return;
+
     setSaving(true);
 
     const orderItems = cart.map((c, idx) => ({

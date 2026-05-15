@@ -59,6 +59,7 @@ export default function RegisterPage() {
   const [selectedPlan,  setSelectedPlan]  = useState<SubscriptionPlan>('starter');
   const [isLoading,     setIsLoading]     = useState(false);
   const [errorMsg,      setErrorMsg]      = useState('');
+  const [submittedEmail, setSubmittedEmail] = useState('');
 
   const [form, setForm] = useState({
     store_name: '',
@@ -103,6 +104,7 @@ export default function RegisterPage() {
         setErrorMsg('حدث خطأ أثناء الإرسال. حاول مجدداً أو تواصل معنا.');
       }
     } else {
+      setSubmittedEmail(form.email.trim().toLowerCase());
       setStep('success');
     }
   };
@@ -112,18 +114,33 @@ export default function RegisterPage() {
     return (
       <div className="min-h-screen bg-[#F2F2F7] flex items-center justify-center p-6">
         <div className="w-full max-w-md text-center">
-          <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-5" />
-          <h1 className="text-2xl font-bold text-[#1C1C1E] mb-3">تم استلام طلبك!</h1>
+          <CheckCircle2 className="w-20 h-20 text-green-500 mx-auto mb-5" />
+          <h1 className="text-2xl font-bold text-[#1C1C1E] mb-3">تم استلام طلبك بنجاح! 🎉</h1>
           <p className="text-sm text-[#6C6C70] leading-relaxed mb-6">
-            شكراً لاهتمامك بـ <strong>طلبك</strong>. سيراجع فريقنا طلبك ويتواصل معك
-            على <strong>{form.email}</strong> خلال 24 ساعة عمل.
+            سنراجع طلبك خلال <strong>24-48 ساعة</strong> وسنرسل لك رابط تفعيل الحساب على:{' '}
+            <strong>{submittedEmail}</strong>
           </p>
+
+          {/* Info box */}
+          <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 mb-6 text-right">
+            <p className="text-sm font-semibold text-indigo-700 mb-3">ماذا يحدث بعد ذلك؟</p>
+            <ul className="space-y-2">
+              <li className="text-sm text-indigo-600">✉️ ستصلك رسالة إيميل بعد الموافقة</li>
+              <li className="text-sm text-indigo-600">🔐 ستضبط كلمة مرورك عبر الرابط</li>
+              <li className="text-sm text-indigo-600">🚀 تبدأ الاستخدام فوراً</li>
+            </ul>
+          </div>
+
           <Link
-            href="/login"
+            href="/"
             className="inline-block px-6 py-3 rounded-xl bg-[#E5302A] text-white font-semibold text-sm hover:bg-[#C42B24] transition-colors"
           >
-            العودة لتسجيل الدخول
+            العودة للصفحة الرئيسية
           </Link>
+
+          <p className="mt-4 text-xs text-[#AEAEB2]">
+            تواصل معنا عبر WhatsApp إذا لم تصلك رسالة خلال 48 ساعة
+          </p>
         </div>
       </div>
     );
@@ -176,6 +193,27 @@ export default function RegisterPage() {
 
         {/* Form card */}
         <div className="bg-white rounded-2xl border border-[#E5E5EA] shadow-sm p-6">
+          {/* Process timeline */}
+          <div className="flex items-center justify-center gap-2 mb-6 flex-wrap">
+            {/* Step 1 */}
+            <div className="flex items-center gap-1.5">
+              <span className="w-5 h-5 rounded-full bg-[#E5302A] text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0">1</span>
+              <span className="text-xs text-[#6C6C70]">📝 أكمل بياناتك</span>
+            </div>
+            <span className="text-[#AEAEB2] text-xs">→</span>
+            {/* Step 2 */}
+            <div className="flex items-center gap-1.5">
+              <span className="w-5 h-5 rounded-full bg-[#E5302A] text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0">2</span>
+              <span className="text-xs text-[#6C6C70]">🔍 نراجع طلبك</span>
+            </div>
+            <span className="text-[#AEAEB2] text-xs">→</span>
+            {/* Step 3 */}
+            <div className="flex items-center gap-1.5">
+              <span className="w-5 h-5 rounded-full bg-[#E5302A] text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0">3</span>
+              <span className="text-xs text-[#6C6C70]">✉️ نرسل لك إيميل الدخول</span>
+            </div>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-4">
 
             {errorMsg && (
