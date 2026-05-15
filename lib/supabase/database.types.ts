@@ -76,7 +76,15 @@ export type Database = {
           metadata?: Record<string, unknown>;
         };
         Update: Partial<Database['public']['Tables']['items']['Insert']>;
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "items_supplier_id_fkey";
+            columns: ["supplier_id"];
+            isOneToOne: false;
+            referencedRelation: "suppliers";
+            referencedColumns: ["id"];
+          }
+        ];
       };
       stock_in_movements: {
         Row: {
@@ -108,7 +116,22 @@ export type Database = {
           created_by?: string | null;
         };
         Update: Partial<Database['public']['Tables']['stock_in_movements']['Insert']>;
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "stock_in_movements_item_id_fkey";
+            columns: ["item_id"];
+            isOneToOne: false;
+            referencedRelation: "items";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "stock_in_movements_supplier_id_fkey";
+            columns: ["supplier_id"];
+            isOneToOne: false;
+            referencedRelation: "suppliers";
+            referencedColumns: ["id"];
+          }
+        ];
       };
       stock_out_movements: {
         Row: {
@@ -140,6 +163,129 @@ export type Database = {
           created_by?: string | null;
         };
         Update: Partial<Database['public']['Tables']['stock_out_movements']['Insert']>;
+        Relationships: [
+          {
+            foreignKeyName: "stock_out_movements_item_id_fkey";
+            columns: ["item_id"];
+            isOneToOne: false;
+            referencedRelation: "items";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      // ── Multi-Tenant tables ───────────────────────────────────
+      tenants: {
+        Row: {
+          id: string;
+          slug: string;
+          store_name: string;
+          owner_email: string;
+          owner_phone: string | null;
+          logo_url: string | null;
+          subscription_plan: 'trial' | 'starter' | 'pro' | 'enterprise';
+          status: 'pending' | 'active' | 'suspended' | 'cancelled';
+          subscription_ends_at: string | null;
+          monthly_fee: number;
+          max_users: number;
+          max_items: number;
+          max_orders_per_month: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          slug: string;
+          store_name: string;
+          owner_email: string;
+          owner_phone?: string | null;
+          logo_url?: string | null;
+          subscription_plan?: 'trial' | 'starter' | 'pro' | 'enterprise';
+          status?: 'pending' | 'active' | 'suspended' | 'cancelled';
+          subscription_ends_at?: string | null;
+          monthly_fee?: number;
+          max_users?: number;
+          max_items?: number;
+          max_orders_per_month?: number;
+        };
+        Update: Partial<Database['public']['Tables']['tenants']['Insert']>;
+        Relationships: [];
+      };
+      user_profiles: {
+        Row: {
+          id: string;
+          tenant_id: string | null;
+          role: 'super_admin' | 'tenant_admin' | 'tenant_user';
+          full_name: string | null;
+          permissions: Record<string, boolean>;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id: string;
+          tenant_id?: string | null;
+          role?: 'super_admin' | 'tenant_admin' | 'tenant_user';
+          full_name?: string | null;
+          permissions?: Record<string, boolean>;
+          is_active?: boolean;
+        };
+        Update: Partial<Database['public']['Tables']['user_profiles']['Insert']>;
+        Relationships: [];
+      };
+      registration_requests: {
+        Row: {
+          id: string;
+          store_name: string;
+          owner_name: string;
+          email: string;
+          phone: string | null;
+          requested_plan: 'trial' | 'starter' | 'pro' | 'enterprise';
+          status: 'pending' | 'approved' | 'rejected';
+          notes: string | null;
+          tenant_id: string | null;
+          reviewed_at: string | null;
+          reviewed_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          store_name: string;
+          owner_name: string;
+          email: string;
+          phone?: string | null;
+          requested_plan?: 'trial' | 'starter' | 'pro' | 'enterprise';
+          status?: 'pending' | 'approved' | 'rejected';
+          notes?: string | null;
+          tenant_id?: string | null;
+          reviewed_at?: string | null;
+          reviewed_by?: string | null;
+        };
+        Update: Partial<Database['public']['Tables']['registration_requests']['Insert']>;
+        Relationships: [];
+      };
+      subscription_events: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          event_type: string;
+          plan_from: 'trial' | 'starter' | 'pro' | 'enterprise' | null;
+          plan_to: 'trial' | 'starter' | 'pro' | 'enterprise' | null;
+          amount: number | null;
+          notes: string | null;
+          created_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          event_type: string;
+          plan_from?: 'trial' | 'starter' | 'pro' | 'enterprise' | null;
+          plan_to?: 'trial' | 'starter' | 'pro' | 'enterprise' | null;
+          amount?: number | null;
+          notes?: string | null;
+          created_by?: string | null;
+        };
+        Update: Partial<Database['public']['Tables']['subscription_events']['Insert']>;
         Relationships: [];
       };
     };
@@ -169,7 +315,28 @@ export type Database = {
         Relationships: [];
       };
     };
-    Functions: Record<string, never>;
+    Functions: {
+      get_tenant_stats: {
+        Args: Record<string, never>;
+        Returns: Array<{
+          id: string;
+          slug: string;
+          store_name: string;
+          owner_email: string;
+          subscription_plan: 'trial' | 'starter' | 'pro' | 'enterprise';
+          status: 'pending' | 'active' | 'suspended' | 'cancelled';
+          monthly_fee: number;
+          subscription_ends_at: string | null;
+          created_at: string;
+          updated_at: string;
+          total_users: number;
+          active_users: number;
+          total_orders: number;
+          orders_last_30d: number;
+          gmv_last_30d: number;
+        }>;
+      };
+    };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
   };

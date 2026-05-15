@@ -201,3 +201,128 @@ export type SalesOrder = {
   notes: string;
   createdAt: string;
 };
+
+// ── Multi-Tenant / SaaS ───────────────────────────────────────────────────────
+
+export type SubscriptionPlan = 'trial' | 'starter' | 'pro' | 'enterprise';
+export type TenantStatus     = 'pending' | 'active' | 'suspended' | 'cancelled';
+export type UserRole         = 'super_admin' | 'tenant_admin' | 'tenant_user';
+export type RegStatus        = 'pending' | 'approved' | 'rejected';
+
+export interface Tenant {
+  id: string;
+  slug: string;           // used in subdomain / path routing
+  store_name: string;
+  owner_email: string;
+  owner_phone?: string;
+  logo_url?: string;
+  subscription_plan: SubscriptionPlan;
+  status: TenantStatus;
+  subscription_ends_at?: string;
+  monthly_fee: number;
+  max_users: number;
+  max_items: number;
+  max_orders_per_month: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UserProfile {
+  id: string;
+  tenant_id: string | null;  // null for super_admin
+  role: UserRole;
+  full_name?: string;
+  /** Granular permission overrides: { "reports:read": true, "settings:write": false } */
+  permissions: Partial<Record<Permission, boolean>>;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Aggregate stats row returned by the super-admin view */
+export interface TenantStats extends Tenant {
+  total_users:     number;
+  active_users:    number;
+  total_orders:    number;
+  orders_last_30d: number;
+  gmv_last_30d:    number;
+}
+
+export interface RegistrationRequest {
+  id: string;
+  store_name: string;
+  owner_name: string;
+  email: string;
+  phone?: string;
+  requested_plan: SubscriptionPlan;
+  status: RegStatus;
+  notes?: string;
+  tenant_id?: string;
+  created_at: string;
+  reviewed_at?: string;
+}
+
+export interface SubscriptionEvent {
+  id: string;
+  tenant_id: string;
+  event_type: 'created' | 'upgraded' | 'downgraded' | 'suspended' | 'cancelled' | 'payment_received';
+  plan_from?: SubscriptionPlan;
+  plan_to?: SubscriptionPlan;
+  amount?: number;
+  notes?: string;
+  created_at: string;
+}
+
+export interface PlanLimit {
+  plan: SubscriptionPlan;
+  display_name: string;
+  monthly_fee: number;
+  max_users: number;
+  max_items: number;
+  max_orders_mo: number;
+  has_api_access: boolean;
+  has_multi_store: boolean;
+}
+
+// ── RBAC Permissions ──────────────────────────────────────────────────────────
+
+export type Permission =
+  | 'stock-in:read'  | 'stock-in:write'
+  | 'stock-out:read' | 'stock-out:write'
+  | 'items:read'     | 'items:write'
+  | 'suppliers:read' | 'suppliers:write'
+  | 'purchases:read' | 'purchases:write'
+  | 'orders:read'    | 'orders:write'
+  | 'reports:read'
+  | 'settings:read'  | 'settings:write'
+  | 'users:read'     | 'users:write';
+
+export const DEFAULT_PERMISSIONS: Record<UserRole, Record<Permission, boolean>> = {
+  super_admin: Object.fromEntries(
+    ([ 'stock-in:read','stock-in:write','stock-out:read','stock-out:write',
+       'items:read','items:write','suppliers:read','suppliers:write',
+       'purchases:read','purchases:write','orders:read','orders:write',
+       'reports:read','settings:read','settings:write','users:read','users:write',
+    ] as Permission[]).map(k => [k, true])
+  ) as Record<Permission, boolean>,
+
+  tenant_admin: Object.fromEntries(
+    ([ 'stock-in:read','stock-in:write','stock-out:read','stock-out:write',
+       'items:read','items:write','suppliers:read','suppliers:write',
+       'purchases:read','purchases:write','orders:read','orders:write',
+       'reports:read','settings:read','settings:write','users:read','users:write',
+    ] as Permission[]).map(k => [k, true])
+  ) as Record<Permission, boolean>,
+
+  tenant_user: {
+    'stock-in:read': true,  'stock-in:write': true,
+    'stock-out:read': true, 'stock-out:write': true,
+    'items:read': true,     'items:write': false,
+    'suppliers:read': true, 'suppliers:write': false,
+    'purchases:read': true, 'purchases:write': false,
+    'orders:read': true,    'orders:write': true,
+    'reports:read': false,
+    'settings:read': false, 'settings:write': false,
+    'users:read': false,    'users:write': false,
+  },
+};
