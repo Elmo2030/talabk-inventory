@@ -158,7 +158,10 @@ export async function middleware(req: NextRequest) {
   }
 
   // ── 6. Auth pages: redirect away if already logged in ────────────────────
-  if (isAuthenticated && AUTH_PATHS.some(p => pathname === p)) {
+  // Exception: /reset-password is kept accessible even when authenticated.
+  // After exchangeCodeForSession (recovery/invite flow) the user has a valid
+  // session but still needs to reach the password-reset form.
+  if (isAuthenticated && AUTH_PATHS.some(p => pathname === p) && pathname !== '/reset-password') {
     if (userRole === 'super_admin') {
       return redirectTo(req, SUPERADMIN_PREFIX);
     }

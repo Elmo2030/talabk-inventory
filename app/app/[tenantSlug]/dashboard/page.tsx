@@ -2,12 +2,12 @@
 import { useMemo, useState } from 'react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell,
+  PieChart, Pie, Cell, ComposedChart, Bar, Line, BarChart, Legend,
 } from 'recharts';
 import {
   TrendingUp, ShoppingBag, Package, AlertTriangle, Truck,
   CheckCircle2, Sun, Moon,
-  Layers, DollarSign,
+  Layers, DollarSign, Target, RotateCw, Receipt, ShoppingCart as CartIcon,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -133,6 +133,66 @@ export default function DashboardPage() {
     };
   }, [salesOrders]);
 
+  // ── Arabic month names ────────────────────────────────────────────────────────
+  const MONTHS = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+
+  // ── Extra KPIs ────────────────────────────────────────────────────────────────
+  const extraKpis = useMemo(() => {
+    const total = salesOrders.length;
+    const delivered = salesOrders.filter(o => o.status === 'DELIVERED').length;
+    const aov = total > 0 ? salesOrders.reduce((s, o) => s + o.customerTotal, 0) / total : 0;
+    const deliveredPct = total > 0 ? (delivered / total) * 100 : 0;
+    const totalCOGS = salesOrders.reduce((s, o) => s + (o.totalCOGS ?? 0), 0);
+    const inventoryValue = currentStock.reduce((s, cs) => {
+      const item = items.find(i => i.id === cs.itemId);
+      const cost = item?.movingAverageCost ?? item?.purchasePrice ?? 0;
+      return s + cs.currentBalance * cost;
+    }, 0);
+    const turnover = inventoryValue > 0 ? totalCOGS / inventoryValue : 0;
+    return { aov, deliveredPct, turnover, purchaseCount: purchaseInvoices.length };
+  }, [salesOrders, currentStock, items, purchaseInvoices]);
+
+  // ── Monthly sales data (last 12 months) ──────────────────────────────────────
+  const monthlySalesData = useMemo(() => {
+    const now = new Date();
+    return Array.from({ length: 12 }, (_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - 11 + i, 1);
+      const yr = d.getFullYear();
+      const mo = d.getMonth();
+      const filtered = salesOrders.filter(o => {
+        const od = new Date(o.createdAt);
+        return od.getFullYear() === yr && od.getMonth() === mo;
+      });
+      return {
+        month: MONTHS[mo].slice(0, 3),
+        revenue: Math.round(filtered.reduce((s, o) => s + o.customerTotal, 0)),
+        netProfit: Math.round(filtered.reduce((s, o) => s + o.netProfit, 0)),
+      };
+    });
+  }, [salesOrders]);
+
+  // ── Quarterly data ────────────────────────────────────────────────────────────
+  const quarterlyData = useMemo(() => {
+    const now = new Date();
+    const yr = now.getFullYear();
+    return [
+      { name: 'Q1', months: [0,1,2] },
+      { name: 'Q2', months: [3,4,5] },
+      { name: 'Q3', months: [6,7,8] },
+      { name: 'Q4', months: [9,10,11] },
+    ].map(q => {
+      const filtered = salesOrders.filter(o => {
+        const od = new Date(o.createdAt);
+        return od.getFullYear() === yr && q.months.includes(od.getMonth());
+      });
+      return {
+        name: q.name,
+        revenue: Math.round(filtered.reduce((s, o) => s + o.customerTotal, 0)),
+        profit: Math.round(filtered.reduce((s, o) => s + o.netProfit, 0)),
+      };
+    });
+  }, [salesOrders]);
+
   return (
     <div className="space-y-5 pb-8">
       {/* ── Header ─────────────────────────────────────────────────────────── */}
@@ -244,6 +304,65 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* ── Second KPI Row ─────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* AOV */}
+        <div className="bg-white dark:bg-[#18181B] border border-[#E5E5EA] dark:border-[#27272A] rounded-2xl p-5">
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-blue-50 dark:bg-blue-950/30">
+              <Target className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            </div>
+          </div>
+          <p className="text-xs text-[#6C6C70] dark:text-[#A1A1AA]">متوسط قيمة الطلب</p>
+          <p className="text-2xl sm:text-3xl font-bold mt-1 text-[#1C1C1E] dark:text-[#F4F4F5]">
+            {extraKpis.aov.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+          </p>
+          <p className="text-xs text-[#AEAEB2] mt-1">ر.س / طلب</p>
+        </div>
+
+        {/* Delivery rate */}
+        <div className="bg-white dark:bg-[#18181B] border border-[#E5E5EA] dark:border-[#27272A] rounded-2xl p-5">
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-green-50 dark:bg-green-950/30">
+              <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
+            </div>
+          </div>
+          <p className="text-xs text-[#6C6C70] dark:text-[#A1A1AA]">الطلبات المكتملة</p>
+          <p className="text-2xl sm:text-3xl font-bold mt-1 text-green-600 dark:text-green-400">
+            {extraKpis.deliveredPct.toFixed(1)}%
+          </p>
+          <p className="text-xs text-[#AEAEB2] mt-1">من إجمالي الطلبات</p>
+        </div>
+
+        {/* Inventory turnover */}
+        <div className="bg-white dark:bg-[#18181B] border border-[#E5E5EA] dark:border-[#27272A] rounded-2xl p-5">
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-purple-50 dark:bg-purple-950/30">
+              <RotateCw className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+            </div>
+          </div>
+          <p className="text-xs text-[#6C6C70] dark:text-[#A1A1AA]">دوران المخزون</p>
+          <p className="text-2xl sm:text-3xl font-bold mt-1 text-[#1C1C1E] dark:text-[#F4F4F5]">
+            {extraKpis.turnover.toFixed(2)}×
+          </p>
+          <p className="text-xs text-[#AEAEB2] mt-1">نسبة التكلفة / المخزون</p>
+        </div>
+
+        {/* Purchase invoices */}
+        <div className="bg-white dark:bg-[#18181B] border border-[#E5E5EA] dark:border-[#27272A] rounded-2xl p-5">
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-orange-50 dark:bg-orange-950/30">
+              <Receipt className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+            </div>
+          </div>
+          <p className="text-xs text-[#6C6C70] dark:text-[#A1A1AA]">فواتير الشراء</p>
+          <p className="text-2xl sm:text-3xl font-bold mt-1 text-[#1C1C1E] dark:text-[#F4F4F5]">
+            {extraKpis.purchaseCount}
+          </p>
+          <p className="text-xs text-[#AEAEB2] mt-1">فاتورة شراء إجمالي</p>
+        </div>
+      </div>
+
       {/* ── Charts Row ─────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Area Chart */}
@@ -342,6 +461,57 @@ export default function DashboardPage() {
                 <span className="font-semibold text-[#1C1C1E] dark:text-[#F4F4F5]">{d.value}</span>
               </div>
             ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Monthly & Quarterly Charts ─────────────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {/* Monthly ComposedChart */}
+        <div className="bg-white dark:bg-[#18181B] border border-[#E5E5EA] dark:border-[#27272A] rounded-2xl p-5">
+          <h3 className="text-sm font-semibold text-[#1C1C1E] dark:text-[#F4F4F5] mb-4">
+            المبيعات الشهرية — آخر 12 شهراً
+          </h3>
+          <ResponsiveContainer width="100%" height={220}>
+            <ComposedChart data={monthlySalesData} margin={{ top: 5, right: 5, left: -15, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#27272A' : '#F0F0F0'} />
+              <XAxis dataKey="month" tick={{ fontSize: 10, fill: isDark ? '#71717A' : '#9CA3AF' }} tickLine={false} axisLine={false} />
+              <YAxis tick={{ fontSize: 10, fill: isDark ? '#71717A' : '#9CA3AF' }} tickLine={false} axisLine={false} />
+              <Tooltip
+                contentStyle={{ background: isDark ? '#18181B' : '#fff', border: `1px solid ${isDark ? '#27272A' : '#E5E5EA'}`, borderRadius: '12px', fontSize: '12px', color: isDark ? '#F4F4F5' : '#1C1C1E' }}
+                formatter={(value: number, name: string) => [`${value.toLocaleString('en-US')} ر.س`, name === 'revenue' ? 'المبيعات' : 'صافي الربح']}
+              />
+              <Bar dataKey="revenue" fill="#E5302A" radius={[4,4,0,0]} name="revenue" opacity={0.85} />
+              <Line type="monotone" dataKey="netProfit" stroke="#22C55E" strokeWidth={2} dot={{ fill: '#22C55E', r: 3 }} name="netProfit" />
+            </ComposedChart>
+          </ResponsiveContainer>
+          <div className="flex items-center gap-4 mt-3 text-xs text-[#6C6C70] dark:text-[#A1A1AA]">
+            <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-[#E5302A]" /> المبيعات</div>
+            <div className="flex items-center gap-1.5"><div className="w-3 h-0.5 bg-green-500 rounded" /> صافي الربح</div>
+          </div>
+        </div>
+
+        {/* Quarterly BarChart */}
+        <div className="bg-white dark:bg-[#18181B] border border-[#E5E5EA] dark:border-[#27272A] rounded-2xl p-5">
+          <h3 className="text-sm font-semibold text-[#1C1C1E] dark:text-[#F4F4F5] mb-4">
+            الأداء الربعي — {new Date().getFullYear()}
+          </h3>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={quarterlyData} margin={{ top: 5, right: 5, left: -15, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#27272A' : '#F0F0F0'} />
+              <XAxis dataKey="name" tick={{ fontSize: 10, fill: isDark ? '#71717A' : '#9CA3AF' }} tickLine={false} axisLine={false} />
+              <YAxis tick={{ fontSize: 10, fill: isDark ? '#71717A' : '#9CA3AF' }} tickLine={false} axisLine={false} />
+              <Tooltip
+                contentStyle={{ background: isDark ? '#18181B' : '#fff', border: `1px solid ${isDark ? '#27272A' : '#E5E5EA'}`, borderRadius: '12px', fontSize: '12px', color: isDark ? '#F4F4F5' : '#1C1C1E' }}
+                formatter={(value: number, name: string) => [`${value.toLocaleString('en-US')} ر.س`, name === 'revenue' ? 'الإيرادات' : 'الربح']}
+              />
+              <Bar dataKey="revenue" fill="#E5302A" radius={[4,4,0,0]} name="revenue" opacity={0.85} />
+              <Bar dataKey="profit" fill="#22C55E" radius={[4,4,0,0]} name="profit" opacity={0.85} />
+            </BarChart>
+          </ResponsiveContainer>
+          <div className="flex items-center gap-4 mt-3 text-xs text-[#6C6C70] dark:text-[#A1A1AA]">
+            <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-[#E5302A]" /> الإيرادات</div>
+            <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-green-500" /> الربح</div>
           </div>
         </div>
       </div>

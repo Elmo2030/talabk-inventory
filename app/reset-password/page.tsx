@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { Eye, EyeOff, AlertCircle, CheckCircle2, Mail, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
@@ -106,10 +106,13 @@ function ExpiredLinkScreen() {
   );
 }
 
-// ── Main reset page ────────────────────────────────────────────────────────────
-export default function ResetPasswordPage() {
-  const router   = useRouter();
-  const supabase = getSupabaseClient();
+// ── Main reset page (inner — uses useSearchParams, must be inside Suspense) ───
+function ResetPasswordInner() {
+  const router       = useRouter();
+  const supabase     = getSupabaseClient();
+  const searchParams = useSearchParams();
+  const flowType     = searchParams.get('type'); // 'invite' | 'recovery' | null
+  const isInvite     = flowType === 'invite';
 
   const [password,        setPassword]        = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -150,13 +153,25 @@ export default function ResetPasswordPage() {
       setSuccess(true);
       // Auto-redirect after 3 seconds
       setTimeout(() => {
-        // Check if super_admin to redirect correctly
         supabase.auth.getSession().then(async ({ data: { session } }) => {
           if (!session) { router.push('/login'); return; }
           const { data: profile } = await supabase
-            .from('user_profiles').select('role').eq('id', session.user.id).single();
-          const p = profile as unknown as { role: string } | null;
-          router.push(p?.role === 'super_admin' ? '/superadmin' : '/login');
+            .from('user_profiles')
+            .select('role, tenant_id')
+            .eq('id', session.user.id)
+            .single();
+          const p = profile as unknown as { role: string; tenant_id: string | null } | null;
+          if (p?.role === 'super_admin') {
+            router.push('/superadmin');
+          } else if (p?.tenant_id) {
+            // Invited tenant users go straight to their dashboard
+            const { data: tenant } = await supabase
+              .from('tenants').select('slug').eq('id', p.tenant_id).single();
+            const t = tenant as unknown as { slug: string } | null;
+            router.push(t?.slug ? `/app/${t.slug}/dashboard` : '/login');
+          } else {
+            router.push('/login');
+          }
         });
       }, 3000);
     } catch {
@@ -189,8 +204,12 @@ export default function ResetPasswordPage() {
         {/* Header */}
         <div className="flex flex-col items-center mb-8">
           <TalabkLogo size={52} />
-          <h1 className="mt-5 text-2xl font-black text-white">إعادة تعيين كلمة المرور</h1>
-          <p className="mt-1.5 text-sm text-white/40">طلبك — للمتاجر الإلكترونية</p>
+          <h1 className="mt-5 text-2xl font-black text-white">
+            {isInvite ? 'تعيين كلمة المرور' : 'إعادة تعيين كلمة المرور'}
+          </h1>
+          <p className="mt-1.5 text-sm text-white/40">
+            {isInvite ? 'أنشئ كلمة مرور للدخول إلى حسابك' : 'طلبك — للمتاجر الإلكترونية'}
+          </p>
         </div>
 
         <div className="bg-[#141820] border border-white/8 rounded-2xl p-7 shadow-2xl shadow-black/50">
@@ -198,7 +217,9 @@ export default function ResetPasswordPage() {
           {success ? (
             <div className="text-center py-4">
               <CheckCircle2 className="w-14 h-14 text-green-500 mx-auto mb-4" />
-              <h3 className="text-lg font-bold text-white mb-2">تم تغيير كلمة المرور</h3>
+              <h3 className="text-lg font-bold text-white mb-2">
+                {isInvite ? 'مرحباً بك! 🎉' : 'تم تغيير كلمة المرور'}
+              </h3>
               <p className="text-white/50 text-sm">جاري تحويلك تلقائياً...</p>
             </div>
           ) : (
@@ -300,5 +321,18 @@ export default function ResetPasswordPage() {
 
       </div>
     </div>
+  );
+}
+
+// ── Page export wrapped in Suspense (required for useSearchParams) ────────────
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#0A0C10] flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-[#E5302A]/30 border-t-[#E5302A] rounded-full animate-spin" />
+      </div>
+    }>
+      <ResetPasswordInner />
+    </Suspense>
   );
 }

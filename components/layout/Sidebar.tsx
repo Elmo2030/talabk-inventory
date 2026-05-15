@@ -10,6 +10,7 @@ import {
   ArrowDownToLine,
   ArrowUpFromLine,
   BarChart3,
+  BarChart2,
   FileText,
   Settings,
   BookOpen,
@@ -54,6 +55,7 @@ const navGroups: NavGroup[] = [
   {
     label: 'التقارير والأدوات',
     items: [
+      { href: '/analytics', label: 'التحليلات', icon: BarChart2 },
       { href: '/reports', label: 'التقارير', icon: FileText },
       { href: '/shipping-calculator', label: 'حاسبة الشحن', icon: Truck },
     ],
