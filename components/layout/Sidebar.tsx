@@ -102,7 +102,7 @@ export default function Sidebar() {
         <TalabkLogo size={38} />
         <div className="flex-1">
           <h1 className="text-base font-bold text-white leading-tight">طلبك</h1>
-          <p className="text-[11px] text-white/40 leading-tight">نظام المخازن</p>
+          <p className="text-[11px] text-white/40 leading-tight">للمتاجر الإلكترونية</p>
         </div>
         {/* Close button — mobile only */}
         <button

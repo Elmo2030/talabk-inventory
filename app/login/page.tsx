@@ -94,7 +94,7 @@ export default function LoginPage() {
           {storeName ? (
             <p className="mt-1 text-sm text-[#6C6C70]">{storeName}</p>
           ) : (
-            <p className="mt-1 text-sm text-[#6C6C70]">طلبك — نظام إدارة المخازن</p>
+            <p className="mt-1 text-sm text-[#6C6C70]">طلبك — للمتاجر الإلكترونية</p>
           )}
         </div>
 

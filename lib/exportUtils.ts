@@ -50,7 +50,7 @@ export function printReport(elementId: string, title: string) {
       <body>
         <div class="print-header">
           <h1>${title}</h1>
-          <p>نظام إدارة المخازن 2026 — تاريخ الطباعة: ${new Date().toLocaleDateString('ar-LY')}</p>
+          <p>للمتاجر الإلكترونية 2026 — تاريخ الطباعة: ${new Date().toLocaleDateString('en-US')}</p>
         </div>
         ${printContent.innerHTML}
         <script>window.onload = function() { window.print(); window.onafterprint = function() { window.close(); }; }</script>

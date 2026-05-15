@@ -125,7 +125,7 @@ export default function PurchasesPage() {
           { label: 'إجمالي الفواتير', value: stats.total, color: 'text-[#1C1C1E]', bg: 'bg-white' },
           { label: 'مسودة', value: stats.draft, color: 'text-slate-600', bg: 'bg-white' },
           { label: 'مؤكدة', value: stats.confirmed, color: 'text-amber-700', bg: 'bg-white' },
-          { label: 'قيمة المستلمة', value: `${stats.totalValue.toLocaleString()} ر.س`, color: 'text-green-700', bg: 'bg-white' },
+          { label: 'قيمة المستلمة', value: `${stats.totalValue.toLocaleString('en-US')} ر.س`, color: 'text-green-700', bg: 'bg-white' },
         ].map((s, i) => (
           <div key={i} className={`${s.bg} border border-[#E5E5EA] rounded-xl p-3 sm:p-4`}>
             <p className="text-xs text-[#6C6C70] mb-1">{s.label}</p>
@@ -206,7 +206,7 @@ export default function PurchasesPage() {
                         <td className="px-4 py-3 text-[#6C6C70]">{inv.invoiceDate}</td>
                         <td className="px-4 py-3 text-[#6C6C70]">{inv.items.length} صنف</td>
                         <td className="px-4 py-3 font-mono font-semibold text-[#1C1C1E]">
-                          {inv.grandTotal.toLocaleString('ar-SA', { minimumFractionDigits: 2 })}
+                          {inv.grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                         </td>
                         <td className="px-4 py-3">
                           <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${status.color}`}>

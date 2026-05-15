@@ -83,7 +83,7 @@ export default function TalabkCalculator({ compact = false, initialCityName, onC
   }, [selectedCity, deliveryType, length, width, height, actualWeight, needsPackaging, onChange]);
 
   const fmt = (n: number) =>
-    n.toLocaleString('ar-LY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   // ── Full mode price table data ────────────────────────────────────────────
   const priceGroups = [

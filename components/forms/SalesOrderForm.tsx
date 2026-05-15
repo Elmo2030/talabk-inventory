@@ -33,7 +33,7 @@ const DELIVERY_TYPE_LABELS: Record<DeliveryType, string> = {
 };
 
 function fmt(n: number) {
-  return n.toLocaleString('ar-LY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 export default function SalesOrderForm({ onSuccess, onCancel }: Props) {

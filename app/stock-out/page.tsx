@@ -161,7 +161,7 @@ export default function StockOutPage() {
         <div className="bg-white border border-slate-200 rounded-xl p-4">
           <p className="text-sm text-slate-500">إجمالي قيمة المبيعات/الصرف</p>
           <p className="text-2xl font-bold text-brand-600 mt-1 font-mono">
-            {stats.totalValue.toLocaleString()}
+            {stats.totalValue.toLocaleString('en-US')}
           </p>
         </div>
       </div>
@@ -279,7 +279,7 @@ export default function StockOutPage() {
                       {m.quantity}
                     </td>
                     <td className="px-3 py-3 font-mono font-bold text-slate-900">
-                      {m.totalValue.toLocaleString()}
+                      {m.totalValue.toLocaleString('en-US')}
                     </td>
                     <td className="px-3 py-3">
                       <Badge variant={getReasonVariant(m.reason)}>{m.reason}</Badge>

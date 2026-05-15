@@ -162,7 +162,7 @@ export default function DashboardPage() {
           </div>
           <p className="text-xs text-[#6C6C70] dark:text-[#A1A1AA]">إجمالي الإيرادات</p>
           <p className="text-2xl sm:text-3xl font-bold mt-1 text-[#1C1C1E] dark:text-[#F4F4F5]">
-            {kpis.totalRevenue.toLocaleString('ar-SA', { minimumFractionDigits: 0 })}
+            {kpis.totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 0 })}
           </p>
           <p className="text-xs text-[#AEAEB2] mt-1">ر.س</p>
         </div>
@@ -176,7 +176,7 @@ export default function DashboardPage() {
           </div>
           <p className="text-xs text-[#6C6C70] dark:text-[#A1A1AA]">صافي الربح الحقيقي</p>
           <p className="text-2xl sm:text-3xl font-bold mt-1 text-green-600 dark:text-green-400">
-            {kpis.netProfit.toLocaleString('ar-SA', { minimumFractionDigits: 0 })}
+            {kpis.netProfit.toLocaleString('en-US', { minimumFractionDigits: 0 })}
           </p>
           <p className="text-xs text-[#AEAEB2] mt-1">هامش {kpis.profitMargin.toFixed(1)}%</p>
         </div>
@@ -190,7 +190,7 @@ export default function DashboardPage() {
           </div>
           <p className="text-xs text-[#6C6C70] dark:text-[#A1A1AA]">قيمة المخزون</p>
           <p className="text-2xl sm:text-3xl font-bold mt-1 text-[#1C1C1E] dark:text-[#F4F4F5]">
-            {kpis.inventoryValue.toLocaleString('ar-SA', { minimumFractionDigits: 0 })}
+            {kpis.inventoryValue.toLocaleString('en-US', { minimumFractionDigits: 0 })}
           </p>
           <p className="text-xs text-[#AEAEB2] mt-1">ر.س · {currentStock.length} صنف</p>
         </div>
@@ -251,7 +251,7 @@ export default function DashboardPage() {
                   color: isDark ? '#F4F4F5' : '#1C1C1E',
                 }}
                 formatter={(value: number, name: string) => [
-                  `${value.toLocaleString()} ر.س`,
+                  `${value.toLocaleString('en-US')} ر.س`,
                   name === 'revenue' ? 'المبيعات' : 'صافي الربح',
                 ]}
               />
@@ -345,7 +345,7 @@ export default function DashboardPage() {
                   </div>
                   <div className="text-left">
                     <p className="text-sm font-bold text-green-600 dark:text-green-400">
-                      +{p.profit.toLocaleString('ar-SA', { minimumFractionDigits: 2 })}
+                      +{p.profit.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                     </p>
                     <p className="text-xs text-[#AEAEB2]">
                       {p.revenue > 0 ? Math.round((p.profit / p.revenue) * 100) : 0}% هامش

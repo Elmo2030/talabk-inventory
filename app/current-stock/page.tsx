@@ -134,7 +134,7 @@ export default function CurrentStockPage() {
         <div className="bg-white border border-slate-200 rounded-xl p-4">
           <p className="text-xs text-slate-500">قيمة المخزون</p>
           <p className="text-xl font-bold text-brand-600 mt-1 font-mono">
-            {stats.totalValue.toLocaleString()}
+            {stats.totalValue.toLocaleString('en-US')}
           </p>
         </div>
         <div
@@ -265,7 +265,7 @@ export default function CurrentStockPage() {
                         </div>
                       </td>
                       <td className="px-3 py-3 font-mono font-semibold text-slate-900">
-                        {s.stockValue.toLocaleString()}
+                        {s.stockValue.toLocaleString('en-US')}
                       </td>
                     </tr>
                   );

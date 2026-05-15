@@ -274,7 +274,7 @@ export default function ItemDetailPage() {
             <div className="bg-brand-50 rounded-xl border border-brand-200 p-4">
               <p className="text-xs text-brand-700">قيمة المخزون</p>
               <p className="text-xl font-bold text-brand-700 mt-1 font-mono">
-                {(stock?.stockValue ?? 0).toLocaleString()}
+                {(stock?.stockValue ?? 0).toLocaleString('en-US')}
               </p>
             </div>
           </div>

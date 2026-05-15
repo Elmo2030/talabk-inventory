@@ -331,7 +331,7 @@ export default function PurchaseInvoiceForm({ onSuccess, onCancel }: Props) {
                     />
                   </td>
                   <td className="px-4 py-2.5 font-mono font-semibold text-[#1C1C1E]">
-                    {(row.quantity * row.unitPrice).toLocaleString('ar-SA', { minimumFractionDigits: 2 })}
+                    {(row.quantity * row.unitPrice).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                   </td>
                   <td className="px-4 py-2.5">
                     {rows.length > 1 && (
@@ -350,7 +350,7 @@ export default function PurchaseInvoiceForm({ onSuccess, onCancel }: Props) {
               <tr className="bg-[#F2F2F7] border-t-2 border-[#E5E5EA]">
                 <td colSpan={3} className="px-4 py-2.5 text-xs font-semibold text-[#6C6C70]">مجموع قيم الأصناف</td>
                 <td className="px-4 py-2.5 font-mono font-bold text-[#1C1C1E]">
-                  {subtotal.toLocaleString('ar-SA', { minimumFractionDigits: 2 })}
+                  {subtotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                 </td>
                 <td />
               </tr>
@@ -417,7 +417,7 @@ export default function PurchaseInvoiceForm({ onSuccess, onCancel }: Props) {
           <div className="text-left">
             <p className="text-xs text-[#6C6C70]">إجمالي المصاريف</p>
             <p className="text-xl font-bold font-mono text-amber-700">
-              {totalLandedCosts.toLocaleString('ar-SA', { minimumFractionDigits: 2 })} ر.س
+              {totalLandedCosts.toLocaleString('en-US', { minimumFractionDigits: 2 })} ر.س
             </p>
           </div>
         </div>

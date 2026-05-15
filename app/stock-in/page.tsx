@@ -171,7 +171,7 @@ export default function StockInPage() {
         <div className="bg-white border border-slate-200 rounded-xl p-4">
           <p className="text-sm text-slate-500">إجمالي قيمة المشتريات</p>
           <p className="text-2xl font-bold text-brand-600 mt-1 font-mono">
-            {stats.totalValue.toLocaleString()}
+            {stats.totalValue.toLocaleString('en-US')}
           </p>
         </div>
       </div>
@@ -288,7 +288,7 @@ export default function StockInPage() {
                       <td className="px-3 py-3 text-slate-600 max-w-[150px] truncate">{m.supplierName}</td>
                       <td className="px-3 py-3 font-mono font-bold text-green-600">{m.quantity}</td>
                       <td className="px-3 py-3 font-mono text-slate-700">{m.unitPrice.toFixed(2)}</td>
-                      <td className="px-3 py-3 font-mono font-bold text-slate-900">{m.totalCost.toLocaleString()}</td>
+                      <td className="px-3 py-3 font-mono font-bold text-slate-900">{m.totalCost.toLocaleString('en-US')}</td>
                       <td className="px-3 py-3 text-slate-700 text-xs">{m.responsibleEmployee}</td>
                       <td className="px-3 py-3">
                         <div className="flex items-center gap-1">

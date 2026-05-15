@@ -8,7 +8,7 @@ import { ThemeProvider } from '@/lib/ThemeContext';
 import AppShell from '@/components/layout/AppShell';
 
 export const metadata: Metadata = {
-  title: 'طلبك — نظام إدارة المخازن',
+  title: 'طلبك — للمتاجر الإلكترونية',
   description: 'نظام احترافي لإدارة المخزون — طلبك 2026',
 };
 

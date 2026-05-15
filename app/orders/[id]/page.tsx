@@ -25,7 +25,7 @@ const DELIVERY_TYPE_LABELS: Record<string, string> = {
 };
 
 function fmt(n: number) {
-  return n.toLocaleString('ar-LY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function StatusBadge({ status }: { status: OrderStatus }) {
@@ -59,7 +59,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     await updateSalesOrder(order.id, { status: newStatus });
   };
 
-  const createdDate = new Date(order.createdAt).toLocaleDateString('ar-LY', {
+  const createdDate = new Date(order.createdAt).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',

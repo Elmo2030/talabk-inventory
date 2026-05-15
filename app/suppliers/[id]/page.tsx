@@ -88,7 +88,7 @@ export default function SupplierDetailPage() {
             إجمالي المشتريات
           </p>
           <p className="text-xl font-bold text-brand-700 mt-1 font-mono">
-            {stats.totalPurchases.toLocaleString()}
+            {stats.totalPurchases.toLocaleString('en-US')}
           </p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4">
@@ -265,7 +265,7 @@ export default function SupplierDetailPage() {
                     <td className="px-3 py-3 font-mono font-bold text-green-600">{m.quantity}</td>
                     <td className="px-3 py-3 font-mono text-slate-700">{m.unitPrice.toFixed(2)}</td>
                     <td className="px-3 py-3 font-mono font-bold text-slate-900">
-                      {m.totalCost.toLocaleString()}
+                      {m.totalCost.toLocaleString('en-US')}
                     </td>
                     <td className="px-3 py-3 text-xs text-slate-600">{m.responsibleEmployee}</td>
                   </tr>

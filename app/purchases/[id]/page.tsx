@@ -75,7 +75,7 @@ export default function PurchaseDetailPage({ params }: { params: Promise<{ id: s
             ].filter((f) => f.value > 0).map((f) => (
               <div key={f.label} className="bg-[#F2F2F7] rounded-lg p-3">
                 <p className="text-xs text-[#6C6C70]">{f.label}</p>
-                <p className="font-mono font-semibold text-[#1C1C1E]">{f.value.toLocaleString('ar-SA', { minimumFractionDigits: 2 })}</p>
+                <p className="font-mono font-semibold text-[#1C1C1E]">{f.value.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
               </div>
             ))}
           </div>
@@ -120,15 +120,15 @@ export default function PurchaseDetailPage({ params }: { params: Promise<{ id: s
           <div className="flex flex-wrap justify-end gap-6 text-sm">
             <div className="text-center">
               <p className="text-xs text-[#6C6C70]">قيمة الأصناف</p>
-              <p className="font-mono font-semibold text-[#1C1C1E]">{inv.subtotal.toLocaleString('ar-SA', { minimumFractionDigits: 2 })}</p>
+              <p className="font-mono font-semibold text-[#1C1C1E]">{inv.subtotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
             </div>
             <div className="text-center">
               <p className="text-xs text-[#6C6C70]">المصاريف الإضافية</p>
-              <p className="font-mono font-semibold text-amber-700">{inv.totalLandedCosts.toLocaleString('ar-SA', { minimumFractionDigits: 2 })}</p>
+              <p className="font-mono font-semibold text-amber-700">{inv.totalLandedCosts.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
             </div>
             <div className="text-center">
               <p className="text-xs text-[#6C6C70] font-semibold">الإجمالي الكلي</p>
-              <p className="font-mono font-bold text-lg text-[#E5302A]">{inv.grandTotal.toLocaleString('ar-SA', { minimumFractionDigits: 2 })}</p>
+              <p className="font-mono font-bold text-lg text-[#E5302A]">{inv.grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
             </div>
           </div>
         </div>
