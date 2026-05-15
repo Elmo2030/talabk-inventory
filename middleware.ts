@@ -20,7 +20,7 @@ import { NextRequest, NextResponse } from 'next/server';
 // ── Constants ─────────────────────────────────────────────────────────────────
 const ROOT_DOMAIN   = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'localhost:3000';
 const PUBLIC_PATHS  = ['/', '/pricing', '/about', '/contact'];
-const AUTH_PATHS    = ['/login', '/register', '/setup'];
+const AUTH_PATHS    = ['/login', '/register', '/setup', '/superadmin/login', '/auth/callback', '/reset-password'];
 const SUPERADMIN_PREFIX = '/superadmin';
 const TENANT_APP_PREFIX = '/app';
 
@@ -108,8 +108,11 @@ export async function middleware(req: NextRequest) {
 
   // ── 4. Super Admin routes ─────────────────────────────────────────────────
   if (pathname.startsWith(SUPERADMIN_PREFIX)) {
+    // /superadmin/login is always public
+    if (pathname === '/superadmin/login') return res;
+
     if (!isAuthenticated) {
-      return redirectTo(req, '/login', { redirect: pathname });
+      return redirectTo(req, '/superadmin/login', { redirect: pathname });
     }
     if (userRole !== 'super_admin') {
       return redirectTo(req, '/403');
