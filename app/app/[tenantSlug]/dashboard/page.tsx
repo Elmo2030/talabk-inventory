@@ -13,6 +13,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useStock } from '@/lib/StockContext';
 import { useTheme } from '@/lib/ThemeContext';
+import { MONTHS } from '@/lib/constants';
 
 export default function DashboardPage() {
   const { items, currentStock, salesOrders, purchaseInvoices, stockIn } = useStock();
@@ -127,9 +128,6 @@ export default function DashboardPage() {
       successRate: successRate || 94.2,
     };
   }, [salesOrders]);
-
-  // ── Arabic month names ────────────────────────────────────────────────────────
-  const MONTHS = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
 
   // ── Extra KPIs ────────────────────────────────────────────────────────────────
   const extraKpis = useMemo(() => {

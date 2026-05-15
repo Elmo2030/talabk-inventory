@@ -11,10 +11,9 @@ import {
 } from 'lucide-react';
 import { useStock } from '@/lib/StockContext';
 import { useTheme } from '@/lib/ThemeContext';
+import { MONTHS } from '@/lib/constants';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
-const MONTHS = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
-const MONTH_SHORT = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
 const PALETTE = ['#E5302A','#3B82F6','#22C55E','#F59E0B','#8B5CF6','#EC4899','#14B8A6','#F97316'];
 const STATUS_COLORS: Record<string, string> = {
   DELIVERED: '#22C55E',

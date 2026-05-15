@@ -67,14 +67,17 @@ export async function middleware(req: NextRequest) {
   const pathname = req.nextUrl.pathname;
   const hostname = req.headers.get('host') ?? '';
 
-  // ── 1. Refresh session (keeps cookies up to date) ─────────────────────────
-  const { data: { session } } = await supabase.auth.getSession();
-  const isAuthenticated = !!session?.user;
+  // ── 1. Verify session via Supabase Auth server (validates JWT signature) ──────
+  // getUser() makes a lightweight request to Supabase to validate the JWT.
+  // This is the secure approach — getSession() only reads from the cookie
+  // without re-verifying the signature, which a tampered cookie could bypass.
+  const { data: { user } } = await supabase.auth.getUser();
+  const isAuthenticated = !!user;
 
   // Custom claims injected by our Postgres custom_access_token_hook.
   // The hook writes into app_metadata (server-only, not user-editable).
   // user_metadata is user-editable and must NEVER be trusted for authz.
-  const appMeta     = (session?.user?.app_metadata  ?? {}) as Record<string, string>;
+  const appMeta     = (user?.app_metadata ?? {}) as Record<string, string>;
   const userRole    = appMeta['user_role']   as string | undefined;
   const jwtTenantId = appMeta['tenant_id']   as string | undefined;
   const tenantSlug  = appMeta['tenant_slug'] as string | undefined;

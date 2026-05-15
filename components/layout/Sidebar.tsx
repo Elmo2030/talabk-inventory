@@ -70,9 +70,6 @@ const navGroups: NavGroup[] = [
   },
 ];
 
-// Flat list for any code that still needs it
-const navItems = navGroups.flatMap((g) => g.items);
-
 // Talabk T-pin SVG logo
 function TalabkLogo({ size = 40 }: { size?: number }) {
   return (

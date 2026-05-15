@@ -160,15 +160,12 @@ function ResetPasswordInner() {
             .select('role, tenant_id')
             .eq('id', session.user.id)
             .single();
-          const p = profile as unknown as { role: string; tenant_id: string | null } | null;
-          if (p?.role === 'super_admin') {
+          if (profile?.role === 'super_admin') {
             router.push('/superadmin');
-          } else if (p?.tenant_id) {
-            // Invited tenant users go straight to their dashboard
+          } else if (profile?.tenant_id) {
             const { data: tenant } = await supabase
-              .from('tenants').select('slug').eq('id', p.tenant_id).single();
-            const t = tenant as unknown as { slug: string } | null;
-            router.push(t?.slug ? `/app/${t.slug}/dashboard` : '/login');
+              .from('tenants').select('slug').eq('id', profile.tenant_id).single();
+            router.push(tenant?.slug ? `/app/${tenant.slug}/dashboard` : '/login');
           } else {
             router.push('/login');
           }

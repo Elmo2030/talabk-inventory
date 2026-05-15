@@ -81,7 +81,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      setUserProfile(profile as unknown as UserProfile);
+      setUserProfile(profile as UserProfile);
 
       // 3. Fetch tenant (super_admin has no tenant)
       if (profile.tenant_id) {
@@ -90,7 +90,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
           .select('*')
           .eq('id', profile.tenant_id)
           .single();
-        setTenant(tenantRow as unknown as Tenant ?? null);
+        setTenant((tenantRow as Tenant) ?? null);
       } else {
         setTenant(null);
       }

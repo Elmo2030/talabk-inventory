@@ -1,19 +1,53 @@
 import { createClient } from '@supabase/supabase-js';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextRequest, NextResponse } from 'next/server';
+import type { Database } from '@/lib/supabase/database.types';
 
 export async function POST(req: NextRequest) {
-  // Lazy init — runs at request time, not module load, so missing env vars
-  // don't crash the build when the route is first imported.
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey  = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const anonKey     = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  if (!supabaseUrl || !serviceKey) {
+  if (!supabaseUrl || !serviceKey || !anonKey) {
     return NextResponse.json(
-      { error: 'Server is not configured (missing service role key).' },
+      { error: 'Server is not configured (missing environment variables).' },
       { status: 503 }
     );
   }
 
+  // ── Auth guard: caller must be an authenticated super_admin ──────────────────
+  // Build a request-scoped SSR client (reads cookies from the incoming request)
+  // to validate the session without trusting the request body.
+  const authClient = createServerClient<Database>(supabaseUrl, anonKey, {
+    cookies: {
+      getAll() {
+        return req.cookies.getAll();
+      },
+      // Read-only in API routes — we don't set cookies here
+      setAll(_cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {},
+    },
+  });
+
+  const { data: { user }, error: authError } = await authClient.auth.getUser();
+
+  if (authError || !user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const { data: callerProfileData } = await authClient
+    .from('user_profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+
+  const callerProfile = callerProfileData as { role: string } | null;
+
+  if (callerProfile?.role !== 'super_admin') {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  // Service-role admin client — only used after auth is confirmed above
   const supabaseAdmin = createClient(supabaseUrl, serviceKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
@@ -21,7 +55,6 @@ export async function POST(req: NextRequest) {
   try {
     const { requestId, storeName, ownerName, email, plan } = await req.json();
 
-    // Validate inputs
     if (!requestId || !storeName || !email || !plan) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
@@ -59,11 +92,15 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (tenantErr) {
-      return NextResponse.json({ error: 'Failed to create tenant: ' + tenantErr.message }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Failed to create tenant: ' + tenantErr.message },
+        { status: 500 }
+      );
     }
 
     // 4. Invite user via Supabase Admin API (sends email automatically)
-    const redirectTo = `${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://inventory-app-nine-lilac.vercel.app'}/auth/callback?type=invite`;
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? req.nextUrl.origin;
+    const redirectTo = `${siteUrl}/auth/callback?type=invite`;
 
     const { data: inviteData, error: inviteErr } = await supabaseAdmin.auth.admin.inviteUserByEmail(
       email,
@@ -81,7 +118,10 @@ export async function POST(req: NextRequest) {
     if (inviteErr) {
       // Rollback tenant creation
       await supabaseAdmin.from('tenants').delete().eq('id', tenant.id);
-      return NextResponse.json({ error: 'Failed to invite user: ' + inviteErr.message }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Failed to invite user: ' + inviteErr.message },
+        { status: 500 }
+      );
     }
 
     // 5. Create user_profiles row
@@ -94,10 +134,14 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 6. Mark request as approved
+    // 6. Mark request as approved — log reviewer ID for audit trail
     await supabaseAdmin
       .from('registration_requests')
-      .update({ status: 'approved', reviewed_at: new Date().toISOString() })
+      .update({
+        status: 'approved',
+        reviewed_at: new Date().toISOString(),
+        reviewed_by: user.id,
+      })
       .eq('id', requestId);
 
     // 7. Log subscription event
@@ -107,10 +151,11 @@ export async function POST(req: NextRequest) {
       plan_from: null,
       plan_to: plan,
       notes: 'Account approved by super admin',
+      created_by: user.id,
     });
 
     return NextResponse.json({ success: true, tenantSlug: finalSlug });
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

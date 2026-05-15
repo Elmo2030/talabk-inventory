@@ -15,7 +15,8 @@ export function createClient() {
   );
 }
 
-// Singleton instance for consistent state across the app
+// Singleton instance for consistent state across the app.
+// One client per browser session — token-refresh timers are shared.
 let browserClient: ReturnType<typeof createClient> | undefined;
 
 export function getSupabaseClient() {
@@ -23,4 +24,12 @@ export function getSupabaseClient() {
     browserClient = createClient();
   }
   return browserClient;
+}
+
+/**
+ * Call this after sign-out to destroy the singleton and stop
+ * the background token-refresh timer for the previous session.
+ */
+export function resetSupabaseClient() {
+  browserClient = undefined;
 }

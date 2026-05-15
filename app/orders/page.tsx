@@ -110,7 +110,14 @@ export default function OrdersPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('هل أنت متأكد من حذف هذا الطلب؟')) return;
+    const ok = await confirm({
+      title: 'حذف الطلب',
+      description: 'هل أنت متأكد من حذف هذا الطلب؟ لا يمكن التراجع عن هذا الإجراء.',
+      confirmLabel: 'نعم، احذف',
+      cancelLabel: 'إلغاء',
+      variant: 'danger',
+    });
+    if (!ok) return;
     setDeletingId(id);
     await deleteSalesOrder(id);
     setDeletingId(null);

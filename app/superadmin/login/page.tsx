@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { Eye, EyeOff, AlertCircle, ShieldCheck, Lock, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 import TalabkLogo from '@/components/ui/TalabkLogo';
 
-export default function SuperAdminLoginPage() {
+// ── Inner component — uses useSearchParams, must be inside <Suspense> ─────────
+function SuperAdminLoginInner() {
   const router       = useRouter();
   const searchParams = useSearchParams();
   const supabase     = getSupabaseClient();
@@ -32,8 +33,7 @@ export default function SuperAdminLoginPage() {
         .select('role')
         .eq('id', session.user.id)
         .single();
-      const p = profile as unknown as { role: string } | null;
-      if (p?.role === 'super_admin') {
+      if (profile?.role === 'super_admin') {
         const redirect = searchParams.get('redirect') ?? '/superadmin';
         router.replace(redirect);
       }
@@ -46,7 +46,7 @@ export default function SuperAdminLoginPage() {
     setForgotLoading(true);
     try {
       await supabase.auth.resetPasswordForEmail(forgotEmail.trim().toLowerCase(), {
-        redirectTo: 'https://inventory-app-nine-lilac.vercel.app/auth/callback?type=recovery',
+        redirectTo: `${window.location.origin}/auth/callback?type=recovery`,
       });
       setForgotSent(true);
     } finally {
@@ -82,9 +82,7 @@ export default function SuperAdminLoginPage() {
         .eq('id', data.session.user.id)
         .single();
 
-      const p = profile as unknown as { role: string } | null;
-
-      if (p?.role !== 'super_admin') {
+      if (profile?.role !== 'super_admin') {
         await supabase.auth.signOut();
         setErrorMsg('ليس لديك صلاحية الوصول إلى لوحة الإدارة');
         return;
@@ -119,7 +117,6 @@ export default function SuperAdminLoginPage() {
 
         {/* Header */}
         <div className="flex flex-col items-center mb-8">
-          {/* Shield icon above logo */}
           <div className="relative mb-1">
             <TalabkLogo size={56} />
             <div className="absolute -bottom-1 -left-1 bg-[#E5302A] rounded-full p-0.5">
@@ -140,7 +137,6 @@ export default function SuperAdminLoginPage() {
           </div>
 
           {forgotMode ? (
-            /* ── Forgot-password panel ── */
             forgotSent ? (
               <div className="flex flex-col items-center gap-4 py-4 text-center">
                 <CheckCircle className="w-10 h-10 text-green-400" />
@@ -193,7 +189,6 @@ export default function SuperAdminLoginPage() {
               </form>
             )
           ) : (
-            /* ── Normal login form ── */
             <form onSubmit={handleSubmit} className="space-y-5">
 
               {errorMsg && (
@@ -203,7 +198,6 @@ export default function SuperAdminLoginPage() {
                 </div>
               )}
 
-              {/* Email */}
               <div>
                 <label className="block text-xs font-semibold text-white/40 mb-2 uppercase tracking-wider">
                   البريد الإلكتروني
@@ -218,7 +212,6 @@ export default function SuperAdminLoginPage() {
                 />
               </div>
 
-              {/* Password */}
               <div>
                 <label className="block text-xs font-semibold text-white/40 mb-2 uppercase tracking-wider">
                   كلمة المرور
@@ -242,7 +235,6 @@ export default function SuperAdminLoginPage() {
                 </div>
               </div>
 
-              {/* Forgot password link */}
               <div className="flex justify-start">
                 <button
                   type="button"
@@ -253,7 +245,6 @@ export default function SuperAdminLoginPage() {
                 </button>
               </div>
 
-              {/* Submit */}
               <button
                 type="submit"
                 disabled={loading}
@@ -273,7 +264,6 @@ export default function SuperAdminLoginPage() {
 
         </div>
 
-        {/* Back to store login */}
         <p className="text-center text-xs text-white/20 mt-6">
           هل أنت صاحب متجر؟{' '}
           <Link href="/login" className="text-white/40 hover:text-white/70 transition-colors underline underline-offset-2">
@@ -283,5 +273,18 @@ export default function SuperAdminLoginPage() {
 
       </div>
     </div>
+  );
+}
+
+// ── Page export wrapped in Suspense (required for useSearchParams) ─────────────
+export default function SuperAdminLoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#0A0C10] flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-[#E5302A]/30 border-t-[#E5302A] rounded-full animate-spin" />
+      </div>
+    }>
+      <SuperAdminLoginInner />
+    </Suspense>
   );
 }

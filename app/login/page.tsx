@@ -34,19 +34,15 @@ export default function LoginPage() {
         .eq('id', session.user.id)
         .single();
 
-      const p = profile as unknown as { role: string; tenant_id: string | null } | null;
-
-      if (p?.role === 'super_admin') {
+      if (profile?.role === 'super_admin') {
         router.replace('/superadmin');
-      } else if (p?.tenant_id) {
-        // Get tenant slug
+      } else if (profile?.tenant_id) {
         const { data: tenant } = await supabase
           .from('tenants')
           .select('slug')
-          .eq('id', p.tenant_id)
+          .eq('id', profile.tenant_id)
           .single();
-        const t = tenant as unknown as { slug: string } | null;
-        router.replace(t ? `/app/${t.slug}/dashboard` : '/');
+        router.replace(tenant?.slug ? `/app/${tenant.slug}/dashboard` : '/');
       } else {
         router.replace('/');
       }
@@ -59,7 +55,7 @@ export default function LoginPage() {
     setForgotLoading(true);
     try {
       await supabase.auth.resetPasswordForEmail(forgotEmail.trim().toLowerCase(), {
-        redirectTo: 'https://inventory-app-nine-lilac.vercel.app/auth/callback?type=recovery',
+        redirectTo: `${window.location.origin}/auth/callback?type=recovery`,
       });
       setForgotSent(true);
     } finally {
@@ -95,18 +91,15 @@ export default function LoginPage() {
         .eq('id', data.session.user.id)
         .single();
 
-      const p = profile as unknown as { role: string; tenant_id: string | null } | null;
-
-      if (p?.role === 'super_admin') {
+      if (profile?.role === 'super_admin') {
         router.push('/superadmin');
-      } else if (p?.tenant_id) {
+      } else if (profile?.tenant_id) {
         const { data: tenant } = await supabase
           .from('tenants')
           .select('slug')
-          .eq('id', p.tenant_id)
+          .eq('id', profile.tenant_id)
           .single();
-        const t = tenant as unknown as { slug: string } | null;
-        router.push(t ? `/app/${t.slug}/dashboard` : '/');
+        router.push(tenant?.slug ? `/app/${tenant.slug}/dashboard` : '/');
       } else {
         router.push('/');
       }

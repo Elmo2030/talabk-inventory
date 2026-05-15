@@ -17,12 +17,13 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import type { Database } from '@/lib/supabase/database.types';
 import type { EmailOtpType } from '@supabase/supabase-js';
 
 // ── Supabase SSR client ───────────────────────────────────────────────────────
 function buildSupabase() {
   const cookieStore = cookies();
-  return createServerClient(
+  return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -40,33 +41,34 @@ function buildSupabase() {
 
 // ── Role-based redirect after session is established ─────────────────────────
 async function roleRedirect(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabase: any,
+  supabase: ReturnType<typeof buildSupabase>,
   origin: string,
   fallback: string,
 ): Promise<NextResponse> {
   const { data: { session } } = await supabase.auth.getSession();
   if (session) {
-    const { data: profile } = await supabase
+    const { data: profileData } = await supabase
       .from('user_profiles')
       .select('role, tenant_id')
       .eq('id', session.user.id)
       .single();
 
-    const p = profile as { role: string; tenant_id: string | null } | null;
+    // Supabase SSR client types don't narrow column-select results in route handlers;
+    // use a targeted cast (not `as unknown as`) since we own the schema.
+    const profile = profileData as { role: string; tenant_id: string | null } | null;
 
-    if (p?.role === 'super_admin') {
+    if (profile?.role === 'super_admin') {
       return NextResponse.redirect(`${origin}/superadmin`);
     }
-    if (p?.tenant_id) {
-      const { data: tenant } = await supabase
+    if (profile?.tenant_id) {
+      const { data: tenantData } = await supabase
         .from('tenants')
         .select('slug')
-        .eq('id', p.tenant_id)
+        .eq('id', profile.tenant_id)
         .single();
-      const t = tenant as { slug: string } | null;
-      if (t?.slug) {
-        return NextResponse.redirect(`${origin}/app/${t.slug}/dashboard`);
+      const tenant = tenantData as { slug: string } | null;
+      if (tenant?.slug) {
+        return NextResponse.redirect(`${origin}/app/${tenant.slug}/dashboard`);
       }
     }
   }

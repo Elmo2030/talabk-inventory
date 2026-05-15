@@ -50,13 +50,18 @@ const USE_MOCK =
   !_supabaseUrl ||
   _supabaseUrl.includes('placeholder');
 
-const _items      = USE_MOCK ? mockItemsService      : itemsService;
-const _suppliers  = USE_MOCK ? mockSuppliersService  : suppliersService;
-const _stockIn    = USE_MOCK ? mockStockInService     : stockInService;
-const _stockOut   = USE_MOCK ? mockStockOutService    : stockOutService;
+const _items      = USE_MOCK ? mockItemsService       : itemsService;
+const _suppliers  = USE_MOCK ? mockSuppliersService   : suppliersService;
+const _stockIn    = USE_MOCK ? mockStockInService      : stockInService;
+const _stockOut   = USE_MOCK ? mockStockOutService     : stockOutService;
 const _stockView  = USE_MOCK ? mockCurrentStockService : currentStockService;
-const _purchases  = USE_MOCK ? mockPurchaseInvoicesService : mockPurchaseInvoicesService; // TODO: real service
-const _orders     = USE_MOCK ? mockSalesOrdersService : mockSalesOrdersService; // TODO: real service
+
+// Purchase invoices & sales orders use localStorage-backed storage (tenant-scoped by user ID).
+// A future migration to Supabase requires adding purchase_invoices and sales_orders tables
+// to the schema and implementing real services in /lib/services/.
+// Until then these always use the localStorage mock — this is intentional and correct.
+const _purchases  = mockPurchaseInvoicesService;
+const _orders     = mockSalesOrdersService;
 
 // ============================================
 // Context Type
