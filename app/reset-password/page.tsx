@@ -3,10 +3,110 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getSupabaseClient } from '@/lib/supabase/client';
-import { Eye, EyeOff, AlertCircle, CheckCircle2, ShieldCheck } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle, CheckCircle2, Mail, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import TalabkLogo from '@/components/ui/TalabkLogo';
 
+// ── Expired link screen with resend option ────────────────────────────────────
+function ExpiredLinkScreen() {
+  const supabase = getSupabaseClient();
+  const [email,      setEmail]      = useState('');
+  const [sending,    setSending]    = useState(false);
+  const [sent,       setSent]       = useState(false);
+  const [resendErr,  setResendErr]  = useState('');
+  const [showForm,   setShowForm]   = useState(false);
+
+  const handleResend = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) return;
+    setSending(true);
+    setResendErr('');
+    const { error } = await supabase.auth.resetPasswordForEmail(
+      email.trim().toLowerCase(),
+      { redirectTo: `${window.location.origin}/auth/callback?type=recovery` }
+    );
+    setSending(false);
+    if (error) {
+      setResendErr('فشل الإرسال، تأكد من البريد الإلكتروني وحاول مجدداً.');
+    } else {
+      setSent(true);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-[#0A0C10] flex items-center justify-center p-4 font-arabic" dir="rtl">
+      <div className="w-full max-w-sm text-center">
+        <div className="w-16 h-16 rounded-full bg-[#E5302A]/15 flex items-center justify-center mx-auto mb-4">
+          <AlertCircle className="w-8 h-8 text-[#E5302A]" />
+        </div>
+        <h2 className="text-xl font-bold text-white mb-2">الرابط منتهي الصلاحية</h2>
+        <p className="text-white/50 text-sm mb-6">
+          رابط إعادة تعيين كلمة المرور منتهي أو تم استخدامه مسبقاً.
+        </p>
+
+        {sent ? (
+          <div className="bg-[#141820] border border-white/8 rounded-2xl p-5 text-center">
+            <CheckCircle2 className="w-10 h-10 text-green-500 mx-auto mb-3" />
+            <p className="text-white font-semibold text-sm">تم إرسال رابط جديد!</p>
+            <p className="text-white/40 text-xs mt-1">تحقق من بريدك الإلكتروني</p>
+          </div>
+        ) : showForm ? (
+          <div className="bg-[#141820] border border-white/8 rounded-2xl p-5">
+            <form onSubmit={handleResend} className="space-y-3">
+              <div className="relative">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={e => { setEmail(e.target.value); setResendErr(''); }}
+                  placeholder="أدخل بريدك الإلكتروني"
+                  className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white text-sm placeholder-white/20 outline-none focus:border-[#E5302A]/50 focus:ring-2 focus:ring-[#E5302A]/10 pr-4 pl-11"
+                />
+                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/25" />
+              </div>
+              {resendErr && (
+                <p className="text-red-400 text-xs">{resendErr}</p>
+              )}
+              <button
+                type="submit"
+                disabled={sending || !email.trim()}
+                className="w-full py-2.5 rounded-xl bg-[#E5302A] hover:bg-[#C42B24] text-white font-semibold text-sm transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {sending ? (
+                  <><RefreshCw className="w-4 h-4 animate-spin" /> جاري الإرسال...</>
+                ) : (
+                  'إرسال رابط جديد'
+                )}
+              </button>
+            </form>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={() => setShowForm(true)}
+              className="w-full px-6 py-2.5 rounded-xl bg-[#E5302A] text-white text-sm font-semibold hover:bg-[#C42B24] transition-colors"
+            >
+              إرسال رابط جديد
+            </button>
+            <Link
+              href="/login"
+              className="w-full px-6 py-2.5 rounded-xl border border-white/10 text-white/60 text-sm font-semibold hover:bg-white/5 transition-colors"
+            >
+              العودة لتسجيل الدخول
+            </Link>
+          </div>
+        )}
+
+        {!sent && (
+          <Link href="/login" className="inline-block mt-4 text-white/30 text-xs hover:text-white/60 transition-colors">
+            العودة لتسجيل الدخول
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Main reset page ────────────────────────────────────────────────────────────
 export default function ResetPasswordPage() {
   const router   = useRouter();
   const supabase = getSupabaseClient();
@@ -75,18 +175,7 @@ export default function ResetPasswordPage() {
   }
 
   if (!hasSession) {
-    return (
-      <div className="min-h-screen bg-[#0A0C10] flex items-center justify-center p-4 font-arabic" dir="rtl">
-        <div className="text-center max-w-sm">
-          <AlertCircle className="w-12 h-12 text-[#E5302A] mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-white mb-2">الرابط منتهي الصلاحية</h2>
-          <p className="text-white/50 text-sm mb-6">رابط إعادة تعيين كلمة المرور منتهي أو تم استخدامه مسبقاً.</p>
-          <Link href="/login" className="px-6 py-2.5 rounded-xl bg-[#E5302A] text-white text-sm font-semibold hover:bg-[#C42B24] transition-colors">
-            العودة لتسجيل الدخول
-          </Link>
-        </div>
-      </div>
-    );
+    return <ExpiredLinkScreen />;
   }
 
   return (

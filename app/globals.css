@@ -109,6 +109,27 @@ tbody tr {
 *::-webkit-scrollbar-thumb { background: #C7C7CC; border-radius: 99px; }
 *::-webkit-scrollbar-thumb:hover { background: #AEAEB2; }
 
+/* ── Print styles ────────────────────────────────────────────────────────────── */
+@media print {
+  /* Hide nav, sidebar, buttons */
+  nav, aside, .print\:hidden, button { display: none !important; }
+  /* Reset background */
+  body { background: white !important; color: black !important; }
+  /* Ensure full width */
+  .max-w-5xl, .max-w-4xl, .max-w-3xl { max-width: 100% !important; }
+  /* No shadows */
+  * { box-shadow: none !important; }
+  /* Page break control */
+  .break-inside-avoid { break-inside: avoid; }
+  /* Force colors for borders */
+  .border, [class*="border-"] { border-color: #e5e7eb !important; }
+  /* Text colors */
+  [class*="text-"] { color: black !important; }
+  .text-\[\#E5302A\] { color: #E5302A !important; }
+  .text-green-600 { color: #16a34a !important; }
+  .text-red-600   { color: #dc2626 !important; }
+}
+
 /* ── Skeleton shimmer (enhanced) ────────────────────────────────────────────── */
 @keyframes shimmer {
   0%   { background-position: -200% 0; }

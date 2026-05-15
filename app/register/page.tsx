@@ -131,12 +131,20 @@ export default function RegisterPage() {
             </ul>
           </div>
 
-          <Link
-            href="/"
-            className="inline-block px-6 py-3 rounded-xl bg-[#E5302A] text-white font-semibold text-sm hover:bg-[#C42B24] transition-colors"
-          >
-            العودة للصفحة الرئيسية
-          </Link>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Link
+              href={`/register/status?email=${encodeURIComponent(submittedEmail)}`}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#E5302A] text-white font-semibold text-sm hover:bg-[#C42B24] transition-colors"
+            >
+              تتبع حالة طلبك
+            </Link>
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-[#E5E5EA] text-[#6C6C70] font-semibold text-sm hover:bg-[#F2F2F7] transition-colors"
+            >
+              الصفحة الرئيسية
+            </Link>
+          </div>
 
           <p className="mt-4 text-xs text-[#AEAEB2]">
             تواصل معنا عبر WhatsApp إذا لم تصلك رسالة خلال 48 ساعة

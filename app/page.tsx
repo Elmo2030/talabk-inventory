@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   BarChart3, Package, Truck, ShieldCheck,
-  ArrowLeft, Star,
+  ArrowLeft, Star, ChevronDown,
 } from 'lucide-react';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import TalabkLogo from '@/components/ui/TalabkLogo';
@@ -51,6 +51,29 @@ function PlanCard({
             : 'bg-white/10 text-white hover:bg-white/20'}`}>
         ابدأ الآن
       </Link>
+    </div>
+  );
+}
+
+// ── FAQ Accordion Item ────────────────────────────────────────────────────────
+function FaqItem({ q, a }: { q: string; a: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="bg-[#141820] border border-white/5 rounded-xl overflow-hidden">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-5 py-4 text-right gap-3 hover:bg-white/3 transition-colors"
+      >
+        <span className="text-white text-sm font-medium leading-snug">{q}</span>
+        <ChevronDown
+          className={`w-4 h-4 text-white/40 flex-shrink-0 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+        />
+      </button>
+      {open && (
+        <div className="px-5 pb-4">
+          <p className="text-white/50 text-sm leading-relaxed">{a}</p>
+        </div>
+      )}
     </div>
   );
 }
@@ -264,6 +287,116 @@ export default function LandingPage() {
             <PlanCard name="مبتدئ"    price="99 د.ل/شهر"    features={['5 مستخدمين', '500 صنف', 'دعم بريد']} />
             <PlanCard name="احترافي"  price="249 د.ل/شهر"   features={['15 مستخدم', '5,000 صنف', 'API']} highlight />
             <PlanCard name="مؤسسي"   price="599 د.ل/شهر"   features={['غير محدود', 'نطاق مخصص', 'دعم أولوية']} />
+          </div>
+        </div>
+      </section>
+
+      {/* ── How it works ───────────────────────────────────────────────────── */}
+      <section className="py-20 px-5 bg-[#0D1017]">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-12">
+            <div className="w-1 h-8 bg-[#E5302A] inline-block ml-3 align-middle rounded-full" />
+            <h2 className="text-2xl sm:text-3xl font-black text-white inline-block align-middle">
+              كيف تبدأ؟
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            {[
+              { n: '01', title: 'سجّل متجرك', desc: 'أكمل نموذج التسجيل واختر خطتك المناسبة في دقيقتين.' },
+              { n: '02', title: 'انتظر الموافقة', desc: 'فريقنا يراجع طلبك ويرسل لك رابط تفعيل الحساب خلال 24 ساعة.' },
+              { n: '03', title: 'ابدأ البيع', desc: 'أضف منتجاتك، سجّل طلباتك، وتابع أرباحك لحظياً من أي جهاز.' },
+            ].map(s => (
+              <div key={s.n} className="relative flex flex-col items-center text-center p-6 rounded-2xl bg-white/3 border border-white/6">
+                <div className="text-5xl font-black text-[#E5302A]/20 mb-4 leading-none">{s.n}</div>
+                <h3 className="text-white font-bold text-lg mb-2">{s.title}</h3>
+                <p className="text-white/45 text-sm leading-relaxed">{s.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Testimonials ───────────────────────────────────────────────────── */}
+      <section className="py-20 px-5">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-12">
+            <div className="w-1 h-8 bg-[#E5302A] inline-block ml-3 align-middle rounded-full" />
+            <h2 className="text-2xl sm:text-3xl font-black text-white inline-block align-middle">
+              ماذا يقول أصحاب المتاجر؟
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+            {[
+              {
+                name: 'أحمد المنصوري',
+                store: 'متجر الأناقة — طرابلس',
+                text: 'قبل طلبك كنت أحسب أرباحي بالإكسل وكنت دايماً غلطان. الآن أشوف صافي ربحي لكل طلب فوراً.',
+                avatar: 'أ',
+              },
+              {
+                name: 'فاطمة الزروق',
+                store: 'ستايل هوم — بنغازي',
+                text: 'حاسبة الشحن وفّرت عليّ ساعات من الحسابات اليدوية. أنصح كل متجر ليبي باستخدام المنصة.',
+                avatar: 'ف',
+              },
+              {
+                name: 'يوسف الترهوني',
+                store: 'تك زون — مصراتة',
+                text: 'المخزون كان مشكلتي الأولى — الآن أعرف بالضبط متى أشتري وبكم. النظام سهّل حياتي.',
+                avatar: 'ي',
+              },
+            ].map(t => (
+              <div key={t.name} className="bg-[#141820] border border-white/5 rounded-2xl p-5 flex flex-col gap-4">
+                <p className="text-white/60 text-sm leading-relaxed flex-1">"{t.text}"</p>
+                <div className="flex items-center gap-3 pt-3 border-t border-white/5">
+                  <div className="w-9 h-9 rounded-full bg-[#E5302A] flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                    {t.avatar}
+                  </div>
+                  <div>
+                    <p className="text-white text-sm font-semibold leading-tight">{t.name}</p>
+                    <p className="text-white/35 text-xs">{t.store}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── FAQ ────────────────────────────────────────────────────────────── */}
+      <section className="py-20 px-5 bg-[#0D1017]">
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center mb-12">
+            <div className="w-1 h-8 bg-[#E5302A] inline-block ml-3 align-middle rounded-full" />
+            <h2 className="text-2xl sm:text-3xl font-black text-white inline-block align-middle">
+              أسئلة شائعة
+            </h2>
+          </div>
+          <div className="space-y-3">
+            {[
+              {
+                q: 'هل يعمل النظام على الجوال؟',
+                a: 'نعم، النظام متجاوب بالكامل ويعمل بسلاسة على الجوال والتابلت والكمبيوتر.',
+              },
+              {
+                q: 'هل يمكنني تجربة النظام قبل الشراء؟',
+                a: 'نعم، خطة "تجريبي" مجانية لمدة 14 يوماً دون الحاجة لبطاقة ائتمان.',
+              },
+              {
+                q: 'كيف يحسب النظام تكلفة الشحن؟',
+                a: 'يتكامل مع أسعار شركة طلبك الرسمية لـ 71 مدينة ليبية، ويحسب الوزن الحجمي مقابل الوزن الفعلي آلياً.',
+              },
+              {
+                q: 'هل بياناتي آمنة؟',
+                a: 'نعم، نستخدم Supabase مع تشفير كامل وعزل تام بين بيانات كل متجر (Row Level Security). لا يمكن لأي متجر الوصول لبيانات متجر آخر.',
+              },
+              {
+                q: 'ماذا يحدث بعد انتهاء الخطة التجريبية؟',
+                a: 'ستتلقى تنبيهاً قبل الانتهاء بـ 3 أيام. يمكنك الترقية لأي خطة أو التواصل معنا لتمديد التجربة.',
+              },
+            ].map((faq, i) => (
+              <FaqItem key={i} q={faq.q} a={faq.a} />
+            ))}
           </div>
         </div>
       </section>

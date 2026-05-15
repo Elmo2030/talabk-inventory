@@ -1,7 +1,7 @@
 'use client';
 import { use } from 'react';
 import Link from 'next/link';
-import { ArrowRight, User, MapPin, Package, TrendingUp } from 'lucide-react';
+import { ArrowRight, User, MapPin, Package, TrendingUp, Printer } from 'lucide-react';
 import { useStock } from '@/lib/StockContext';
 import { OrderStatus, SalesOrder } from '@/lib/types';
 
@@ -85,6 +85,13 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             <p className="text-sm text-[#6C6C70] mt-1">{order.customerName} · {createdDate}</p>
           </div>
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => window.print()}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[#E5E5EA] text-[#6C6C70] text-sm font-medium hover:bg-[#F2F2F7] transition-colors print:hidden"
+            >
+              <Printer className="w-4 h-4" />
+              طباعة
+            </button>
             <label className="text-xs text-[#6C6C70]">تغيير الحالة:</label>
             <select
               value={order.status}
