@@ -2,20 +2,45 @@
 
 import { ReactNode } from 'react';
 import { useStock } from '@/lib/StockContext';
-import { Loader2, AlertCircle, RefreshCw, Database } from 'lucide-react';
+import { AlertCircle, RefreshCw } from 'lucide-react';
+import { Skeleton, SkeletonKPICard } from '@/components/ui/Skeleton';
 
 export default function LoadingGate({ children }: { children: ReactNode }) {
   const { loading, error, refresh } = useStock();
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="text-center">
-          <div className="w-16 h-16 mx-auto rounded-2xl bg-brand-600 flex items-center justify-center mb-4">
-            <Loader2 className="w-8 h-8 text-white animate-spin" />
+      <div className="space-y-5 animate-pulse">
+        {/* Page header skeleton */}
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <Skeleton className="h-7 w-48" />
+            <Skeleton className="h-4 w-64" />
           </div>
-          <h2 className="text-lg font-bold text-slate-900">جاري الاتصال بقاعدة البيانات...</h2>
-          <p className="text-sm text-slate-500 mt-2">يتم تحميل البيانات من Supabase</p>
+          <Skeleton className="h-10 w-32 rounded-xl" />
+        </div>
+        {/* KPI cards skeleton */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => <SkeletonKPICard key={i} />)}
+        </div>
+        {/* Table skeleton */}
+        <div className="bg-white dark:bg-[#18181B] border border-[#E5E5EA] dark:border-[#27272A] rounded-2xl overflow-hidden">
+          <div className="px-5 py-4 border-b border-[#E5E5EA] dark:border-[#27272A]">
+            <Skeleton className="h-9 w-full max-w-xs rounded-xl" />
+          </div>
+          <div className="divide-y divide-[#F2F2F7] dark:divide-[#27272A]">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="flex items-center gap-4 px-5 py-4">
+                <Skeleton className="w-9 h-9 rounded-xl flex-shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-40" />
+                  <Skeleton className="h-3 w-24" />
+                </div>
+                <Skeleton className="h-6 w-16 rounded-full" />
+                <Skeleton className="h-8 w-8 rounded-lg" />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -23,39 +48,16 @@ export default function LoadingGate({ children }: { children: ReactNode }) {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-        <div className="max-w-md w-full bg-white rounded-xl border border-red-200 p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 rounded-lg bg-red-50 flex items-center justify-center">
-              <AlertCircle className="w-6 h-6 text-red-600" />
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-slate-900">فشل الاتصال بقاعدة البيانات</h2>
-              <p className="text-xs text-slate-500">تحقق من إعدادات Supabase</p>
-            </div>
+      <div className="min-h-[60vh] flex items-center justify-center p-4">
+        <div className="max-w-sm w-full bg-white dark:bg-[#18181B] border border-red-200 dark:border-red-900/50 rounded-2xl p-6 text-center shadow-lg">
+          <div className="w-14 h-14 rounded-2xl bg-red-50 dark:bg-red-950/30 flex items-center justify-center mx-auto mb-4">
+            <AlertCircle className="w-7 h-7 text-red-500" />
           </div>
-
-          <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-            <p className="text-sm text-red-700 font-mono break-all">{error}</p>
-          </div>
-
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
-            <h3 className="text-sm font-semibold text-amber-900 mb-2 flex items-center gap-2">
-              <Database className="w-4 h-4" />
-              خطوات التشخيص:
-            </h3>
-            <ol className="text-xs text-amber-800 space-y-1.5 list-decimal mr-4">
-              <li>تأكد من وجود ملف .env.local في جذر المشروع</li>
-              <li>تحقق من صحة NEXT_PUBLIC_SUPABASE_URL</li>
-              <li>تحقق من صحة NEXT_PUBLIC_SUPABASE_ANON_KEY</li>
-              <li>تأكد من تشغيل migration.sql في Supabase SQL Editor</li>
-              <li>أعد تشغيل خادم التطوير بعد تعديل .env.local</li>
-            </ol>
-          </div>
-
+          <h2 className="text-base font-bold text-[#1C1C1E] dark:text-[#F4F4F5] mb-1">فشل تحميل البيانات</h2>
+          <p className="text-xs text-[#6C6C70] dark:text-[#A1A1AA] mb-5 font-mono break-all">{error}</p>
           <button
             onClick={refresh}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-medium rounded-lg transition-colors"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#E5302A] hover:bg-[#C42B24] text-white font-semibold text-sm rounded-xl transition-colors"
           >
             <RefreshCw className="w-4 h-4" />
             إعادة المحاولة

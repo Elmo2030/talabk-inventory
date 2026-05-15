@@ -62,3 +62,60 @@ aside ::-webkit-scrollbar-thumb:hover { background: var(--brand-primary); }
   aside, .print\:hidden { display: none !important; }
   main { margin: 0 !important; padding: 0 !important; }
 }
+
+/* ── Page transitions ────────────────────────────────────────────────────────── */
+main > * {
+  animation: fadeSlideIn 0.18s ease-out;
+}
+
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Table row hover ─────────────────────────────────────────────────────────── */
+tbody tr {
+  transition: background-color 0.12s ease;
+}
+
+/* ── Card hover lift ─────────────────────────────────────────────────────────── */
+.card-hover {
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.card-hover:hover {
+  box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+  transform: translateY(-1px);
+}
+
+/* ── Focus ring (accessibility) ─────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid #E5302A;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ── Smooth number transitions ──────────────────────────────────────────────── */
+.num-transition {
+  transition: all 0.3s ease;
+}
+
+/* ── Scrollbar (thin, matches theme) ────────────────────────────────────────── */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #C7C7CC transparent;
+}
+*::-webkit-scrollbar { width: 5px; height: 5px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb { background: #C7C7CC; border-radius: 99px; }
+*::-webkit-scrollbar-thumb:hover { background: #AEAEB2; }
+
+/* ── Skeleton shimmer (enhanced) ────────────────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton-shimmer {
+  background: linear-gradient(90deg, #E5E5EA 25%, #F2F2F7 50%, #E5E5EA 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}

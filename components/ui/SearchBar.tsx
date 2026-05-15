@@ -7,6 +7,7 @@ interface SearchBarProps {
   onChange: (value: string) => void;
   placeholder?: string;
   className?: string;
+  'aria-label'?: string;
 }
 
 export default function SearchBar({
@@ -14,6 +15,7 @@ export default function SearchBar({
   onChange,
   placeholder = 'بحث...',
   className = '',
+  'aria-label': ariaLabel,
 }: SearchBarProps) {
   return (
     <div className={`relative w-full max-w-md ${className}`}>
@@ -23,6 +25,7 @@ export default function SearchBar({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
+        aria-label={ariaLabel}
         className="
           w-full pr-10 pl-10 py-2 text-sm
           bg-white border border-[#E5E5EA] rounded-lg

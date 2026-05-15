@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -15,6 +15,10 @@ import {
 } from 'lucide-react';
 import { useStock } from '@/lib/StockContext';
 import { SalesOrder, OrderStatus } from '@/lib/types';
+import EmptyState from '@/components/ui/EmptyState';
+import Pagination from '@/components/ui/Pagination';
+
+const PAGE_SIZE = 20;
 
 const STATUS_CONFIG: Record<
   OrderStatus,
@@ -50,6 +54,7 @@ export default function OrdersPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'ALL'>('ALL');
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
 
   const filtered = salesOrders.filter((o) => {
     const matchSearch =
@@ -59,6 +64,14 @@ export default function OrdersPage() {
     const matchStatus = statusFilter === 'ALL' || o.status === statusFilter;
     return matchSearch && matchStatus;
   });
+
+  // Reset page when search or filter changes
+  useEffect(() => {
+    setPage(1);
+  }, [search, statusFilter]);
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   // Stats
   const total = salesOrders.length;
@@ -93,6 +106,7 @@ export default function OrdersPage() {
         <Link
           href="/orders/new"
           className="flex items-center gap-2 px-4 py-2.5 bg-[#E5302A] hover:bg-[#C42B24] text-white text-sm font-semibold rounded-xl transition-colors"
+          aria-label="إنشاء طلب جديد"
         >
           <Plus className="w-4 h-4" />
           <span>طلب جديد</span>
@@ -129,6 +143,7 @@ export default function OrdersPage() {
             placeholder="بحث برقم الطلب أو اسم العميل..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            aria-label="بحث في الطلبات"
             className="w-full pr-9 pl-3 py-2.5 rounded-xl border border-[#E5E5EA] text-sm text-[#1C1C1E] bg-white focus:outline-none focus:border-[#E5302A] focus:ring-2 focus:ring-[#E5302A]/20"
             dir="rtl"
           />
@@ -161,93 +176,114 @@ export default function OrdersPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-white border border-[#E5E5EA] rounded-2xl overflow-hidden">
+      <div
+        className="bg-white border border-[#E5E5EA] rounded-2xl overflow-hidden card-hover"
+        role="region"
+        aria-label="قائمة الطلبات"
+      >
         {filtered.length === 0 ? (
-          <div className="py-16 text-center">
-            <ShoppingBag className="w-10 h-10 text-[#E5E5EA] mx-auto mb-3" />
-            <p className="text-sm text-[#6C6C70]">لا توجد طلبات</p>
-            <Link href="/orders/new" className="mt-3 inline-block text-xs text-[#E5302A] hover:underline">
-              + إنشاء طلب جديد
-            </Link>
-          </div>
+          <EmptyState
+            icon={ShoppingBag}
+            title="لا توجد طلبات"
+            description="ابدأ بإنشاء أول طلب مبيعات من شاشة نقطة البيع"
+            action={
+              <Link
+                href="/orders/new"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-[#E5302A] hover:bg-[#C42B24] text-white text-sm font-semibold rounded-xl transition-colors"
+              >
+                + إنشاء طلب جديد
+              </Link>
+            }
+          />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-[#F2F2F7] border-b border-[#E5E5EA]">
-                  {['رقم الطلب', 'العميل', 'المدينة', 'المنتجات', 'إجمالي العميل', 'صافي الربح', 'الحالة', 'إجراءات'].map(
-                    (h) => (
-                      <th key={h} className="text-right px-4 py-3 text-xs font-medium text-[#6C6C70]">
-                        {h}
-                      </th>
-                    )
-                  )}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#F2F2F7]">
-                {filtered.map((order) => (
-                  <tr key={order.id} className="hover:bg-[#F2F2F7]/50 transition-colors">
-                    <td className="px-4 py-3 font-mono text-xs text-[#E5302A] font-semibold whitespace-nowrap">
-                      {order.orderNumber}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="font-medium text-[#1C1C1E]">{order.customerName}</div>
-                      <div className="text-xs text-[#6C6C70]">{order.customerPhone}</div>
-                    </td>
-                    <td className="px-4 py-3 text-[#6C6C70] text-xs whitespace-nowrap">{order.customerCity}</td>
-                    <td className="px-4 py-3">
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#F2F2F7] rounded-full text-xs font-medium text-[#1C1C1E]">
-                        {order.items.reduce((s, i) => s + i.quantity, 0)} قطعة
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 font-semibold text-[#1C1C1E] whitespace-nowrap">
-                      {fmt(order.customerTotal)} د.ل
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <span className={order.netProfit >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>
-                        {fmt(order.netProfit)} د.ل
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <select
-                        value={order.status}
-                        onChange={(e) => handleStatusChange(order, e.target.value as OrderStatus)}
-                        className="text-xs border border-[#E5E5EA] rounded-lg px-2 py-1 bg-white focus:outline-none focus:border-[#E5302A] cursor-pointer"
-                        dir="rtl"
-                      >
-                        {ALL_STATUSES.map((s) => (
-                          <option key={s} value={s}>
-                            {STATUS_CONFIG[s].label}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => router.push(`/orders/${order.id}`)}
-                          className="p-1.5 text-[#6C6C70] hover:text-[#1C1C1E] hover:bg-[#F2F2F7] rounded-lg transition-colors"
-                          title="عرض التفاصيل"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        {(order.status === 'PENDING' || order.status === 'CANCELLED') && (
-                          <button
-                            onClick={() => handleDelete(order.id)}
-                            disabled={deletingId === order.id}
-                            className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
-                            title="حذف"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
-                    </td>
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-[#F2F2F7] border-b border-[#E5E5EA]">
+                    {['رقم الطلب', 'العميل', 'المدينة', 'المنتجات', 'إجمالي العميل', 'صافي الربح', 'الحالة', 'إجراءات'].map(
+                      (h) => (
+                        <th key={h} className="text-right px-4 py-3 text-xs font-medium text-[#6C6C70]">
+                          {h}
+                        </th>
+                      )
+                    )}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-[#F2F2F7]">
+                  {paginated.map((order) => (
+                    <tr key={order.id} className="hover:bg-[#F2F2F7]/50 transition-colors">
+                      <td className="px-4 py-3 font-mono text-xs text-[#E5302A] font-semibold whitespace-nowrap">
+                        {order.orderNumber}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="font-medium text-[#1C1C1E]">{order.customerName}</div>
+                        <div className="text-xs text-[#6C6C70]">{order.customerPhone}</div>
+                      </td>
+                      <td className="px-4 py-3 text-[#6C6C70] text-xs whitespace-nowrap">{order.customerCity}</td>
+                      <td className="px-4 py-3">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#F2F2F7] rounded-full text-xs font-medium text-[#1C1C1E]">
+                          {order.items.reduce((s, i) => s + i.quantity, 0)} قطعة
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 font-semibold text-[#1C1C1E] whitespace-nowrap">
+                        {fmt(order.customerTotal)} د.ل
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className={order.netProfit >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>
+                          {fmt(order.netProfit)} د.ل
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <select
+                          value={order.status}
+                          onChange={(e) => handleStatusChange(order, e.target.value as OrderStatus)}
+                          className="text-xs border border-[#E5E5EA] rounded-lg px-2 py-1 bg-white focus:outline-none focus:border-[#E5302A] cursor-pointer"
+                          dir="rtl"
+                        >
+                          {ALL_STATUSES.map((s) => (
+                            <option key={s} value={s}>
+                              {STATUS_CONFIG[s].label}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => router.push(`/orders/${order.id}`)}
+                            className="p-1.5 text-[#6C6C70] hover:text-[#1C1C1E] hover:bg-[#F2F2F7] rounded-lg transition-colors"
+                            title="عرض التفاصيل"
+                            aria-label="عرض تفاصيل الطلب"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          {(order.status === 'PENDING' || order.status === 'CANCELLED') && (
+                            <button
+                              onClick={() => handleDelete(order.id)}
+                              disabled={deletingId === order.id}
+                              className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                              title="حذف"
+                              aria-label="حذف الطلب"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              total={filtered.length}
+              pageSize={PAGE_SIZE}
+              onPage={setPage}
+            />
+          </>
         )}
       </div>
     </div>

@@ -7,6 +7,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
   size?: Size;
   icon?: ReactNode;
+  loading?: boolean;
   children: ReactNode;
 }
 
@@ -27,25 +28,34 @@ export default function Button({
   variant = 'primary',
   size = 'md',
   icon,
+  loading = false,
   children,
   className = '',
+  disabled,
   ...props
 }: ButtonProps) {
   return (
     <button
+      disabled={disabled || loading}
       className={`
         inline-flex items-center justify-center
         font-medium rounded-lg
-        transition-colors
+        transition-all duration-150
         disabled:opacity-50 disabled:cursor-not-allowed
         focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-brand-600
+        focus-visible:ring-2 focus-visible:ring-[#E5302A] focus-visible:ring-offset-2
+        ${loading ? 'opacity-70 cursor-wait' : ''}
         ${variantStyles[variant]}
         ${sizeStyles[size]}
         ${className}
       `}
       {...props}
     >
-      {icon}
+      {loading ? (
+        <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+      ) : (
+        icon
+      )}
       {children}
     </button>
   );

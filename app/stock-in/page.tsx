@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { Plus, Trash2, Pencil, ArrowDownToLine, SlidersHorizontal, X } from 'lucide-react';
 import { useStock } from '@/lib/StockContext';
 import { StockInMovement } from '@/lib/types';
@@ -13,6 +13,10 @@ import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useKeyboardShortcuts } from '@/lib/useKeyboardShortcuts';
 import { employees } from '@/data/mock-data';
+import EmptyState from '@/components/ui/EmptyState';
+import Pagination from '@/components/ui/Pagination';
+
+const PAGE_SIZE = 20;
 
 interface Filters {
   fromDate: string;
@@ -33,6 +37,7 @@ export default function StockInPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<Filters>(emptyFilters);
+  const [page, setPage] = useState(1);
 
   useKeyboardShortcuts({
     'Ctrl+N': () => { setEditingMovement(null); setIsModalOpen(true); },
@@ -71,6 +76,14 @@ export default function StockInPage() {
 
     return result;
   }, [stockIn, searchQuery, filters]);
+
+  // Reset page when search or filters change
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery, filters]);
+
+  const totalPages = Math.ceil(filteredMovements.length / PAGE_SIZE);
+  const paginatedMovements = filteredMovements.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const stats = useMemo(() => {
     const totalQty = stockIn.reduce((sum, m) => sum + m.quantity, 0);
@@ -135,7 +148,11 @@ export default function StockInPage() {
           >
             فلاتر{hasActiveFilters && ` (${Object.values(filters).filter(Boolean).length})`}
           </Button>
-          <Button onClick={() => setIsModalOpen(true)} icon={<Plus className="w-4 h-4" />}>
+          <Button
+            onClick={() => setIsModalOpen(true)}
+            icon={<Plus className="w-4 h-4" />}
+            aria-label="تسجيل وارد جديد"
+          >
             تسجيل وارد جديد
           </Button>
         </div>
@@ -218,6 +235,7 @@ export default function StockInPage() {
           value={searchQuery}
           onChange={setSearchQuery}
           placeholder="بحث برقم العملية أو الفاتورة أو الصنف..."
+          aria-label="بحث في حركات الوارد"
         />
         <div className="text-sm text-slate-500">
           عرض:{' '}
@@ -227,70 +245,85 @@ export default function StockInPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm min-w-[700px]">
-            <thead className="bg-slate-50 border-b border-slate-200">
-              <tr>
-                <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">رقم العملية</th>
-                <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">التاريخ</th>
-                <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">رقم الفاتورة</th>
-                <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">الصنف</th>
-                <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">المورد</th>
-                <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">الكمية</th>
-                <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">سعر الوحدة</th>
-                <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">الإجمالي</th>
-                <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">المسؤول</th>
-                <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">إجراءات</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {filteredMovements.length === 0 ? (
-                <tr>
-                  <td colSpan={10} className="px-4 py-12 text-center text-slate-500">
-                    {hasActiveFilters || searchQuery
-                      ? 'لا توجد نتائج تطابق الفلاتر المحددة'
-                      : 'لا توجد حركات وارد مسجلة'}
-                  </td>
-                </tr>
-              ) : (
-                filteredMovements.map((m) => (
-                  <tr key={m.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-3 py-3 font-mono font-semibold text-green-700">{m.operationCode}</td>
-                    <td className="px-3 py-3 text-slate-600 font-mono text-xs">{m.date}</td>
-                    <td className="px-3 py-3 text-slate-600 font-mono text-xs">{m.invoiceNo}</td>
-                    <td className="px-3 py-3 text-slate-900 font-medium max-w-[180px] truncate">{m.itemName}</td>
-                    <td className="px-3 py-3 text-slate-600 max-w-[150px] truncate">{m.supplierName}</td>
-                    <td className="px-3 py-3 font-mono font-bold text-green-600">{m.quantity}</td>
-                    <td className="px-3 py-3 font-mono text-slate-700">{m.unitPrice.toFixed(2)}</td>
-                    <td className="px-3 py-3 font-mono font-bold text-slate-900">{m.totalCost.toLocaleString()}</td>
-                    <td className="px-3 py-3 text-slate-700 text-xs">{m.responsibleEmployee}</td>
-                    <td className="px-3 py-3">
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => handleEdit(m)}
-                          className="p-1.5 text-brand-600 hover:bg-brand-50 rounded-lg transition-colors"
-                          aria-label="تعديل"
-                          title="تعديل"
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(m.id)}
-                          className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          aria-label="حذف"
-                          title="حذف"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden card-hover">
+        {filteredMovements.length === 0 ? (
+          <EmptyState
+            icon={ArrowDownToLine}
+            title="لا توجد حركات وارد"
+            description="سجّل أول عملية استلام بضاعة"
+            action={
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-[#E5302A] hover:bg-[#C42B24] text-white text-sm font-semibold rounded-xl transition-colors"
+              >
+                + تسجيل وارد جديد
+              </button>
+            }
+          />
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm min-w-[700px]">
+                <thead className="bg-slate-50 border-b border-slate-200">
+                  <tr>
+                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">رقم العملية</th>
+                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">التاريخ</th>
+                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">رقم الفاتورة</th>
+                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">الصنف</th>
+                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">المورد</th>
+                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">الكمية</th>
+                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">سعر الوحدة</th>
+                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">الإجمالي</th>
+                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">المسؤول</th>
+                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">إجراءات</th>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {paginatedMovements.map((m) => (
+                    <tr key={m.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="px-3 py-3 font-mono font-semibold text-green-700">{m.operationCode}</td>
+                      <td className="px-3 py-3 text-slate-600 font-mono text-xs">{m.date}</td>
+                      <td className="px-3 py-3 text-slate-600 font-mono text-xs">{m.invoiceNo}</td>
+                      <td className="px-3 py-3 text-slate-900 font-medium max-w-[180px] truncate">{m.itemName}</td>
+                      <td className="px-3 py-3 text-slate-600 max-w-[150px] truncate">{m.supplierName}</td>
+                      <td className="px-3 py-3 font-mono font-bold text-green-600">{m.quantity}</td>
+                      <td className="px-3 py-3 font-mono text-slate-700">{m.unitPrice.toFixed(2)}</td>
+                      <td className="px-3 py-3 font-mono font-bold text-slate-900">{m.totalCost.toLocaleString()}</td>
+                      <td className="px-3 py-3 text-slate-700 text-xs">{m.responsibleEmployee}</td>
+                      <td className="px-3 py-3">
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => handleEdit(m)}
+                            className="p-1.5 text-brand-600 hover:bg-brand-50 rounded-lg transition-colors"
+                            aria-label="تعديل"
+                            title="تعديل"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(m.id)}
+                            className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            aria-label="حذف"
+                            title="حذف"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              total={filteredMovements.length}
+              pageSize={PAGE_SIZE}
+              onPage={setPage}
+            />
+          </>
+        )}
       </div>
 
       <Modal

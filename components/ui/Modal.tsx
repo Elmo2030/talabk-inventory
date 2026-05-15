@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode, useEffect } from 'react';
+import { ReactNode, useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 
 interface ModalProps {
@@ -25,6 +25,8 @@ export default function Modal({
   children,
   size = 'md',
 }: ModalProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
   // Close on Escape key
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -34,6 +36,10 @@ export default function Modal({
     if (isOpen) {
       document.addEventListener('keydown', handleEsc);
       document.body.style.overflow = 'hidden';
+      // Auto-focus the modal container when it opens
+      setTimeout(() => {
+        containerRef.current?.focus();
+      }, 0);
     }
 
     return () => {
@@ -45,7 +51,11 @@ export default function Modal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4">
+    <div
+      ref={containerRef}
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4"
+      tabIndex={-1}
+    >
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
@@ -54,6 +64,9 @@ export default function Modal({
 
       {/* Modal Content */}
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-title"
         className={`
           relative w-full ${sizeStyles[size]}
           bg-white sm:rounded-xl rounded-t-2xl shadow-2xl
@@ -63,11 +76,11 @@ export default function Modal({
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-[#E5E5EA]">
-          <h2 className="text-lg font-semibold text-[#1C1C1E]">{title}</h2>
+          <h2 id="modal-title" className="text-lg font-semibold text-[#1C1C1E]">{title}</h2>
           <button
             onClick={onClose}
             className="p-1.5 rounded-lg text-[#6C6C70] hover:text-[#1C1C1E] hover:bg-[#F2F2F7] transition-colors"
-            aria-label="إغلاق"
+            aria-label="إغلاق النافذة"
           >
             <X className="w-5 h-5" />
           </button>
