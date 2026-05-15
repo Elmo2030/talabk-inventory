@@ -35,7 +35,17 @@ function TalabkLogo({ size = 48 }: { size?: number }) {
   );
 }
 
-const AUTH_PATHS = ['/login', '/setup'];
+// Pages that don't require login — rendered fullscreen without sidebar
+const PUBLIC_PATHS  = ['/', '/register', '/pricing', '/about', '/contact', '/403'];
+// Auth-flow pages — fullscreen, redirect away if already logged in
+const AUTH_PATHS    = ['/login', '/setup', '/superadmin/login', '/reset-password'];
+// Combined: all pages that bypass the "must be logged in" guard
+const NO_AUTH_PATHS = [...PUBLIC_PATHS, ...AUTH_PATHS];
+
+function isNoAuthPath(pathname: string) {
+  return NO_AUTH_PATHS.some(p => pathname === p) ||
+    pathname.startsWith('/auth/'); // /auth/callback etc.
+}
 
 export default function AppShell({ children }: { children: ReactNode }) {
   const { isLoggedIn, isSetupDone, initialized } = useAuth();
@@ -45,21 +55,14 @@ export default function AppShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!initialized) return;
 
-    if (!isSetupDone && pathname !== '/setup') {
-      router.replace('/setup');
-      return;
-    }
-    if (isSetupDone && !isLoggedIn && !AUTH_PATHS.includes(pathname)) {
+    // Only redirect to login if the page actually requires auth
+    if (isSetupDone && !isLoggedIn && !isNoAuthPath(pathname)) {
       router.replace('/login');
-      return;
-    }
-    if (isLoggedIn && AUTH_PATHS.includes(pathname)) {
-      router.replace('/');
     }
   }, [initialized, isLoggedIn, isSetupDone, pathname, router]);
 
-  // 1. Not yet initialized — spinner
-  if (!initialized) {
+  // 1. Not yet initialized — show spinner only for protected pages
+  if (!initialized && !isNoAuthPath(pathname)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F2F2F7]">
         <div className="flex flex-col items-center gap-4">
@@ -70,31 +73,17 @@ export default function AppShell({ children }: { children: ReactNode }) {
     );
   }
 
-  // 2. Setup not done, not on /setup — wait for redirect
-  if (!isSetupDone && pathname !== '/setup') {
+  // 2. Protected page + not logged in — wait for redirect
+  if (initialized && isSetupDone && !isLoggedIn && !isNoAuthPath(pathname)) {
     return null;
   }
 
-  // 3. Setup done, not logged in, not on auth page — wait for redirect
-  if (isSetupDone && !isLoggedIn && !AUTH_PATHS.includes(pathname)) {
-    return null;
+  // 3. Public or auth pages — fullscreen, no sidebar
+  if (isNoAuthPath(pathname)) {
+    return <>{children}</>;
   }
 
-  // 4. Logged in but on auth page — wait for redirect
-  if (isLoggedIn && AUTH_PATHS.includes(pathname)) {
-    return null;
-  }
-
-  // 5. Auth pages — fullscreen, no sidebar
-  if (AUTH_PATHS.includes(pathname)) {
-    return (
-      <div className="min-h-screen bg-[#F2F2F7]">
-        {children}
-      </div>
-    );
-  }
-
-  // 6. Full app layout
+  // 4. Full app layout (logged in)
   return (
     <div className="flex min-h-screen">
       <Sidebar />
