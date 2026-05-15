@@ -103,7 +103,6 @@ export default function SalesOrderForm({ onSuccess, onCancel }: Props) {
         },
       ]);
     }
-    setShowItemPicker(false);
     setItemSearch('');
   };
 
@@ -359,22 +358,39 @@ export default function SalesOrderForm({ onSuccess, onCancel }: Props) {
                     {pickerItems.length === 0 ? (
                       <p className="text-center py-8 text-sm text-[#6C6C70]">لا توجد نتائج</p>
                     ) : (
-                      pickerItems.map((item) => (
-                        <button
-                          key={item.id}
-                          onClick={() => addToCart(item)}
-                          className="w-full flex items-center justify-between px-4 py-3 hover:bg-[#F2F2F7] text-right transition-colors"
-                        >
-                          <div>
-                            <p className="text-sm font-medium text-[#1C1C1E]">{item.name}</p>
-                            <p className="text-xs text-[#6C6C70]">{item.code} · {item.category}</p>
-                          </div>
-                          <span className="text-sm font-semibold text-[#E5302A] whitespace-nowrap">
-                            {fmt(item.sellingPrice)} د.ل
-                          </span>
-                        </button>
-                      ))
+                      pickerItems.map((item) => {
+                        const inCart = cart.some((c) => c.itemId === item.id);
+                        return (
+                          <button
+                            key={item.id}
+                            onClick={() => addToCart(item)}
+                            className={`w-full flex items-center justify-between px-4 py-3 text-right transition-colors ${inCart ? 'bg-green-50 hover:bg-green-100' : 'hover:bg-[#F2F2F7]'}`}
+                          >
+                            <div className="flex items-center gap-2">
+                              {inCart && (
+                                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-green-500 text-white text-[10px] font-bold flex-shrink-0">✓</span>
+                              )}
+                              <div>
+                                <p className="text-sm font-medium text-[#1C1C1E]">{item.name}</p>
+                                <p className="text-xs text-[#6C6C70]">{item.code} · {item.category}</p>
+                              </div>
+                            </div>
+                            <span className="text-sm font-semibold text-[#E5302A] whitespace-nowrap">
+                              {fmt(item.sellingPrice)} د.ل
+                            </span>
+                          </button>
+                        );
+                      })
                     )}
+                  </div>
+                  {/* Done button */}
+                  <div className="p-3 border-t border-[#E5E5EA]">
+                    <button
+                      onClick={() => setShowItemPicker(false)}
+                      className="w-full py-2.5 bg-[#E5302A] text-white rounded-xl font-semibold text-sm"
+                    >
+                      تم الاختيار ✓
+                    </button>
                   </div>
                 </div>
               </div>

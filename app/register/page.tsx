@@ -116,10 +116,23 @@ export default function RegisterPage() {
         <div className="w-full max-w-md text-center">
           <CheckCircle2 className="w-20 h-20 text-green-500 mx-auto mb-5" />
           <h1 className="text-2xl font-bold text-[#1C1C1E] mb-3">تم استلام طلبك بنجاح! 🎉</h1>
-          <p className="text-sm text-[#6C6C70] leading-relaxed mb-6">
-            سنراجع طلبك خلال <strong>24-48 ساعة</strong> وسنرسل لك رابط تفعيل الحساب على:{' '}
+          <p className="text-sm text-[#6C6C70] leading-relaxed mb-4">
+            سنراجع طلبك <strong>خلال ساعات قليلة</strong> وسنرسل لك رابط تفعيل الحساب على:{' '}
             <strong>{submittedEmail}</strong>
           </p>
+
+          {/* Trial mode hint */}
+          <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-sm text-green-800 text-right mb-4">
+            <p className="font-semibold mb-2">💡 في انتظار الموافقة، يمكنك استعراض النظام التجريبي مباشرة</p>
+            <a
+              href="https://inventory-app-nine-lilac.vercel.app/app/demo/dashboard"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 mt-1 px-4 py-2 rounded-xl bg-green-600 hover:bg-green-700 text-white text-xs font-semibold transition-colors"
+            >
+              استعراض النسخة التجريبية
+            </a>
+          </div>
 
           {/* Info box */}
           <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 mb-6 text-right">
@@ -147,7 +160,7 @@ export default function RegisterPage() {
           </div>
 
           <p className="mt-4 text-xs text-[#AEAEB2]">
-            تواصل معنا عبر WhatsApp إذا لم تصلك رسالة خلال 48 ساعة
+            تواصل معنا عبر WhatsApp إذا لم تصلك رسالة خلال ساعات قليلة
           </p>
         </div>
       </div>

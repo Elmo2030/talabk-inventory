@@ -235,7 +235,7 @@ export default function LoginPage() {
               </div>
 
               {/* Forgot password link */}
-              <div className="flex justify-start">
+              <div className="flex justify-end">
                 <button
                   type="button"
                   onClick={() => setForgotMode(true)}

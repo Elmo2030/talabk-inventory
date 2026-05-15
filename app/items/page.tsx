@@ -153,7 +153,76 @@ export default function ItemsPage() {
           />
         ) : (
           <>
-            <div className="overflow-x-auto">
+            {/* Mobile cards — sm and below */}
+            <div className="sm:hidden divide-y divide-slate-100">
+              {paginatedItems.map((item) => {
+                const balance = getBalance(item.id);
+                const isBelowMin = balance <= item.minStockLevel;
+                const isSuspended = item.status === 'SUSPENDED';
+                return (
+                  <div
+                    key={item.id}
+                    className={`bg-white border border-[#E5E5EA] rounded-xl p-4 space-y-2 m-3 ${isSuspended ? 'bg-red-50/60' : ''}`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-[11px] text-slate-400 font-mono">{item.code}</p>
+                        <p className="text-sm font-bold text-slate-900 truncate">{item.name}</p>
+                      </div>
+                      {item.status === 'ACTIVE' ? (
+                        <Badge variant="success">نشط</Badge>
+                      ) : (
+                        <Badge variant="danger">موقوف</Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs font-medium">
+                        {item.category}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <div>
+                        <p className="text-xs text-slate-400">الرصيد</p>
+                        <p className={`text-2xl font-bold ${isBelowMin ? 'text-amber-600' : 'text-slate-900'}`}>
+                          {balance}
+                          {isBelowMin && <AlertTriangle className="inline w-4 h-4 text-amber-500 mr-1 mb-0.5" />}
+                        </p>
+                      </div>
+                      <div className="text-left">
+                        <p className="text-xs text-slate-400">سعر البيع</p>
+                        <p className="text-sm font-semibold text-slate-700">{item.sellingPrice.toFixed(2)} د.ل</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 pt-1 border-t border-slate-100">
+                      <Link
+                        href={`/items/${item.id}`}
+                        className="p-1.5 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors"
+                        title="عرض التفاصيل"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </Link>
+                      <button
+                        onClick={() => handleEdit(item)}
+                        className="p-1.5 text-brand-600 hover:bg-brand-50 rounded-lg transition-colors"
+                        title="تعديل"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(item)}
+                        className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        title="حذف"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Desktop table — md and above */}
+            <div className="hidden sm:block overflow-x-auto">
               <table className="w-full text-sm min-w-[700px]">
                 <thead className="bg-slate-50 border-b border-slate-200">
                   <tr>
@@ -239,6 +308,7 @@ export default function ItemsPage() {
                 </tbody>
               </table>
             </div>
+
             <Pagination
               page={page}
               totalPages={totalPages}

@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { settingsService, SettingKey, SystemSettings } from '@/lib/settingsService';
+import { useTenant } from '@/lib/TenantContext';
+import { getSupabaseClient } from '@/lib/supabase/client';
 import Button from '@/components/ui/Button';
-import Input from '@/components/ui/Input';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import {
@@ -21,6 +22,9 @@ import {
   RotateCcw,
   Save,
   CheckCircle2,
+  Cloud,
+  CloudOff,
+  Loader2,
 } from 'lucide-react';
 
 // ============================================
@@ -80,10 +84,12 @@ function ListEditor({
   listKey,
   items,
   onSave,
+  isSaving,
 }: {
   listKey: TabId;
   items: string[];
-  onSave: (key: TabId, items: string[]) => void;
+  onSave: (key: TabId, items: string[]) => Promise<void>;
+  isSaving: boolean;
 }) {
   const [localItems, setLocalItems] = useState<string[]>(items);
   const [newItem, setNewItem] = useState('');
@@ -111,8 +117,8 @@ function ListEditor({
     setLocalItems((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleSave = () => {
-    onSave(listKey, localItems);
+  const handleSave = async () => {
+    await onSave(listKey, localItems);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
@@ -177,11 +183,11 @@ function ListEditor({
           <Button
             variant="primary"
             size="sm"
-            icon={<Save className="w-4 h-4" />}
+            icon={isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             onClick={handleSave}
-            disabled={!hasChanges}
+            disabled={!hasChanges || isSaving}
           >
-            حفظ التغييرات
+            {isSaving ? 'جارٍ الحفظ...' : 'حفظ التغييرات'}
           </Button>
         </div>
       </div>
@@ -192,17 +198,59 @@ function ListEditor({
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<TabId>('employees');
   const [settings, setSettings] = useState<SystemSettings | null>(null);
+  const [loadingFromCloud, setLoadingFromCloud] = useState(false);
+  const [syncedWithCloud, setSyncedWithCloud] = useState(false);
+  const [savingList, setSavingList] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const toast = useToast();
   const { confirm } = useConfirm();
+  const { tenantId } = useTenant();
+  const supabase = getSupabaseClient();
 
+  // Load: show from cache immediately, then fetch from Supabase
   useEffect(() => {
+    // Instant render from localStorage
     setSettings(settingsService.getAll());
-  }, []);
 
-  const handleSaveList = (key: TabId, items: string[]) => {
-    settingsService.saveList(key, items);
-    setSettings(settingsService.getAll());
+    // Then load authoritative copy from Supabase (if we have a tenant)
+    if (!tenantId) return;
+
+    setLoadingFromCloud(true);
+    settingsService.load(supabase, tenantId)
+      .then((fresh) => {
+        setSettings(fresh);
+        setSyncedWithCloud(true);
+      })
+      .catch(() => {
+        // Cloud unreachable — localStorage cache is still shown
+        setSyncedWithCloud(false);
+      })
+      .finally(() => setLoadingFromCloud(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tenantId]);
+
+  const handleSaveList = async (key: TabId, items: string[]) => {
+    if (!tenantId) {
+      // No tenant — fall back to localStorage-only save (dev / super_admin)
+      const current = settingsService.getAll();
+      const updated = { ...current, [key]: items };
+      localStorage.setItem('inventory_system_settings', JSON.stringify(updated));
+      setSettings({ ...updated });
+      toast.success('تم الحفظ محلياً');
+      return;
+    }
+    setSavingList(true);
+    try {
+      const ok = await settingsService.saveList(supabase, tenantId, key, items);
+      setSettings(settingsService.getAll());
+      if (ok) {
+        toast.success('تم الحفظ والمزامنة مع السحابة ☁️');
+      } else {
+        toast.warning('تم الحفظ محلياً — لم نتمكن من المزامنة مع السحابة');
+      }
+    } finally {
+      setSavingList(false);
+    }
   };
 
   const handleExport = () => {
@@ -220,12 +268,16 @@ export default function SettingsPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => {
+    reader.onload = async (ev) => {
       const content = ev.target?.result as string;
-      const result = settingsService.importSettings(content);
+      if (!tenantId) {
+        toast.error('لا يمكن الاستيراد بدون tenant');
+        return;
+      }
+      const result = await settingsService.importSettings(supabase, tenantId, content);
       if (result.success) {
         setSettings(settingsService.getAll());
-        toast.success('تم استيراد الإعدادات بنجاح');
+        toast.success('تم استيراد الإعدادات وحفظها في السحابة');
       } else {
         toast.error(`فشل الاستيراد: ${result.error}`);
       }
@@ -243,7 +295,12 @@ export default function SettingsPage() {
       variant: 'danger',
     });
     if (!confirmed) return;
-    settingsService.resetToDefaults();
+
+    if (tenantId) {
+      await settingsService.resetToDefaults(supabase, tenantId);
+    } else {
+      localStorage.removeItem('inventory_system_settings');
+    }
     setSettings(settingsService.getAll());
     toast.success('تم إعادة تعيين الإعدادات للقيم الافتراضية');
   };
@@ -271,12 +328,31 @@ export default function SettingsPage() {
             <p className="text-xs sm:text-sm text-slate-500">إدارة القوائم والبيانات المرجعية</p>
           </div>
         </div>
+
+        {/* Cloud sync indicator */}
+        <div className="flex items-center gap-1.5 text-xs">
+          {loadingFromCloud ? (
+            <span className="flex items-center gap-1 text-slate-400">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              مزامنة...
+            </span>
+          ) : syncedWithCloud ? (
+            <span className="flex items-center gap-1 text-green-600">
+              <Cloud className="w-3.5 h-3.5" />
+              متزامن مع السحابة
+            </span>
+          ) : (
+            <span className="flex items-center gap-1 text-slate-400">
+              <CloudOff className="w-3.5 h-3.5" />
+              محلي فقط
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* القائمة الجانبية للتبويبات */}
         <div className="lg:col-span-1">
-
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
             <div className="px-4 py-3 bg-slate-50 border-b border-slate-200">
               <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
@@ -331,6 +407,7 @@ export default function SettingsPage() {
               listKey={activeTab}
               items={settings[activeTab]}
               onSave={handleSaveList}
+              isSaving={savingList}
             />
           </div>
 

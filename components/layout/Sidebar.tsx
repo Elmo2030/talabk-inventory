@@ -164,7 +164,7 @@ export default function Sidebar() {
             <div className="space-y-0.5">
               {group.items.map((item) => {
                 const Icon = item.icon;
-                const isActive = pathname === item.href;
+                const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href + '/'));
                 const isStockAlert = item.href === '/current-stock' && alertCount > 0;
 
                 return (

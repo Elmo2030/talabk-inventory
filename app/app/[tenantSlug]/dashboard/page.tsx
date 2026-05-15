@@ -41,19 +41,14 @@ export default function DashboardPage() {
     return map;
   }, [salesOrders]);
 
-  // ── Build chart data ──────────────────────────────────────────────────────────
+  // ── Build chart data (real data only — no fake demo numbers) ─────────────────
   const chartData = useMemo(() => {
-    const hasRealData = salesOrders.length >= 3;
-    return last30Days.map((date, i) => {
+    return last30Days.map((date) => {
       const real = salesByDay[date];
       if (real) return { date: date.slice(5), revenue: Math.round(real.revenue), profit: Math.round(real.profit) };
-      if (!hasRealData) {
-        const base = 800 + Math.sin(i * 0.4) * 300 + Math.random() * 150;
-        return { date: date.slice(5), revenue: Math.round(base), profit: Math.round(base * 0.28) };
-      }
       return { date: date.slice(5), revenue: 0, profit: 0 };
     });
-  }, [last30Days, salesByDay, salesOrders.length]);
+  }, [last30Days, salesByDay]);
 
   // ── KPI computations ─────────────────────────────────────────────────────────
   const kpis = useMemo(() => {
@@ -258,7 +253,7 @@ export default function DashboardPage() {
           <p className="text-2xl sm:text-3xl font-bold mt-1 text-[#1C1C1E] dark:text-[#F4F4F5]">
             {kpis.totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 0 })}
           </p>
-          <p className="text-xs text-[#AEAEB2] mt-1">ر.س</p>
+          <p className="text-xs text-[#AEAEB2] mt-1">د.ل</p>
         </div>
 
         {/* 2. Net Profit */}
@@ -286,7 +281,7 @@ export default function DashboardPage() {
           <p className="text-2xl sm:text-3xl font-bold mt-1 text-[#1C1C1E] dark:text-[#F4F4F5]">
             {kpis.inventoryValue.toLocaleString('en-US', { minimumFractionDigits: 0 })}
           </p>
-          <p className="text-xs text-[#AEAEB2] mt-1">ر.س · {currentStock.length} صنف</p>
+          <p className="text-xs text-[#AEAEB2] mt-1">د.ل · {currentStock.length} صنف</p>
         </div>
 
         {/* 4. Active Orders */}
@@ -317,7 +312,7 @@ export default function DashboardPage() {
           <p className="text-2xl sm:text-3xl font-bold mt-1 text-[#1C1C1E] dark:text-[#F4F4F5]">
             {extraKpis.aov.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
           </p>
-          <p className="text-xs text-[#AEAEB2] mt-1">ر.س / طلب</p>
+          <p className="text-xs text-[#AEAEB2] mt-1">د.ل / طلب</p>
         </div>
 
         {/* Delivery rate */}
@@ -370,6 +365,17 @@ export default function DashboardPage() {
           <h3 className="text-sm font-semibold text-[#1C1C1E] dark:text-[#F4F4F5] mb-4">
             المبيعات مقابل صافي الربح — آخر 30 يوماً
           </h3>
+          {salesOrders.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-[220px] text-center gap-3">
+              <div className="w-14 h-14 rounded-2xl bg-[#F2F2F7] dark:bg-[#27272A] flex items-center justify-center">
+                <TrendingUp className="w-7 h-7 text-[#C7C7CC] dark:text-[#52525B]" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-[#1C1C1E] dark:text-[#F4F4F5]">لا توجد بيانات بعد</p>
+                <p className="text-xs text-[#6C6C70] dark:text-[#A1A1AA] mt-0.5">سجّل أول طلب بيع لرؤية رسمك البياني هنا</p>
+              </div>
+            </div>
+          ) : (
           <ResponsiveContainer width="100%" height={220}>
             <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
               <defs>
@@ -404,7 +410,7 @@ export default function DashboardPage() {
                   color: isDark ? '#F4F4F5' : '#1C1C1E',
                 }}
                 formatter={(value: number, name: string) => [
-                  `${value.toLocaleString('en-US')} ر.س`,
+                  `${value.toLocaleString('en-US')} د.ل`,
                   name === 'revenue' ? 'المبيعات' : 'صافي الربح',
                 ]}
               />
@@ -412,6 +418,7 @@ export default function DashboardPage() {
               <Area type="monotone" dataKey="profit"  stroke="#22C55E" strokeWidth={2} fill="url(#profitGrad)"  dot={false} />
             </AreaChart>
           </ResponsiveContainer>
+          )}
           <div className="flex items-center gap-4 mt-3 text-xs text-[#6C6C70] dark:text-[#A1A1AA]">
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-0.5 bg-[#E5302A] rounded" /> المبيعات
@@ -479,7 +486,7 @@ export default function DashboardPage() {
               <YAxis tick={{ fontSize: 10, fill: isDark ? '#71717A' : '#9CA3AF' }} tickLine={false} axisLine={false} />
               <Tooltip
                 contentStyle={{ background: isDark ? '#18181B' : '#fff', border: `1px solid ${isDark ? '#27272A' : '#E5E5EA'}`, borderRadius: '12px', fontSize: '12px', color: isDark ? '#F4F4F5' : '#1C1C1E' }}
-                formatter={(value: number, name: string) => [`${value.toLocaleString('en-US')} ر.س`, name === 'revenue' ? 'المبيعات' : 'صافي الربح']}
+                formatter={(value: number, name: string) => [`${value.toLocaleString('en-US')} د.ل`, name === 'revenue' ? 'المبيعات' : 'صافي الربح']}
               />
               <Bar dataKey="revenue" fill="#E5302A" radius={[4,4,0,0]} name="revenue" opacity={0.85} />
               <Line type="monotone" dataKey="netProfit" stroke="#22C55E" strokeWidth={2} dot={{ fill: '#22C55E', r: 3 }} name="netProfit" />
@@ -503,7 +510,7 @@ export default function DashboardPage() {
               <YAxis tick={{ fontSize: 10, fill: isDark ? '#71717A' : '#9CA3AF' }} tickLine={false} axisLine={false} />
               <Tooltip
                 contentStyle={{ background: isDark ? '#18181B' : '#fff', border: `1px solid ${isDark ? '#27272A' : '#E5E5EA'}`, borderRadius: '12px', fontSize: '12px', color: isDark ? '#F4F4F5' : '#1C1C1E' }}
-                formatter={(value: number, name: string) => [`${value.toLocaleString('en-US')} ر.س`, name === 'revenue' ? 'الإيرادات' : 'الربح']}
+                formatter={(value: number, name: string) => [`${value.toLocaleString('en-US')} د.ل`, name === 'revenue' ? 'الإيرادات' : 'الربح']}
               />
               <Bar dataKey="revenue" fill="#E5302A" radius={[4,4,0,0]} name="revenue" opacity={0.85} />
               <Bar dataKey="profit" fill="#22C55E" radius={[4,4,0,0]} name="profit" opacity={0.85} />

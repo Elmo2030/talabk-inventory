@@ -17,6 +17,7 @@ import { useStock } from '@/lib/StockContext';
 import { SalesOrder, OrderStatus } from '@/lib/types';
 import EmptyState from '@/components/ui/EmptyState';
 import Pagination from '@/components/ui/Pagination';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 
 const PAGE_SIZE = 20;
 
@@ -51,6 +52,7 @@ function fmt(n: number) {
 export default function OrdersPage() {
   const router = useRouter();
   const { salesOrders, updateSalesOrder, deleteSalesOrder } = useStock();
+  const { confirm } = useConfirm();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'ALL'>('ALL');
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -85,6 +87,25 @@ export default function OrdersPage() {
     .reduce((s, o) => s + o.netProfit, 0);
 
   const handleStatusChange = async (order: SalesOrder, newStatus: OrderStatus) => {
+    if (newStatus === 'DELIVERED') {
+      const confirmed = await confirm({
+        title: 'تأكيد التسليم',
+        description: 'هل تأكد من أن الطلب وصل للعميل؟ لا يمكن التراجع عن هذه الحالة.',
+        variant: 'warning',
+        confirmLabel: 'نعم، تم التسليم',
+        cancelLabel: 'إلغاء',
+      });
+      if (!confirmed) return;
+    } else if (newStatus === 'CANCELLED') {
+      const confirmed = await confirm({
+        title: 'إلغاء الطلب',
+        description: 'هل أنت متأكد من إلغاء هذا الطلب؟',
+        variant: 'danger',
+        confirmLabel: 'نعم، إلغاء الطلب',
+        cancelLabel: 'تراجع',
+      });
+      if (!confirmed) return;
+    }
     await updateSalesOrder(order.id, { status: newStatus });
   };
 
