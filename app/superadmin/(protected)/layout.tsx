@@ -18,14 +18,13 @@ export default async function SuperAdminLayout({ children }: { children: ReactNo
 
   if (!user) redirect('/superadmin/login');
 
-  const { data: profileRaw } = await supabase
-    .from('user_profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-  const profile = profileRaw as unknown as { role: string } | null;
-
-  if (profile?.role !== 'super_admin') redirect('/403');
+  // Role is verified against the JWT app_metadata (injected by
+  // custom_access_token_hook). The middleware already gates the
+  // /superadmin/* path on this claim — re-check here as defence
+  // in depth without an extra DB round-trip that could fail under
+  // a brand-new session cookie.
+  const role = (user.app_metadata as Record<string, string> | undefined)?.user_role;
+  if (role !== 'super_admin') redirect('/403');
 
   return (
     <div className="flex min-h-screen bg-[#F2F2F7] dark:bg-[#09090B]">
