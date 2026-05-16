@@ -163,7 +163,13 @@ export default function BillingPage() {
   const [step,          setStep]          = useState<1 | 2 | 3>(1);
   const [selectedPlan,  setSelectedPlan]  = useState<PlanDef | null>(null);
   const [billingMonths, setBillingMonths] = useState(1);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('usdt');
+  // USDT payments are gated on having a wallet address configured.
+  // When NEXT_PUBLIC_USDT_WALLET is empty, only cash is offered to avoid
+  // taking a customer's TX hash with no destination address to verify.
+  const usdtEnabled = !!process.env.NEXT_PUBLIC_USDT_WALLET;
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(
+    usdtEnabled ? 'usdt' : 'cash',
+  );
 
   // Step 3 form
   const [txHash,      setTxHash]      = useState('');
@@ -172,8 +178,7 @@ export default function BillingPage() {
   const [submitted,   setSubmitted]   = useState(false);
   const [submitError, setSubmitError] = useState('');
 
-  const walletAddress =
-    process.env.NEXT_PUBLIC_USDT_WALLET || 'سيتم إضافة العنوان قريباً';
+  const walletAddress = process.env.NEXT_PUBLIC_USDT_WALLET ?? '';
 
   // ── Load payment history ──────────────────────────────────────────────────
 
@@ -218,7 +223,7 @@ export default function BillingPage() {
     setStep(1);
     setSelectedPlan(null);
     setBillingMonths(1);
-    setPaymentMethod('usdt');
+    setPaymentMethod(usdtEnabled ? 'usdt' : 'cash');
     setTxHash('');
     setProofNotes('');
     setSubmitting(false);
@@ -566,26 +571,28 @@ export default function BillingPage() {
                       </div>
                     </button>
 
-                    {/* USDT */}
-                    <button
-                      type="button"
-                      onClick={() => setPaymentMethod('usdt')}
-                      className={`flex flex-col items-center gap-3 p-6 rounded-xl border-2 transition-all ${
-                        paymentMethod === 'usdt'
-                          ? 'border-[#E5302A] bg-[#E5302A]/5'
-                          : 'border-[#E5E5EA] dark:border-[#2C2C2E] hover:border-[#E5302A]/50'
-                      }`}
-                    >
-                      <div className="w-14 h-14 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                        <Lock className="w-7 h-7 text-blue-600 dark:text-blue-400" />
-                      </div>
-                      <div className="text-center">
-                        <p className="font-bold text-slate-900 dark:text-white">🔐 USDT (TRC-20)</p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                          تحويل مباشر للمحفظة
-                        </p>
-                      </div>
-                    </button>
+                    {/* USDT — only shown when a wallet address is configured */}
+                    {usdtEnabled && (
+                      <button
+                        type="button"
+                        onClick={() => setPaymentMethod('usdt')}
+                        className={`flex flex-col items-center gap-3 p-6 rounded-xl border-2 transition-all ${
+                          paymentMethod === 'usdt'
+                            ? 'border-[#E5302A] bg-[#E5302A]/5'
+                            : 'border-[#E5E5EA] dark:border-[#2C2C2E] hover:border-[#E5302A]/50'
+                        }`}
+                      >
+                        <div className="w-14 h-14 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                          <Lock className="w-7 h-7 text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <div className="text-center">
+                          <p className="font-bold text-slate-900 dark:text-white">🔐 USDT (TRC-20)</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                            تحويل مباشر للمحفظة
+                          </p>
+                        </div>
+                      </button>
+                    )}
                   </div>
 
                   <div className="flex gap-3">
