@@ -234,7 +234,7 @@ export default function BillingPage() {
   // ── Submit payment request ────────────────────────────────────────────────
 
   async function handleSubmit() {
-    if (!selectedPlan || !tenantId) return;
+    if (!selectedPlan) return;
 
     if (paymentMethod === 'usdt' && !txHash.trim()) {
       setSubmitError('يرجى إدخال هاش المعاملة (TX Hash)');
@@ -248,28 +248,33 @@ export default function BillingPage() {
     setSubmitting(true);
     setSubmitError('');
 
-    const supabase = getSupabaseClient();
-    const { error } = await supabase.from('subscription_payments').insert({
-      tenant_id:      tenantId,
-      plan:           selectedPlan.key,
-      billing_months: billingMonths,
-      amount:         calcAmount(selectedPlan, billingMonths),
-      currency:       'USD',
-      payment_method: paymentMethod,
-      status:         'pending',
-      tx_hash:        paymentMethod === 'usdt' ? txHash.trim() : null,
-      proof_notes:    proofNotes.trim() || null,
-    });
+    try {
+      const res = await fetch('/api/billing/submit', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          plan:           selectedPlan.key,
+          billing_months: billingMonths,
+          payment_method: paymentMethod,
+          tx_hash:        paymentMethod === 'usdt' ? txHash.trim() : null,
+          proof_notes:    proofNotes.trim() || null,
+        }),
+      });
 
-    setSubmitting(false);
+      const json = await res.json();
 
-    if (error) {
-      setSubmitError('حدث خطأ أثناء الإرسال، يرجى المحاولة مجدداً');
-      return;
+      if (!res.ok) {
+        setSubmitError(json.error ?? 'حدث خطأ أثناء الإرسال، يرجى المحاولة مجدداً');
+        return;
+      }
+
+      setSubmitted(true);
+      loadPayments();
+    } catch {
+      setSubmitError('حدث خطأ في الاتصال، يرجى المحاولة مجدداً');
+    } finally {
+      setSubmitting(false);
     }
-
-    setSubmitted(true);
-    loadPayments();
   }
 
   // ── Render ────────────────────────────────────────────────────────────────

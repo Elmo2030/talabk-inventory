@@ -126,6 +126,9 @@ function ReviewDialog({ payment, action, onClose, onDone }: ReviewDialogProps) {
     setError('');
     const supabase = getSupabaseClient();
 
+    // Get current admin user for audit trail
+    const { data: { user } } = await supabase.auth.getUser();
+
     // 1. Update the payment record
     const { error: payErr } = await supabase
       .from('subscription_payments')
@@ -133,6 +136,7 @@ function ReviewDialog({ payment, action, onClose, onDone }: ReviewDialogProps) {
         status:      action === 'approve' ? 'approved' : 'rejected',
         admin_notes: note.trim() || null,
         reviewed_at: new Date().toISOString(),
+        reviewed_by: user?.id ?? null,
       })
       .eq('id', payment.id);
 

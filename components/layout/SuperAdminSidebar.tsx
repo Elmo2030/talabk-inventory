@@ -2,13 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, Store, Settings, LogOut, Shield } from 'lucide-react';
+import { LayoutDashboard, Store, Settings, LogOut, Shield, CreditCard } from 'lucide-react';
 import { getSupabaseClient } from '@/lib/supabase/client';
 
 const NAV = [
-  { href: '/superadmin',         label: 'لوحة التحكم',   icon: LayoutDashboard },
-  { href: '/superadmin/tenants', label: 'إدارة المتاجر', icon: Store },
-  { href: '/superadmin/settings',label: 'الإعدادات',     icon: Settings },
+  { href: '/superadmin',          label: 'لوحة التحكم',   icon: LayoutDashboard },
+  { href: '/superadmin/tenants',  label: 'إدارة المتاجر', icon: Store },
+  { href: '/superadmin/payments', label: 'المدفوعات',     icon: CreditCard },
+  { href: '/superadmin/settings', label: 'الإعدادات',     icon: Settings },
 ];
 
 function TalabkLogo({ size = 32 }: { size?: number }) {
