@@ -56,7 +56,7 @@ const FILTER_TABS: { key: FilterTab; label: string }[] = [
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString('ar-SA', {
+  return new Date(iso).toLocaleDateString('ar-LY', {
     year: 'numeric', month: 'short', day: 'numeric',
     hour: '2-digit', minute: '2-digit',
   });
@@ -173,7 +173,7 @@ function ReviewDialog({ payment, action, onClose, onDone }: ReviewDialogProps) {
             الخطة: <span className="font-medium text-slate-800 dark:text-slate-200">{PLAN_LABEL[payment.plan] ?? payment.plan}</span>
           </p>
           <p className="text-slate-600 dark:text-slate-400">
-            المبلغ: <span className="font-bold text-slate-900 dark:text-white">${payment.amount.toFixed(2)} {payment.currency}</span>
+            المبلغ: <span className="font-bold text-slate-900 dark:text-white">{payment.amount.toLocaleString('ar-LY', { minimumFractionDigits: 2 })} {payment.currency === 'LYD' ? 'د.ل' : payment.currency}</span>
           </p>
           {payment.tx_hash && (
             <p className="text-slate-600 dark:text-slate-400">

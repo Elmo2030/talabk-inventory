@@ -83,7 +83,7 @@ const STATUS_LABEL: Record<string, string> = {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString('ar-SA', {
+  return new Date(iso).toLocaleDateString('ar-LY', {
     year: 'numeric', month: 'long', day: 'numeric',
   });
 }
@@ -653,16 +653,37 @@ export default function BillingPage() {
                     <div className="space-y-5">
                       {paymentMethod === 'usdt' ? (
                         <>
-                          {/* Wallet address */}
+                          {/* Wallet address + QR */}
                           <div>
                             <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                               عنوان المحفظة (TRC-20)
                             </p>
-                            <div className="flex items-center gap-2 bg-slate-50 dark:bg-[#2C2C2E] border border-[#E5E5EA] dark:border-[#3C3C3E] rounded-xl px-4 py-3">
-                              <span className="flex-1 font-mono text-sm text-slate-700 dark:text-slate-300 break-all">
-                                {walletAddress}
-                              </span>
-                              <CopyButton text={walletAddress} />
+                            <div className="flex flex-col sm:flex-row items-start gap-3">
+                              {walletAddress && (
+                                <img
+                                  src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(walletAddress)}`}
+                                  alt="QR code"
+                                  width={120}
+                                  height={120}
+                                  className="rounded-xl border border-[#E5E5EA] dark:border-[#3C3C3E] bg-white p-1.5 flex-shrink-0"
+                                />
+                              )}
+                              <div className="flex-1 w-full space-y-2">
+                                <div className="flex items-center gap-2 bg-slate-50 dark:bg-[#2C2C2E] border border-[#E5E5EA] dark:border-[#3C3C3E] rounded-xl px-4 py-3">
+                                  <span className="flex-1 font-mono text-xs text-slate-700 dark:text-slate-300 break-all">
+                                    {walletAddress}
+                                  </span>
+                                  <CopyButton text={walletAddress} />
+                                </div>
+                                <a
+                                  href={`https://tronscan.org/#/address/${walletAddress}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                                >
+                                  عرض على TronScan ↗
+                                </a>
+                              </div>
                             </div>
                           </div>
 

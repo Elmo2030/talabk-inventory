@@ -40,7 +40,7 @@ const ORDER_STATUS_MAP: Record<string, { label: string; color: string }> = {
 
 function formatDate(iso: string) {
   const d = new Date(iso);
-  return d.toLocaleDateString('ar-SA', { year: 'numeric', month: 'short', day: 'numeric' });
+  return d.toLocaleDateString('ar-LY', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
 // ── Main page ─────────────────────────────────────────────────────────────────

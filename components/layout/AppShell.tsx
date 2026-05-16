@@ -6,6 +6,8 @@ import { useAuth } from '@/lib/AuthContext';
 import Sidebar from '@/components/layout/Sidebar';
 import LoadingGate from '@/components/layout/LoadingGate';
 import TalabkLogo from '@/components/ui/TalabkLogo';
+import CommandPalette from '@/components/ui/CommandPalette';
+import SubscriptionBanner from '@/components/layout/SubscriptionBanner';
 
 // Pages that don't require login — rendered fullscreen without sidebar
 const PUBLIC_PATHS  = ['/', '/register', '/pricing', '/about', '/contact', '/403'];
@@ -71,11 +73,15 @@ export default function AppShell({ children }: { children: ReactNode }) {
 
   // 5. Full app layout with tenant sidebar (logged-in tenant users)
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen flex-col-reverse md:flex-row">
       <Sidebar />
-      <main className="flex-1 md:mr-64 pt-14 md:pt-0 p-4 md:p-8">
-        <LoadingGate>{children}</LoadingGate>
-      </main>
+      <div className="flex-1 md:mr-64 pt-14 md:pt-0 flex flex-col">
+        <SubscriptionBanner />
+        <main className="flex-1 p-4 md:p-8">
+          <LoadingGate>{children}</LoadingGate>
+        </main>
+      </div>
+      <CommandPalette />
     </div>
   );
 }
