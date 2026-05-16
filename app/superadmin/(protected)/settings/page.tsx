@@ -210,16 +210,20 @@ export default function SuperAdminSettingsPage() {
         )}
       </section>
 
-      {/* ── Audit log ─────────────────────────────────────────────────────── */}
+      {/* ── Recent audit (preview — full page at /superadmin/audit) ────────── */}
       <section className="bg-white dark:bg-[#1C1C1E] rounded-2xl border border-[#E5E5EA] dark:border-[#2C2C2E] p-6 space-y-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
-            <Database className="w-5 h-5 text-purple-500" />
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
+              <Database className="w-5 h-5 text-purple-500" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white">آخر 10 أحداث</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">معاينة — السجل الكامل في صفحة "سجل الأحداث"</p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white">آخر الأحداث</h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400">سجل قرارات السوبر أدمن والمهام التلقائية</p>
-          </div>
+          <a href="/superadmin/audit"
+             className="text-xs font-medium text-purple-600 hover:underline">عرض الكل ↗</a>
         </div>
 
         {loading ? (
@@ -230,7 +234,7 @@ export default function SuperAdminSettingsPage() {
           </p>
         ) : (
           <div className="divide-y divide-slate-100 dark:divide-[#2C2C2E]/50">
-            {audit.map(e => (
+            {audit.slice(0, 10).map(e => (
               <div key={e.id} className="py-3 flex items-start justify-between gap-3 text-sm">
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-slate-900 dark:text-white">
