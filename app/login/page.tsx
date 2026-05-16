@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { Eye, EyeOff, AlertCircle, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 import TalabkLogo from '@/components/ui/TalabkLogo';
 
-export default function LoginPage() {
+// ── Inner component — uses useSearchParams, must be inside <Suspense> ─────
+function LoginPageInner() {
   const router       = useRouter();
   const searchParams = useSearchParams();
   const supabase     = getSupabaseClient();
@@ -295,5 +296,18 @@ export default function LoginPage() {
 
       </div>
     </div>
+  );
+}
+
+// ── Page export wrapped in Suspense (required for useSearchParams) ────────
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#F2F2F7] flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-[#E5302A]/30 border-t-[#E5302A] rounded-full animate-spin" />
+      </div>
+    }>
+      <LoginPageInner />
+    </Suspense>
   );
 }
