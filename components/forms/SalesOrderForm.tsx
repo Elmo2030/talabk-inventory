@@ -1,5 +1,5 @@
 'use client';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Plus, Minus, Trash2, Search, X, ShoppingCart, User, MapPin, Package, Tag, CheckCircle, AlertCircle } from 'lucide-react';
 import { useStock } from '@/lib/StockContext';
 import { Item, Coupon } from '@/lib/types';
@@ -8,6 +8,8 @@ import { ShippingCalcResult } from '@/lib/data/talabkCities';
 import { SORTED_CITIES, DeliveryType, getBasePrice, TALABK_CITIES } from '@/lib/data/talabkCities';
 import TalabkCalculator from '@/components/shipping/TalabkCalculator';
 import { couponsStorage } from '@/lib/storage/couponsStorage';
+import { storeSettingsService } from '@/lib/services/storeSettingsService';
+import type { StoreSettings } from '@/lib/types';
 
 interface Props {
   onSuccess: () => void;
@@ -63,15 +65,24 @@ export default function SalesOrderForm({ onSuccess, onCancel }: Props) {
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
 
-  // Load VAT settings from localStorage
-  const vatSettings = (() => {
+  // VAT settings — loaded from Supabase with localStorage fallback
+  const [storeSettings, setStoreSettings] = useState<StoreSettings>(() => {
     try {
       const raw = typeof window !== 'undefined' ? localStorage.getItem('talabk_store_settings') : null;
       return raw ? JSON.parse(raw) : {};
     } catch { return {}; }
-  })();
-  const vatEnabled: boolean = vatSettings.vatEnabled ?? false;
-  const vatRate: number = vatSettings.vatRate ?? 15;
+  });
+
+  useEffect(() => {
+    storeSettingsService.get()
+      .then((s) => setStoreSettings(s))
+      .catch(() => {
+        // Supabase unavailable — localStorage fallback already applied in initial state
+      });
+  }, []);
+
+  const vatEnabled: boolean = storeSettings.vatEnabled ?? false;
+  const vatRate: number = storeSettings.vatRate ?? 15;
 
   // Coupon
   const [couponInput, setCouponInput] = useState('');

@@ -1,9 +1,11 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { Plus, Trash2, Calculator, Package, TrendingDown, FileText } from 'lucide-react';
 import { useStock } from '@/lib/StockContext';
 import { LandedCostMethod } from '@/lib/types';
+import type { StoreSettings } from '@/lib/types';
+import { storeSettingsService } from '@/lib/services/storeSettingsService';
 import { computeInvoiceItems } from '@/lib/landedCost';
 import { useToast } from '@/components/ui/Toast';
 
@@ -73,15 +75,24 @@ export default function PurchaseInvoiceForm({ onSuccess, onCancel }: Props) {
   // Loading
   const [saving, setSaving] = useState(false);
 
-  // VAT settings from localStorage
-  const vatSettings = (() => {
+  // VAT settings — loaded from Supabase with localStorage fallback
+  const [storeSettings, setStoreSettings] = useState<StoreSettings>(() => {
     try {
       const raw = typeof window !== 'undefined' ? localStorage.getItem('talabk_store_settings') : null;
       return raw ? JSON.parse(raw) : {};
     } catch { return {}; }
-  })();
-  const vatEnabled: boolean = vatSettings.vatEnabled ?? false;
-  const vatRate: number = vatSettings.vatRate ?? 15;
+  });
+
+  useEffect(() => {
+    storeSettingsService.get()
+      .then((s) => setStoreSettings(s))
+      .catch(() => {
+        // Supabase unavailable — localStorage fallback already applied in initial state
+      });
+  }, []);
+
+  const vatEnabled: boolean = storeSettings.vatEnabled ?? false;
+  const vatRate: number = storeSettings.vatRate ?? 15;
 
   // ── Derived data ─────────────────────────────────────────────────────────────
 

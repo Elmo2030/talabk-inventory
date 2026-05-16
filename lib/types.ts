@@ -70,6 +70,7 @@ export type StoreSettings = {
   vatEnabled?: boolean;      // تفعيل الضريبة
   vatRate?: number;          // نسبة الضريبة % (e.g. 15)
   vatNumber?: string;        // الرقم الضريبي
+  storeName?: string;        // اسم المتجر
 };
 
 export type StockInMovement = {

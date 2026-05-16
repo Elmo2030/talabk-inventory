@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { settingsService, SettingKey, SystemSettings } from '@/lib/settingsService';
 import { useTenant } from '@/lib/TenantContext';
 import { getSupabaseClient } from '@/lib/supabase/client';
+import { storeSettingsService } from '@/lib/services/storeSettingsService';
 import Button from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
@@ -218,7 +219,7 @@ export default function SettingsPage() {
     // Instant render from localStorage
     setSettings(settingsService.getAll());
 
-    // Load VAT settings
+    // Load VAT settings — first from localStorage (instant), then from Supabase
     try {
       const raw = localStorage.getItem('talabk_store_settings');
       if (raw) {
@@ -230,6 +231,16 @@ export default function SettingsPage() {
     } catch {
       // ignore parse errors
     }
+
+    storeSettingsService.get()
+      .then((s) => {
+        setVatEnabled(s.vatEnabled ?? false);
+        setVatRate(s.vatRate ?? 15);
+        setVatNumber(s.vatNumber ?? '');
+      })
+      .catch(() => {
+        // Supabase unreachable — localStorage cache already applied above
+      });
 
     // Then load authoritative copy from Supabase (if we have a tenant)
     if (!tenantId) return;
@@ -276,7 +287,14 @@ export default function SettingsPage() {
     setSavingVat(true);
     try {
       const vatSettings = { vatEnabled, vatRate, vatNumber };
+      // Always write to localStorage as fast local cache
       localStorage.setItem('talabk_store_settings', JSON.stringify(vatSettings));
+      // Also persist to Supabase (falls back gracefully if unavailable)
+      try {
+        await storeSettingsService.save(vatSettings);
+      } catch {
+        // Supabase unavailable — localStorage write above is the only copy, which is fine
+      }
       toast.success('تم حفظ إعدادات الضريبة');
     } finally {
       setSavingVat(false);

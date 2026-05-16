@@ -153,3 +153,43 @@ export const mockSalesOrdersService = {
   delete: async (id: string): Promise<void> =>
     Promise.resolve(salesOrdersStorage.delete(id)),
 };
+
+// ── Coupons ───────────────────────────────────────────────────────────────────
+
+import { couponsStorage } from './couponsStorage';
+import { Coupon } from '@/lib/types';
+
+export const mockCouponsService = {
+  getAll: async (): Promise<Coupon[]> =>
+    Promise.resolve(couponsStorage.getAll()),
+  getByCode: async (code: string): Promise<Coupon | null> =>
+    Promise.resolve(couponsStorage.getByCode(code)),
+  create: async (
+    coupon: Omit<Coupon, 'id' | 'usedCount' | 'createdAt'>
+  ): Promise<Coupon> =>
+    Promise.resolve(couponsStorage.create(coupon)),
+  update: async (id: string, updates: Partial<Coupon>): Promise<Coupon> =>
+    Promise.resolve(couponsStorage.update(id, updates)),
+  incrementUsed: async (id: string): Promise<void> =>
+    Promise.resolve(couponsStorage.incrementUsed(id)),
+  delete: async (id: string): Promise<void> =>
+    Promise.resolve(couponsStorage.delete(id)),
+};
+
+// ── Return Orders ─────────────────────────────────────────────────────────────
+
+import { returnsStorage } from './returnsStorage';
+import { ReturnOrder } from '@/lib/types';
+
+export const mockReturnsService = {
+  getAll: async (): Promise<ReturnOrder[]> =>
+    Promise.resolve(returnsStorage.getAll()),
+  create: async (
+    ret: Omit<ReturnOrder, 'id' | 'returnNumber' | 'createdAt'>
+  ): Promise<ReturnOrder> =>
+    Promise.resolve(returnsStorage.create(ret)),
+  update: async (id: string, updates: Partial<ReturnOrder>): Promise<ReturnOrder> =>
+    Promise.resolve(returnsStorage.update(id, updates)),
+  delete: async (id: string): Promise<void> =>
+    Promise.resolve(returnsStorage.delete(id)),
+};

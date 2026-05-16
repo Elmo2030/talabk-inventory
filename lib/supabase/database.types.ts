@@ -407,6 +407,62 @@ export type Database = {
         Update: Partial<Database['public']['Tables']['registration_requests']['Insert']>;
         Relationships: [];
       };
+      // ── Appointments ─────────────────────────────────────────────
+      appointments: {
+        Row: {
+          id: string;
+          customer_name: string;
+          customer_phone: string;
+          service: string;
+          staff_name: string | null;
+          date: string;
+          time: string;
+          duration_minutes: number;
+          notes: string | null;
+          status: 'SCHEDULED' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
+          created_at: string;
+          tenant_id: string | null;
+        };
+        Insert: {
+          id?: string;
+          customer_name: string;
+          customer_phone?: string;
+          service: string;
+          staff_name?: string | null;
+          date: string;
+          time: string;
+          duration_minutes?: number;
+          notes?: string | null;
+          status?: 'SCHEDULED' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
+          created_at?: string;
+          tenant_id?: string | null;
+        };
+        Update: Partial<Database['public']['Tables']['appointments']['Insert']>;
+        Relationships: [];
+      };
+      // ── Store Settings ────────────────────────────────────────────
+      store_settings: {
+        Row: {
+          id: string;
+          tenant_id: string | null;
+          vat_enabled: boolean;
+          vat_rate: number;
+          vat_number: string | null;
+          store_name: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id?: string | null;
+          vat_enabled?: boolean;
+          vat_rate?: number;
+          vat_number?: string | null;
+          store_name?: string | null;
+          updated_at?: string;
+        };
+        Update: Partial<Database['public']['Tables']['store_settings']['Insert']>;
+        Relationships: [];
+      };
       subscription_events: {
         Row: {
           id: string;
@@ -431,6 +487,90 @@ export type Database = {
         };
         Update: Partial<Database['public']['Tables']['subscription_events']['Insert']>;
         Relationships: [];
+      };
+      // ── Coupons ───────────────────────────────────────────────
+      coupons: {
+        Row: {
+          id: string;
+          code: string;
+          type: 'fixed' | 'percentage';
+          value: number;
+          min_order_value: number;
+          max_uses: number;
+          used_count: number;
+          is_active: boolean;
+          expires_at: string | null;
+          created_at: string;
+          tenant_id: string | null;
+        };
+        Insert: {
+          id?: string;
+          code: string;
+          type?: 'fixed' | 'percentage';
+          value: number;
+          min_order_value?: number;
+          max_uses?: number;
+          used_count?: number;
+          is_active?: boolean;
+          expires_at?: string | null;
+          created_at?: string;
+          tenant_id?: string | null;
+        };
+        Update: Partial<Database['public']['Tables']['coupons']['Insert']>;
+        Relationships: [
+          {
+            foreignKeyName: "coupons_tenant_id_fkey";
+            columns: ["tenant_id"];
+            isOneToOne: false;
+            referencedRelation: "tenants";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      // ── Return Orders ─────────────────────────────────────────
+      return_orders: {
+        Row: {
+          id: string;
+          return_number: string;
+          original_order_id: string;
+          original_order_number: string;
+          customer_name: string;
+          customer_phone: string;
+          items: unknown;
+          reason: string;
+          refund_amount: number;
+          restock_items: boolean;
+          status: 'PENDING' | 'APPROVED' | 'REJECTED';
+          notes: string;
+          created_at: string;
+          tenant_id: string | null;
+        };
+        Insert: {
+          id?: string;
+          return_number: string;
+          original_order_id: string;
+          original_order_number: string;
+          customer_name: string;
+          customer_phone?: string;
+          items?: unknown;
+          reason?: string;
+          refund_amount?: number;
+          restock_items?: boolean;
+          status?: 'PENDING' | 'APPROVED' | 'REJECTED';
+          notes?: string;
+          created_at?: string;
+          tenant_id?: string | null;
+        };
+        Update: Partial<Database['public']['Tables']['return_orders']['Insert']>;
+        Relationships: [
+          {
+            foreignKeyName: "return_orders_tenant_id_fkey";
+            columns: ["tenant_id"];
+            isOneToOne: false;
+            referencedRelation: "tenants";
+            referencedColumns: ["id"];
+          }
+        ];
       };
     };
     Views: {

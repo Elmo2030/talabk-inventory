@@ -9,12 +9,20 @@ const supabase = () => getSupabaseClient();
 
 // ── Number generation ────────────────────────────────────────────────────────
 async function genInvoiceNumber(): Promise<string> {
-  const year = new Date().getFullYear();
-  const { count } = await supabase()
-    .from('purchase_invoices')
-    .select('*', { count: 'exact', head: true });
-  const next = (count ?? 0) + 1;
-  return `PO-${year}-${String(next).padStart(4, '0')}`;
+  const { data: { session } } = await supabase().auth.getSession();
+  const tenantId = session?.user?.app_metadata?.tenant_id as string | undefined;
+  if (!tenantId) {
+    const year = new Date().getFullYear();
+    return `PO-${year}-${Date.now().toString().slice(-4)}`;
+  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase() as any).rpc('next_order_number', {
+    p_tenant_id: tenantId,
+    p_prefix: 'PO',
+    p_year: new Date().getFullYear(),
+  });
+  if (error || !data) throw new Error(`فشل توليد رقم الفاتورة: ${(error as { message?: string })?.message}`);
+  return data as string;
 }
 
 // ── Mapper ───────────────────────────────────────────────────────────────────
@@ -80,11 +88,15 @@ function toInsert(
 
 // ── Service ──────────────────────────────────────────────────────────────────
 export const purchaseInvoicesService = {
-  async getAll(): Promise<PurchaseInvoice[]> {
+  async getAll(page = 0, pageSize = 200): Promise<PurchaseInvoice[]> {
+    const from = page * pageSize;
+    const to   = from + pageSize - 1;
+
     const { data, error } = await supabase()
       .from('purchase_invoices')
       .select('*')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .range(from, to);
 
     if (error) throw new Error(`فشل جلب فواتير الشراء: ${error.message}`);
     return (data ?? []).map(mapRow);

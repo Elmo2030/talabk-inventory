@@ -8,12 +8,22 @@ const supabase = () => getSupabaseClient();
 
 // ── Number generation ────────────────────────────────────────────────────────
 async function genOrderNumber(): Promise<string> {
-  const year = new Date().getFullYear();
-  const { count } = await supabase()
-    .from('sales_orders')
-    .select('*', { count: 'exact', head: true });
-  const next = (count ?? 0) + 1;
-  return `SO-${year}-${String(next).padStart(4, '0')}`;
+  // Get current tenant from session
+  const { data: { session } } = await supabase().auth.getSession();
+  const tenantId = session?.user?.app_metadata?.tenant_id as string | undefined;
+  if (!tenantId) {
+    // Fallback for non-tenant context: timestamp-based
+    const year = new Date().getFullYear();
+    return `SO-${year}-${Date.now().toString().slice(-4)}`;
+  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase() as any).rpc('next_order_number', {
+    p_tenant_id: tenantId,
+    p_prefix: 'SO',
+    p_year: new Date().getFullYear(),
+  });
+  if (error || !data) throw new Error(`فشل توليد رقم الطلب: ${(error as { message?: string })?.message}`);
+  return data as string;
 }
 
 // ── Mapper row → SalesOrder ──────────────────────────────────────────────────
@@ -71,11 +81,15 @@ function mapRow(row: SORow): SalesOrder {
 
 // ── Service ──────────────────────────────────────────────────────────────────
 export const salesOrdersService = {
-  async getAll(): Promise<SalesOrder[]> {
+  async getAll(page = 0, pageSize = 200): Promise<SalesOrder[]> {
+    const from = page * pageSize;
+    const to   = from + pageSize - 1;
+
     const { data, error } = await supabase()
       .from('sales_orders')
       .select('*')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .range(from, to);
 
     if (error) throw new Error(`فشل جلب طلبات البيع: ${error.message}`);
     return (data ?? []).map(mapRow);

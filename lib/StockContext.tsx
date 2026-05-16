@@ -26,6 +26,8 @@ import { stockOutService } from '@/lib/services/stockOutService';
 import { currentStockService } from '@/lib/services/currentStockService';
 import { purchaseInvoicesService } from '@/lib/services/purchaseInvoicesService';
 import { salesOrdersService } from '@/lib/services/salesOrdersService';
+import { couponsService } from '@/lib/services/couponsService';
+import { returnsService } from '@/lib/services/returnsService';
 
 // Mock mode imports — only active when NEXT_PUBLIC_USE_MOCK=true
 import {
@@ -36,6 +38,8 @@ import {
   mockCurrentStockService,
   mockPurchaseInvoicesService,
   mockSalesOrdersService,
+  mockCouponsService,
+  mockReturnsService,
 } from '@/lib/storage/mockServices';
 import { seedMockDataIfNeeded } from '@/lib/storage/seedData';
 import { setInvoicesTenantPrefix } from '@/lib/storage/purchaseInvoicesStorage';
@@ -64,6 +68,10 @@ const _stockView  = USE_MOCK ? mockCurrentStockService : currentStockService;
 // Purchase invoices & sales orders: use Supabase in production, localStorage mock in demo mode
 const _purchases  = USE_MOCK ? mockPurchaseInvoicesService : purchaseInvoicesService;
 const _orders     = USE_MOCK ? mockSalesOrdersService     : salesOrdersService;
+
+// Coupons & returns: use Supabase in production, localStorage mock in demo mode
+export const _coupons = USE_MOCK ? mockCouponsService : couponsService;
+export const _returns = USE_MOCK ? mockReturnsService : returnsService;
 
 // ============================================
 // Context Type

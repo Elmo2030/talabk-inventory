@@ -14,8 +14,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { Appointment, AppointmentStatus } from '@/lib/types';
-import { appointmentsStorage, setAppointmentsTenantPrefix } from '@/lib/storage/appointmentsStorage';
-import { getSupabaseClient } from '@/lib/supabase/client';
+import { appointmentsService } from '@/lib/services/appointmentsService';
 import Modal from '@/components/ui/Modal';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
@@ -212,16 +211,18 @@ export default function AppointmentsPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editing, setEditing] = useState<Appointment | null>(null);
 
-  // Init tenant prefix and load
+  // Load from Supabase on mount
   useEffect(() => {
-    getSupabaseClient().auth.getSession().then(({ data: { session } }) => {
-      const prefix = session?.user?.id ?? 'anon';
-      setAppointmentsTenantPrefix(prefix);
-      setAppointments(appointmentsStorage.getAll());
-    });
+    appointmentsService.getAll()
+      .then((data) => setAppointments(data))
+      .catch(() => setAppointments([]));
   }, []);
 
-  const reload = () => setAppointments(appointmentsStorage.getAll());
+  const reload = () => {
+    appointmentsService.getAll()
+      .then((data) => setAppointments(data))
+      .catch(() => {});
+  };
 
   const filtered = useMemo(() => {
     const today = todayStr();
@@ -261,17 +262,21 @@ export default function AppointmentsPage() {
     };
   }, [appointments]);
 
-  const handleSave = (form: FormState) => {
-    if (editing) {
-      appointmentsStorage.update(editing.id, form);
-      toast.success('تم تحديث الموعد');
-    } else {
-      appointmentsStorage.create(form);
-      toast.success('تم إضافة الموعد');
+  const handleSave = async (form: FormState) => {
+    try {
+      if (editing) {
+        await appointmentsService.update(editing.id, form);
+        toast.success('تم تحديث الموعد');
+      } else {
+        await appointmentsService.create({ ...form, durationMinutes: form.durationMinutes });
+        toast.success('تم إضافة الموعد');
+      }
+      reload();
+      setIsFormOpen(false);
+      setEditing(null);
+    } catch {
+      toast.error('حدث خطأ أثناء الحفظ');
     }
-    reload();
-    setIsFormOpen(false);
-    setEditing(null);
   };
 
   const handleDelete = async (apt: Appointment) => {
@@ -283,15 +288,23 @@ export default function AppointmentsPage() {
       variant: 'danger',
     });
     if (!ok) return;
-    appointmentsStorage.delete(apt.id);
-    reload();
-    toast.success('تم حذف الموعد');
+    try {
+      await appointmentsService.delete(apt.id);
+      reload();
+      toast.success('تم حذف الموعد');
+    } catch {
+      toast.error('حدث خطأ أثناء الحذف');
+    }
   };
 
-  const handleStatusChange = (apt: Appointment, status: AppointmentStatus) => {
-    appointmentsStorage.update(apt.id, { status });
-    reload();
-    toast.success(`تم تحديث حالة الموعد`);
+  const handleStatusChange = async (apt: Appointment, status: AppointmentStatus) => {
+    try {
+      await appointmentsService.update(apt.id, { status });
+      reload();
+      toast.success(`تم تحديث حالة الموعد`);
+    } catch {
+      toast.error('حدث خطأ أثناء تحديث الحالة');
+    }
   };
 
   const openWhatsApp = (apt: Appointment) => {
