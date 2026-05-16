@@ -38,6 +38,8 @@ import {
 import { seedMockDataIfNeeded } from '@/lib/storage/seedData';
 import { setInvoicesTenantPrefix } from '@/lib/storage/purchaseInvoicesStorage';
 import { setOrdersTenantPrefix }   from '@/lib/storage/salesOrdersStorage';
+import { setCouponsTenantPrefix }  from '@/lib/storage/couponsStorage';
+import { setReturnsTenantPrefix }  from '@/lib/storage/returnsStorage';
 import { getSupabaseClient } from '@/lib/supabase/client';
 
 // ── Service selector ──────────────────────────────────────────────────────────
@@ -206,6 +208,8 @@ export function StockProvider({ children }: { children: ReactNode }) {
       const prefix = session?.user?.id ?? 'anon';
       setInvoicesTenantPrefix(prefix);
       setOrdersTenantPrefix(prefix);
+      setCouponsTenantPrefix(prefix);
+      setReturnsTenantPrefix(prefix);
     });
   }, []);
 

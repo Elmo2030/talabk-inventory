@@ -189,6 +189,10 @@ export default function PurchaseInvoiceForm({ onSuccess, onCancel }: Props) {
         totalLandedCosts,
         grandTotal,
         notes,
+        // Payment tracking defaults
+        paymentStatus: 'unpaid',
+        paidAmount: 0,
+        payments: [],
       });
 
       if (!result.success || !result.data) {

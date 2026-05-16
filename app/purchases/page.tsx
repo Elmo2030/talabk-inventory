@@ -5,10 +5,10 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   Plus, Trash2, Eye, CheckCircle, ShoppingCart,
-  FileText, Clock, PackageCheck, Search,
+  FileText, Clock, PackageCheck, Search, CreditCard, X,
 } from 'lucide-react';
 import { useStock } from '@/lib/StockContext';
-import { PurchaseInvoice } from '@/lib/types';
+import { PurchaseInvoice, SupplierPayment } from '@/lib/types';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import EmptyState from '@/components/ui/EmptyState';
@@ -23,7 +23,7 @@ const STATUS_MAP: Record<PurchaseInvoice['status'], { label: string; color: stri
 };
 
 export default function PurchasesPage() {
-  const { purchaseInvoices, deletePurchaseInvoice, receivePurchaseInvoice } = useStock();
+  const { purchaseInvoices, deletePurchaseInvoice, receivePurchaseInvoice, updatePurchaseInvoice } = useStock();
   const router = useRouter();
   const toast = useToast();
   const { confirm } = useConfirm();
@@ -31,6 +31,10 @@ export default function PurchasesPage() {
   const [statusFilter, setStatusFilter] = useState<PurchaseInvoice['status'] | 'ALL'>('ALL');
   const [receivingId, setReceivingId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
+  const [paymentInvoice, setPaymentInvoice] = useState<PurchaseInvoice | null>(null);
+  const [payAmount, setPayAmount] = useState('');
+  const [payMethod, setPayMethod] = useState<'cash' | 'bank_transfer' | 'check'>('cash');
+  const [payNotes, setPayNotes] = useState('');
 
   const filtered = useMemo(() => {
     let list = purchaseInvoices;
@@ -100,6 +104,40 @@ export default function PurchasesPage() {
 
   // suppress unused router warning — router available for future programmatic nav
   void router;
+
+  async function handleAddPayment() {
+    if (!paymentInvoice) return;
+    const amount = parseFloat(payAmount);
+    if (!amount || amount <= 0) return;
+
+    const payment: SupplierPayment = {
+      id: `pay-${Date.now()}`,
+      amount,
+      date: new Date().toISOString().split('T')[0],
+      method: payMethod,
+      notes: payNotes.trim() || undefined,
+    };
+
+    const newPaid = paymentInvoice.paidAmount + amount;
+    const newStatus: PurchaseInvoice['paymentStatus'] =
+      newPaid >= paymentInvoice.grandTotal
+        ? 'paid'
+        : newPaid > 0
+        ? 'partial'
+        : 'unpaid';
+
+    await updatePurchaseInvoice(paymentInvoice.id, {
+      payments: [...(paymentInvoice.payments ?? []), payment],
+      paidAmount: newPaid,
+      paymentStatus: newStatus,
+    });
+
+    toast.success(`تم تسجيل دفعة بمبلغ ${amount.toFixed(2)} د.ل`);
+    setPaymentInvoice(null);
+    setPayAmount('');
+    setPayMethod('cash');
+    setPayNotes('');
+  }
 
   return (
     <div className="space-y-6">
@@ -190,7 +228,7 @@ export default function PurchasesPage() {
               <table className="w-full min-w-[700px] text-sm">
                 <thead>
                   <tr className="border-b border-[#E5E5EA] bg-[#F2F2F7]">
-                    {['رقم الفاتورة', 'المورد', 'التاريخ', 'الأصناف', 'الإجمالي', 'الحالة', 'إجراءات'].map((h) => (
+                    {['رقم الفاتورة', 'المورد', 'التاريخ', 'الأصناف', 'الإجمالي', 'الحالة', 'الدفع', 'إجراءات'].map((h) => (
                       <th key={h} className="text-right px-4 py-3 text-xs font-semibold text-[#6C6C70]">{h}</th>
                     ))}
                   </tr>
@@ -215,6 +253,17 @@ export default function PurchasesPage() {
                           </span>
                         </td>
                         <td className="px-4 py-3">
+                          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                            inv.paymentStatus === 'paid' ? 'bg-green-100 text-green-700' :
+                            inv.paymentStatus === 'partial' ? 'bg-amber-100 text-amber-700' :
+                            'bg-red-50 text-red-600'
+                          }`}>
+                            {inv.paymentStatus === 'paid' ? 'مدفوع' :
+                             inv.paymentStatus === 'partial' ? `جزئي (${inv.paidAmount.toFixed(0)})` :
+                             'غير مدفوع'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
                           <div className="flex items-center gap-1">
                             <Link
                               href={`/purchases/${inv.id}`}
@@ -235,6 +284,15 @@ export default function PurchasesPage() {
                                 ) : (
                                   <CheckCircle className="w-4 h-4" />
                                 )}
+                              </button>
+                            )}
+                            {inv.paymentStatus !== 'paid' && (
+                              <button
+                                onClick={() => { setPaymentInvoice(inv); setPayAmount(''); }}
+                                className="p-1.5 rounded-lg text-brand-600 hover:bg-brand-50 transition-colors"
+                                title="تسجيل دفعة"
+                              >
+                                <CreditCard className="w-4 h-4" />
                               </button>
                             )}
                             {inv.status !== 'RECEIVED' && (
@@ -264,6 +322,79 @@ export default function PurchasesPage() {
           </>
         )}
       </div>
+      {/* Payment Modal */}
+      {paymentInvoice && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => setPaymentInvoice(null)}>
+          <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl p-5" dir="rtl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-slate-900">تسجيل دفعة — {paymentInvoice.invoiceNumber}</h3>
+              <button onClick={() => setPaymentInvoice(null)} className="p-1 text-slate-400 hover:text-slate-700 rounded">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="text-xs text-slate-500 mb-4">
+              الإجمالي: {paymentInvoice.grandTotal.toFixed(2)} د.ل
+              {' | '}
+              المدفوع: {paymentInvoice.paidAmount.toFixed(2)} د.ل
+              {' | '}
+              المتبقي: <span className="font-semibold text-red-600">{(paymentInvoice.grandTotal - paymentInvoice.paidAmount).toFixed(2)} د.ل</span>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs text-slate-600 mb-1">المبلغ (د.ل) *</label>
+                <input
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  max={paymentInvoice.grandTotal - paymentInvoice.paidAmount}
+                  value={payAmount}
+                  onChange={(e) => setPayAmount(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-brand-500"
+                  placeholder="0.00"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-slate-600 mb-1">طريقة الدفع</label>
+                <select
+                  value={payMethod}
+                  onChange={(e) => setPayMethod(e.target.value as typeof payMethod)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-brand-500"
+                >
+                  <option value="cash">نقداً</option>
+                  <option value="bank_transfer">تحويل بنكي</option>
+                  <option value="check">شيك</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-slate-600 mb-1">ملاحظات</label>
+                <input
+                  type="text"
+                  value={payNotes}
+                  onChange={(e) => setPayNotes(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-brand-500"
+                  placeholder="اختياري..."
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-4">
+              <button
+                onClick={() => setPaymentInvoice(null)}
+                className="flex-1 px-4 py-2 border border-slate-200 text-sm text-slate-600 rounded-xl hover:bg-slate-50"
+              >
+                إلغاء
+              </button>
+              <button
+                onClick={handleAddPayment}
+                disabled={!payAmount || parseFloat(payAmount) <= 0}
+                className="flex-1 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-50"
+              >
+                تسجيل الدفعة
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

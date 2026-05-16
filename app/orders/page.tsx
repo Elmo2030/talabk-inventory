@@ -12,6 +12,9 @@ import {
   Package,
   CheckCircle,
   Clock,
+  Truck,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { useStock } from '@/lib/StockContext';
 import { SalesOrder, OrderStatus } from '@/lib/types';
@@ -34,6 +37,15 @@ const STATUS_CONFIG: Record<
 
 const ALL_STATUSES: OrderStatus[] = ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED'];
 
+const CARRIERS = [
+  { value: 'أرامكس', label: 'أرامكس' },
+  { value: 'DHL', label: 'DHL' },
+  { value: 'FedEx', label: 'FedEx' },
+  { value: 'الأمانة', label: 'الأمانة' },
+  { value: 'سهل', label: 'سهل' },
+  { value: 'خاص', label: 'خاص' },
+];
+
 function StatusBadge({ status }: { status: OrderStatus }) {
   const cfg = STATUS_CONFIG[status];
   return (
@@ -47,6 +59,114 @@ function StatusBadge({ status }: { status: OrderStatus }) {
 
 function fmt(n: number) {
   return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+// ── Tracking Number inline section ───────────────────────────────────────────
+function TrackingSection({ order, onSave }: { order: SalesOrder; onSave: (id: string, data: Partial<SalesOrder>) => Promise<void> }) {
+  const today = new Date().toISOString().split('T')[0];
+  const [showForm, setShowForm] = useState(false);
+  const [trackingNumber, setTrackingNumber] = useState('');
+  const [shippingCarrier, setShippingCarrier] = useState(CARRIERS[0].value);
+  const [shippedAt, setShippedAt] = useState(today);
+  const [saving, setSaving] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  async function handleSave() {
+    if (!trackingNumber.trim()) return;
+    setSaving(true);
+    await onSave(order.id, {
+      trackingNumber: trackingNumber.trim(),
+      shippingCarrier,
+      shippedAt,
+    });
+    setSaving(false);
+    setShowForm(false);
+  }
+
+  function handleCopy() {
+    if (!order.trackingNumber) return;
+    navigator.clipboard.writeText(order.trackingNumber).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  }
+
+  if (order.trackingNumber) {
+    return (
+      <div className="mt-2 flex items-center gap-2 flex-wrap">
+        <Truck className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
+        <span className="text-xs text-[#6C6C70]">{order.shippingCarrier}</span>
+        <span className="font-mono text-xs bg-blue-50 border border-blue-200 text-blue-700 px-2 py-0.5 rounded-full">
+          {order.trackingNumber}
+        </span>
+        <button
+          onClick={handleCopy}
+          className="p-1 text-[#6C6C70] hover:text-blue-600 rounded transition-colors"
+          title="نسخ رقم التتبع"
+        >
+          {copied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-2">
+      {!showForm ? (
+        <button
+          onClick={() => setShowForm(true)}
+          className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 hover:underline"
+        >
+          <Truck className="w-3 h-3" />
+          أضف رقم التتبع
+        </button>
+      ) : (
+        <div className="mt-1 p-2 bg-blue-50 border border-blue-200 rounded-lg space-y-2">
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={trackingNumber}
+              onChange={(e) => setTrackingNumber(e.target.value)}
+              placeholder="رقم التتبع"
+              className="flex-1 min-w-0 px-2 py-1 text-xs border border-[#E5E5EA] rounded-lg focus:outline-none focus:border-blue-400 bg-white"
+              dir="rtl"
+            />
+            <select
+              value={shippingCarrier}
+              onChange={(e) => setShippingCarrier(e.target.value)}
+              className="px-2 py-1 text-xs border border-[#E5E5EA] rounded-lg focus:outline-none focus:border-blue-400 bg-white"
+              dir="rtl"
+            >
+              {CARRIERS.map((c) => (
+                <option key={c.value} value={c.value}>{c.label}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="date"
+              value={shippedAt}
+              onChange={(e) => setShippedAt(e.target.value)}
+              className="px-2 py-1 text-xs border border-[#E5E5EA] rounded-lg focus:outline-none focus:border-blue-400 bg-white"
+            />
+            <button
+              onClick={handleSave}
+              disabled={saving || !trackingNumber.trim()}
+              className="px-3 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50"
+            >
+              {saving ? '...' : 'حفظ'}
+            </button>
+            <button
+              onClick={() => setShowForm(false)}
+              className="px-2 py-1 text-xs text-[#6C6C70] hover:text-[#1C1C1E] rounded-lg transition-colors"
+            >
+              إلغاء
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function OrdersPage() {
@@ -122,6 +242,10 @@ export default function OrdersPage() {
     await deleteSalesOrder(id);
     setDeletingId(null);
   };
+
+  async function handleSaveTracking(id: string, data: Partial<SalesOrder>) {
+    await updateSalesOrder(id, data);
+  }
 
   return (
     <div className="space-y-5" dir="rtl">
@@ -263,18 +387,24 @@ export default function OrdersPage() {
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <select
-                          value={order.status}
-                          onChange={(e) => handleStatusChange(order, e.target.value as OrderStatus)}
-                          className="text-xs border border-[#E5E5EA] rounded-lg px-2 py-1 bg-white focus:outline-none focus:border-[#E5302A] cursor-pointer"
-                          dir="rtl"
-                        >
-                          {ALL_STATUSES.map((s) => (
-                            <option key={s} value={s}>
-                              {STATUS_CONFIG[s].label}
-                            </option>
-                          ))}
-                        </select>
+                        <div>
+                          <select
+                            value={order.status}
+                            onChange={(e) => handleStatusChange(order, e.target.value as OrderStatus)}
+                            className="text-xs border border-[#E5E5EA] rounded-lg px-2 py-1 bg-white focus:outline-none focus:border-[#E5302A] cursor-pointer"
+                            dir="rtl"
+                          >
+                            {ALL_STATUSES.map((s) => (
+                              <option key={s} value={s}>
+                                {STATUS_CONFIG[s].label}
+                              </option>
+                            ))}
+                          </select>
+                          {/* Tracking section — only for SHIPPED orders */}
+                          {order.status === 'SHIPPED' && (
+                            <TrackingSection order={order} onSave={handleSaveTracking} />
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">

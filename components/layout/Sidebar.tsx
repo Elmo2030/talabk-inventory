@@ -21,9 +21,13 @@ import {
   ShoppingCart,
   ShoppingBag,
   Truck,
+  UserCircle,
+  RotateCcw,
+  Tag,
 } from 'lucide-react';
 import { useStock } from '@/lib/StockContext';
 import { useAuth } from '@/lib/AuthContext';
+import NotificationCenter from '@/components/ui/NotificationCenter';
 
 type NavItem = { href: string; label: string; icon: React.ElementType };
 type NavGroup = { label: string | null; items: NavItem[] };
@@ -50,6 +54,9 @@ const navGroups: NavGroup[] = [
     items: [
       { href: '/purchases', label: 'فواتير الشراء', icon: ShoppingCart },
       { href: '/orders', label: 'طلبات البيع', icon: ShoppingBag },
+      { href: '/returns', label: 'المرتجعات', icon: RotateCcw },
+      { href: '/coupons', label: 'الكوبونات', icon: Tag },
+      { href: '/customers', label: 'العملاء', icon: UserCircle },
     ],
   },
   {
@@ -242,8 +249,10 @@ export default function Sidebar() {
           <span className="text-base font-bold text-white">طلبك</span>
         </div>
 
-        {/* Left: spacer for balance */}
-        <div className="w-10" />
+        {/* Left: notification bell */}
+        <div className="w-10 flex justify-end">
+          <NotificationCenter />
+        </div>
       </div>
 
       {/* Mobile backdrop */}

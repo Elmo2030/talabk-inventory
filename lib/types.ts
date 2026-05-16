@@ -17,6 +17,16 @@ export type Supplier = {
   createdAt: string;
 };
 
+// ── Item Variants (ألوان / مقاسات) ───────────────────────────────────────────
+export type ItemVariant = {
+  id: string;
+  sku: string;           // e.g.  "SHIRT-RED-L"
+  color?: string;
+  size?: string;
+  additionalPrice: number; // delta on top of base sellingPrice (0 = same price)
+  openingQty: number;
+};
+
 export type Item = {
   id: string;
   code: string;
@@ -33,6 +43,10 @@ export type Item = {
   movingAverageCost?: number;
   location: string;
   status: 'ACTIVE' | 'SUSPENDED' | 'UNDER_REVIEW';
+  // Variant support
+  hasVariants?: boolean;
+  variants?: ItemVariant[];
+  imageUrl?: string;
 };
 
 export type StockInMovement = {
@@ -92,6 +106,15 @@ export type LandedCostMethod = 'VALUE' | 'QUANTITY' | 'EQUAL';
 
 export type PurchaseInvoiceStatus = 'DRAFT' | 'CONFIRMED' | 'RECEIVED';
 
+// ── Supplier Payment tracking ─────────────────────────────────────────────────
+export type SupplierPayment = {
+  id: string;
+  amount: number;
+  date: string;
+  method: 'cash' | 'bank_transfer' | 'check';
+  notes?: string;
+};
+
 export type PurchaseInvoiceItem = {
   id: string;
   itemId: string;
@@ -138,6 +161,11 @@ export type PurchaseInvoice = {
   notes: string;
   createdAt: string;
   receivedAt?: string;
+  // Payment tracking (Feature 9)
+  paymentStatus: 'unpaid' | 'partial' | 'paid';
+  paidAmount: number;
+  dueDate?: string;
+  payments: SupplierPayment[];
 };
 
 // ── Sales Orders ──────────────────────────────────────────────────────────────
@@ -155,6 +183,50 @@ export type SalesOrderItem = {
   lineTotal: number;          // quantity * sellingPrice
   costSnapshot: number;       // MAC at time of order (for profit calc)
   lineCost: number;           // quantity * costSnapshot
+  variantId?: string;         // optional variant (color/size)
+  variantLabel?: string;      // e.g. "أحمر / L"
+};
+
+// ── Coupons & Discounts ───────────────────────────────────────────────────────
+export type Coupon = {
+  id: string;
+  code: string;
+  type: 'fixed' | 'percentage';
+  value: number;              // amount off or percentage
+  minOrderValue: number;      // minimum cart total to apply
+  maxUses: number;            // 0 = unlimited
+  usedCount: number;
+  isActive: boolean;
+  expiresAt?: string;
+  createdAt: string;
+};
+
+// ── Return Orders ─────────────────────────────────────────────────────────────
+export type ReturnOrderItem = {
+  id: string;
+  originalOrderItemId: string;
+  itemId: string;
+  itemName: string;
+  itemCode: string;
+  quantity: number;
+  sellingPrice: number;
+  lineTotal: number;
+};
+
+export type ReturnOrder = {
+  id: string;
+  returnNumber: string;
+  originalOrderId: string;
+  originalOrderNumber: string;
+  customerName: string;
+  customerPhone: string;
+  items: ReturnOrderItem[];
+  reason: string;
+  refundAmount: number;
+  restockItems: boolean;      // true = add items back to inventory
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  notes: string;
+  createdAt: string;
 };
 
 export type SalesOrder = {
@@ -200,6 +272,17 @@ export type SalesOrder = {
   status: OrderStatus;
   notes: string;
   createdAt: string;
+  // Coupon / Discount (Feature 2)
+  couponCode?: string;
+  discountType?: 'fixed' | 'percentage';
+  discountValue?: number;
+  discountAmount?: number;
+  // Shipping Tracking (Feature 8)
+  trackingNumber?: string;
+  shippingCarrier?: string;
+  shippedAt?: string;
+  // Returns reference
+  hasReturn?: boolean;
 };
 
 // ── Multi-Tenant / SaaS ───────────────────────────────────────────────────────
@@ -295,7 +378,10 @@ export type Permission =
   | 'orders:read'    | 'orders:write'
   | 'reports:read'
   | 'settings:read'  | 'settings:write'
-  | 'users:read'     | 'users:write';
+  | 'users:read'     | 'users:write'
+  | 'customers:read'
+  | 'returns:read'   | 'returns:write'
+  | 'coupons:read'   | 'coupons:write';
 
 export const DEFAULT_PERMISSIONS: Record<UserRole, Record<Permission, boolean>> = {
   super_admin: Object.fromEntries(
@@ -303,6 +389,7 @@ export const DEFAULT_PERMISSIONS: Record<UserRole, Record<Permission, boolean>> 
        'items:read','items:write','suppliers:read','suppliers:write',
        'purchases:read','purchases:write','orders:read','orders:write',
        'reports:read','settings:read','settings:write','users:read','users:write',
+       'customers:read','returns:read','returns:write','coupons:read','coupons:write',
     ] as Permission[]).map(k => [k, true])
   ) as Record<Permission, boolean>,
 
@@ -311,6 +398,7 @@ export const DEFAULT_PERMISSIONS: Record<UserRole, Record<Permission, boolean>> 
        'items:read','items:write','suppliers:read','suppliers:write',
        'purchases:read','purchases:write','orders:read','orders:write',
        'reports:read','settings:read','settings:write','users:read','users:write',
+       'customers:read','returns:read','returns:write','coupons:read','coupons:write',
     ] as Permission[]).map(k => [k, true])
   ) as Record<Permission, boolean>,
 
@@ -324,5 +412,8 @@ export const DEFAULT_PERMISSIONS: Record<UserRole, Record<Permission, boolean>> 
     'reports:read': false,
     'settings:read': false, 'settings:write': false,
     'users:read': false,    'users:write': false,
+    'customers:read': true,
+    'returns:read': true,   'returns:write': true,
+    'coupons:read': true,   'coupons:write': false,
   },
 };

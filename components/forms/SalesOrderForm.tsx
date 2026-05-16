@@ -1,12 +1,13 @@
 'use client';
 import { useState, useCallback } from 'react';
-import { Plus, Minus, Trash2, Search, X, ShoppingCart, User, MapPin, Package } from 'lucide-react';
+import { Plus, Minus, Trash2, Search, X, ShoppingCart, User, MapPin, Package, Tag, CheckCircle, AlertCircle } from 'lucide-react';
 import { useStock } from '@/lib/StockContext';
-import { Item } from '@/lib/types';
+import { Item, Coupon } from '@/lib/types';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { ShippingCalcResult } from '@/lib/data/talabkCities';
 import { SORTED_CITIES, DeliveryType, getBasePrice, TALABK_CITIES } from '@/lib/data/talabkCities';
 import TalabkCalculator from '@/components/shipping/TalabkCalculator';
+import { couponsStorage } from '@/lib/storage/couponsStorage';
 
 interface Props {
   onSuccess: () => void;
@@ -38,7 +39,7 @@ function fmt(n: number) {
 }
 
 export default function SalesOrderForm({ onSuccess, onCancel }: Props) {
-  const { items, addSalesOrder } = useStock();
+  const { items, addSalesOrder, getCurrentBalance } = useStock();
   const { confirm } = useConfirm();
 
   // Customer
@@ -60,6 +61,11 @@ export default function SalesOrderForm({ onSuccess, onCancel }: Props) {
 
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
+
+  // Coupon
+  const [couponInput, setCouponInput] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
+  const [couponError, setCouponError] = useState('');
 
   // Active items
   const activeItems = items.filter((i) => i.status === 'ACTIVE');
@@ -127,18 +133,41 @@ export default function SalesOrderForm({ onSuccess, onCancel }: Props) {
     setShippingResult(result);
   }, []);
 
+  // ── Coupon helpers ────────────────────────────────────────────────────────
+  const applyCoupon = () => {
+    setCouponError('');
+    const coupon = couponsStorage.getByCode(couponInput.trim());
+    if (!coupon) { setCouponError('الكوبون غير موجود'); return; }
+    if (!coupon.isActive) { setCouponError('هذا الكوبون غير نشط'); return; }
+    if (coupon.expiresAt && new Date(coupon.expiresAt) < new Date()) { setCouponError('انتهت صلاحية الكوبون'); return; }
+    if (coupon.maxUses > 0 && coupon.usedCount >= coupon.maxUses) { setCouponError('وصل الكوبون للحد الأقصى من الاستخدامات'); return; }
+    setAppliedCoupon(coupon);
+  };
+
+  const removeCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponInput('');
+    setCouponError('');
+  };
+
   // ── Profit calculations ───────────────────────────────────────────────────
   const subtotalProducts = cart.reduce((s, i) => s + i.quantity * i.sellingPrice, 0);
+  const discountAmount = appliedCoupon
+    ? appliedCoupon.type === 'percentage'
+      ? (subtotalProducts * appliedCoupon.value) / 100
+      : Math.min(appliedCoupon.value, subtotalProducts)
+    : 0;
   const totalCOGS = cart.reduce((s, i) => s + i.quantity * i.costSnapshot, 0);
   const shippingCost = shippingResult?.shippingCost ?? 0;
   const packagingCost = shippingResult?.packagingCost ?? 0;
   const storeShippingExpense = shippingOnStore ? shippingCost : 0;
   const storePackagingExpense = packagingOnStore ? packagingCost : 0;
   const customerTotal =
-    subtotalProducts +
+    subtotalProducts -
+    discountAmount +
     (shippingOnStore ? 0 : shippingCost) +
     (packagingOnStore ? 0 : packagingCost);
-  const grossProfit = subtotalProducts - totalCOGS;
+  const grossProfit = subtotalProducts - discountAmount - totalCOGS;
   const netProfit = grossProfit - storeShippingExpense - storePackagingExpense;
   const profitMargin = subtotalProducts > 0 ? (netProfit / subtotalProducts) * 100 : 0;
 
@@ -180,6 +209,11 @@ export default function SalesOrderForm({ onSuccess, onCancel }: Props) {
       lineCost: c.quantity * c.costSnapshot,
     }));
 
+    // Increment coupon usage
+    if (appliedCoupon) {
+      couponsStorage.incrementUsed(appliedCoupon.id);
+    }
+
     const result = await addSalesOrder({
       customerName: customerName.trim(),
       customerPhone: customerPhone.trim(),
@@ -205,6 +239,10 @@ export default function SalesOrderForm({ onSuccess, onCancel }: Props) {
       profitMargin,
       status: 'PENDING',
       notes: notes.trim(),
+      couponCode: appliedCoupon?.code,
+      discountType: appliedCoupon?.type,
+      discountValue: appliedCoupon?.value,
+      discountAmount: discountAmount > 0 ? discountAmount : undefined,
     });
 
     setSaving(false);
@@ -373,6 +411,12 @@ export default function SalesOrderForm({ onSuccess, onCancel }: Props) {
                               <div>
                                 <p className="text-sm font-medium text-[#1C1C1E]">{item.name}</p>
                                 <p className="text-xs text-[#6C6C70]">{item.code} · {item.category}</p>
+                                <p className="text-xs text-[#6C6C70]">
+                                  الرصيد:{' '}
+                                  <span className={getCurrentBalance(item.id) <= 0 ? 'text-red-500 font-semibold' : 'text-green-600 font-semibold'}>
+                                    {getCurrentBalance(item.id)}
+                                  </span>
+                                </p>
                               </div>
                             </div>
                             <span className="text-sm font-semibold text-[#E5302A] whitespace-nowrap">
@@ -499,6 +543,59 @@ export default function SalesOrderForm({ onSuccess, onCancel }: Props) {
                 <span className="text-sm font-semibold text-[#1C1C1E]">{fmt(subtotalProducts)} د.ل</span>
               </div>
 
+              {/* Coupon */}
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-[#6C6C70] flex items-center gap-1">
+                  <Tag className="w-3.5 h-3.5" />
+                  كوبون الخصم
+                </p>
+                {appliedCoupon ? (
+                  <div className="flex items-center justify-between p-2 bg-green-50 border border-green-200 rounded-xl">
+                    <div className="flex items-center gap-1.5">
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                      <div>
+                        <p className="text-xs font-bold text-green-800 font-mono">{appliedCoupon.code}</p>
+                        <p className="text-xs text-green-600">
+                          خصم {appliedCoupon.type === 'percentage' ? `${appliedCoupon.value}%` : `${fmt(appliedCoupon.value)} د.ل`}
+                          {' · '}-{fmt(discountAmount)} د.ل
+                        </p>
+                      </div>
+                    </div>
+                    <button onClick={removeCoupon} className="p-1 text-green-600 hover:bg-green-100 rounded">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={couponInput}
+                        onChange={(e) => { setCouponInput(e.target.value.toUpperCase()); setCouponError(''); }}
+                        placeholder="أدخل الكوبون..."
+                        className="flex-1 px-2.5 py-1.5 text-xs font-mono uppercase border border-[#E5E5EA] rounded-lg focus:outline-none focus:border-[#E5302A] bg-white"
+                        dir="ltr"
+                        onKeyDown={(e) => e.key === 'Enter' && applyCoupon()}
+                      />
+                      <button
+                        type="button"
+                        onClick={applyCoupon}
+                        disabled={!couponInput.trim()}
+                        className="px-3 py-1.5 text-xs font-semibold bg-[#1C1C1E] text-white rounded-lg hover:bg-black disabled:opacity-40 transition-colors"
+                      >
+                        تطبيق
+                      </button>
+                    </div>
+                    {couponError && (
+                      <p className="flex items-center gap-1 text-xs text-red-600">
+                        <AlertCircle className="w-3 h-3" />
+                        {couponError}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+
               {/* Shipping toggle */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -558,6 +655,14 @@ export default function SalesOrderForm({ onSuccess, onCancel }: Props) {
                       على العميل
                     </button>
                   </div>
+                </div>
+              )}
+
+              {/* Discount line */}
+              {discountAmount > 0 && (
+                <div className="flex items-center justify-between text-xs text-green-700">
+                  <span>الخصم ({appliedCoupon?.code})</span>
+                  <span className="font-semibold">-{fmt(discountAmount)} د.ل</span>
                 </div>
               )}
 

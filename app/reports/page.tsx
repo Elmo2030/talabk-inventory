@@ -8,12 +8,15 @@ import {
   AlertOctagon,
   BarChart3,
   Printer,
+  Download,
 } from 'lucide-react';
 import InventoryReport from '@/components/reports/InventoryReport';
 import PurchasesSummaryReport from '@/components/reports/PurchasesSummaryReport';
 import ItemMovementReport from '@/components/reports/ItemMovementReport';
 import LowStockReport from '@/components/reports/LowStockReport';
 import AnalyticsReport from '@/components/reports/AnalyticsReport';
+import { useStock } from '@/lib/StockContext';
+import { exportToCSV } from '@/lib/exportUtils';
 
 type TabId = 'inventory' | 'purchases' | 'movement' | 'lowstock' | 'analytics';
 
@@ -27,6 +30,50 @@ const tabs: { id: TabId; label: string; icon: typeof FileText; color: string }[]
 
 export default function ReportsPage() {
   const [activeTab, setActiveTab] = useState<TabId>('inventory');
+  const { currentStock, salesOrders, purchaseInvoices } = useStock();
+
+  const handleExport = () => {
+    if (activeTab === 'inventory') {
+      exportToCSV(
+        'الجرد-الفعلي',
+        ['الكود', 'الصنف', 'التصنيف', 'الوحدة', 'رصيد الافتتاح', 'إجمالي الوارد', 'إجمالي الصادر', 'الرصيد الحالي', 'الحد الأدنى', 'قيمة المخزون', 'الحالة'],
+        currentStock.map((s) => [
+          s.itemCode, s.itemName, s.category, s.unit,
+          s.openingQty, s.totalIn, s.totalOut, s.currentBalance,
+          s.minStockLevel, s.stockValue.toFixed(2), s.status,
+        ])
+      );
+    } else if (activeTab === 'purchases') {
+      exportToCSV(
+        'فواتير-الشراء',
+        ['رقم الفاتورة', 'المورد', 'التاريخ', 'الإجمالي', 'الحالة', 'حالة الدفع'],
+        purchaseInvoices.map((p) => [
+          p.invoiceNumber, p.supplierName, p.invoiceDate,
+          p.grandTotal.toFixed(2), p.status, p.paymentStatus,
+        ])
+      );
+    } else if (activeTab === 'lowstock') {
+      const lowItems = currentStock.filter(
+        (s) => s.status === 'OUT_OF_STOCK' || s.status === 'NEEDS_REORDER' || s.status === 'LOW'
+      );
+      exportToCSV(
+        'الأصناف-النافذة',
+        ['الكود', 'الصنف', 'الرصيد الحالي', 'الحد الأدنى', 'مستوى إعادة الطلب', 'الحالة'],
+        lowItems.map((s) => [s.itemCode, s.itemName, s.currentBalance, s.minStockLevel, s.reorderLevel, s.status])
+      );
+    } else if (activeTab === 'analytics') {
+      exportToCSV(
+        'تحليل-المبيعات',
+        ['رقم الطلب', 'العميل', 'المدينة', 'إجمالي المنتجات', 'صافي الربح', 'هامش الربح%', 'الحالة', 'التاريخ'],
+        salesOrders.map((o) => [
+          o.orderNumber, o.customerName, o.customerCity,
+          o.subtotalProducts.toFixed(2), o.netProfit.toFixed(2),
+          o.profitMargin.toFixed(1) + '%', o.status,
+          new Date(o.createdAt).toLocaleDateString('en-US'),
+        ])
+      );
+    }
+  };
 
   return (
     <div>
@@ -38,13 +85,24 @@ export default function ReportsPage() {
             تقارير تحليلية آلية لمتابعة أداء المخزون واتخاذ القرارات
           </p>
         </div>
-        <button
-          onClick={() => window.print()}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl border border-[#E5E5EA] text-[#6C6C70] text-sm font-medium hover:bg-[#F2F2F7] transition-colors print:hidden"
-        >
-          <Printer className="w-4 h-4" />
-          طباعة / PDF
-        </button>
+        <div className="flex items-center gap-2 print:hidden">
+          {['inventory', 'purchases', 'lowstock', 'analytics'].includes(activeTab) && (
+            <button
+              onClick={handleExport}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl border border-[#E5E5EA] text-[#6C6C70] text-sm font-medium hover:bg-[#F2F2F7] transition-colors"
+            >
+              <Download className="w-4 h-4" />
+              تصدير CSV
+            </button>
+          )}
+          <button
+            onClick={() => window.print()}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-[#E5E5EA] text-[#6C6C70] text-sm font-medium hover:bg-[#F2F2F7] transition-colors"
+          >
+            <Printer className="w-4 h-4" />
+            طباعة / PDF
+          </button>
+        </div>
       </div>
 
       {/* Tabs Navigation */}
