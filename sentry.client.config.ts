@@ -20,4 +20,29 @@ Sentry.init({
       blockAllMedia: true,
     }),
   ],
+
+  // Scrub PII (emails, phone numbers, wallet addresses, JWTs) from
+  // error payloads before they reach Sentry's servers.
+  beforeSend(event) {
+    const scrub = (s: string): string =>
+      s
+        .replace(/[\w.+-]+@[\w-]+\.[\w.-]+/g, '[email]')
+        .replace(/\+?\d[\d\s\-()]{7,}/g, '[phone]')
+        .replace(/\b[T1][a-zA-HJ-NP-Z0-9]{33,34}\b/g, '[wallet]')          // TRC-20 / BTC-ish
+        .replace(/\b0x[a-fA-F0-9]{40,64}\b/g, '[hex]')
+        .replace(/eyJ[\w-]{10,}\.[\w-]{10,}\.[\w-]{10,}/g, '[jwt]');
+
+    const walk = (obj: unknown): unknown => {
+      if (typeof obj === 'string') return scrub(obj);
+      if (Array.isArray(obj)) return obj.map(walk);
+      if (obj && typeof obj === 'object') {
+        const out: Record<string, unknown> = {};
+        for (const [k, v] of Object.entries(obj)) out[k] = walk(v);
+        return out;
+      }
+      return obj;
+    };
+
+    return walk(event) as typeof event;
+  },
 });

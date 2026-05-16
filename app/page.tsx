@@ -418,6 +418,10 @@ export default function LandingPage() {
             <TalabkLogo size={24} />
             <span className="text-white/60 text-sm">طلبك</span>
           </div>
+          <div className="flex items-center gap-4 text-xs">
+            <a href="/privacy" className="text-white/40 hover:text-white/80 transition-colors">سياسة الخصوصية</a>
+            <a href="/terms"   className="text-white/40 hover:text-white/80 transition-colors">شروط الاستخدام</a>
+          </div>
           <p className="text-white/30 text-xs">
             جميع الحقوق محفوظة © 2026 — صنع بواسطة{' '}
             <span className="text-[#E5302A]">talabk.ly</span>

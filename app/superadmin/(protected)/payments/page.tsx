@@ -126,45 +126,24 @@ function ReviewDialog({ payment, action, onClose, onDone }: ReviewDialogProps) {
     setError('');
     const supabase = getSupabaseClient();
 
-    // Get current admin user for audit trail
-    const { data: { user } } = await supabase.auth.getUser();
+    // Call the atomic RPC — performs payment update + tenant activation
+    // (when approving) in a single transaction with FOR UPDATE locking,
+    // and writes an audit_log entry. Idempotency: the RPC throws if the
+    // payment is no longer `pending`, so a double-click cannot double-approve.
+    const rpc = action === 'approve'
+      ? 'approve_subscription_payment'
+      : 'reject_subscription_payment';
 
-    // 1. Update the payment record
-    const { error: payErr } = await supabase
-      .from('subscription_payments')
-      .update({
-        status:      action === 'approve' ? 'approved' : 'rejected',
-        admin_notes: note.trim() || null,
-        reviewed_at: new Date().toISOString(),
-        reviewed_by: user?.id ?? null,
-      })
-      .eq('id', payment.id);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: rpcErr } = await (supabase as any).rpc(rpc, {
+      p_payment_id: payment.id,
+      p_admin_note: note.trim() || null,
+    });
 
-    if (payErr) {
-      setError('خطأ في تحديث السجل: ' + payErr.message);
+    if (rpcErr) {
+      setError(rpcErr.message || 'فشل تنفيذ العملية');
       setLoading(false);
       return;
-    }
-
-    // 2. If approved: activate tenant subscription
-    if (action === 'approve') {
-      const endsAt = new Date();
-      endsAt.setMonth(endsAt.getMonth() + payment.billing_months);
-
-      const { error: tenantErr } = await supabase
-        .from('tenants')
-        .update({
-          status:               'active',
-          subscription_plan:    payment.plan as 'trial' | 'starter' | 'pro' | 'enterprise',
-          subscription_ends_at: endsAt.toISOString(),
-        })
-        .eq('id', payment.tenant_id);
-
-      if (tenantErr) {
-        setError('تم قبول الدفع لكن حدث خطأ في تحديث بيانات المتجر: ' + tenantErr.message);
-        setLoading(false);
-        return;
-      }
     }
 
     setLoading(false);

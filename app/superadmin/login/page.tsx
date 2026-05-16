@@ -24,14 +24,21 @@ function SuperAdminLoginInner() {
   const [forgotSent,    setForgotSent]    = useState(false);
   const [forgotLoading, setForgotLoading] = useState(false);
 
+  // Allow only same-origin relative paths to prevent open-redirect attacks.
+  const safeRedirect = (raw: string | null): string => {
+    if (!raw) return '/superadmin';
+    // Reject anything starting with `//`, a protocol, or whitespace.
+    if (!/^\/[^/]/.test(raw)) return '/superadmin';
+    return raw;
+  };
+
   // Redirect if already logged in as super_admin
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) return;
       const role = session.user.app_metadata?.user_role;
       if (role === 'super_admin') {
-        const redirect = searchParams.get('redirect') ?? '/superadmin';
-        router.replace(redirect);
+        router.replace(safeRedirect(searchParams.get('redirect')));
       }
     });
   }, [supabase, router, searchParams]);
@@ -79,8 +86,7 @@ function SuperAdminLoginInner() {
         return;
       }
 
-      const redirect = searchParams.get('redirect') ?? '/superadmin';
-      router.push(redirect);
+      router.push(safeRedirect(searchParams.get('redirect')));
     } catch {
       setErrorMsg('حدث خطأ أثناء تسجيل الدخول، حاول مجدداً');
     } finally {
