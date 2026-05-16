@@ -30,7 +30,9 @@ export default function SuperAdminSidebar() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    router.push('/login');
+    // Super-admins log back in via the dedicated /superadmin/login page,
+    // not the tenant /login flow.
+    router.push('/superadmin/login');
   };
 
   return (

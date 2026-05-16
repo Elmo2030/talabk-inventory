@@ -30,17 +30,18 @@ import {
 } from 'lucide-react';
 import { useStock } from '@/lib/StockContext';
 import { useAuth } from '@/lib/AuthContext';
+import { useTenant } from '@/lib/TenantContext';
 import NotificationCenter from '@/components/ui/NotificationCenter';
 
 type NavItem = { href: string; label: string; icon: React.ElementType };
 type NavGroup = { label: string | null; items: NavItem[] };
 
+// Dashboard target depends on whether the user has a tenant — wired up
+// dynamically inside the Sidebar component (see `dashboardHref` below).
 const navGroups: NavGroup[] = [
   {
     label: null,
-    items: [
-      { href: '/', label: 'لوحة التحكم', icon: LayoutDashboard },
-    ],
+    items: [],   // dashboard item is injected at render time
   },
   {
     label: 'المخزون',
@@ -134,11 +135,21 @@ export default function Sidebar() {
   const router = useRouter();
   const { currentStock } = useStock();
   const { username, logout } = useAuth();
+  const { tenant } = useTenant();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const alertCount = currentStock.filter(
     (s) => s.status === 'OUT_OF_STOCK' || s.status === 'NEEDS_REORDER'
   ).length;
+
+  // Dashboard route is tenant-scoped when the user has a tenant
+  // (`/app/<slug>/dashboard`), otherwise fall back to `/`.
+  const dashboardHref = tenant?.slug ? `/app/${tenant.slug}/dashboard` : '/';
+  const resolvedGroups = navGroups.map((g, idx) =>
+    idx === 0
+      ? { ...g, items: [{ href: dashboardHref, label: 'لوحة التحكم', icon: LayoutDashboard }] }
+      : g,
+  );
 
   const sidebarContent = (
     <>
@@ -161,7 +172,7 @@ export default function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 px-3 py-5 overflow-y-auto">
-        {navGroups.map((group, groupIdx) => (
+        {resolvedGroups.map((group, groupIdx) => (
           <div key={groupIdx}>
             {/* Separator before every group except the first */}
             {groupIdx > 0 && (
