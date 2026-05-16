@@ -26,14 +26,10 @@ function SuperAdminLoginInner() {
 
   // Redirect if already logged in as super_admin
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) return;
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('role')
-        .eq('id', session.user.id)
-        .single();
-      if (profile?.role === 'super_admin') {
+      const role = session.user.app_metadata?.user_role;
+      if (role === 'super_admin') {
         const redirect = searchParams.get('redirect') ?? '/superadmin';
         router.replace(redirect);
       }
@@ -75,14 +71,9 @@ function SuperAdminLoginInner() {
         return;
       }
 
-      // Verify super_admin role
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('role')
-        .eq('id', data.session.user.id)
-        .single();
-
-      if (profile?.role !== 'super_admin') {
+      // Verify super_admin role via JWT claims (injected by custom_access_token_hook)
+      const role = data.session.user.app_metadata?.user_role;
+      if (role !== 'super_admin') {
         await supabase.auth.signOut();
         setErrorMsg('ليس لديك صلاحية الوصول إلى لوحة الإدارة');
         return;
