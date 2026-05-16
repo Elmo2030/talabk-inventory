@@ -26,6 +26,7 @@ import {
   CloudOff,
   Loader2,
   ShieldCheck,
+  Percent,
 } from 'lucide-react';
 
 // ============================================
@@ -204,6 +205,10 @@ export default function SettingsPage() {
   const [savingList, setSavingList] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const toast = useToast();
+  const [vatEnabled, setVatEnabled] = useState(false);
+  const [vatRate, setVatRate] = useState(15);
+  const [vatNumber, setVatNumber] = useState('');
+  const [savingVat, setSavingVat] = useState(false);
   const { confirm } = useConfirm();
   const { tenantId } = useTenant();
   const supabase = getSupabaseClient();
@@ -212,6 +217,19 @@ export default function SettingsPage() {
   useEffect(() => {
     // Instant render from localStorage
     setSettings(settingsService.getAll());
+
+    // Load VAT settings
+    try {
+      const raw = localStorage.getItem('talabk_store_settings');
+      if (raw) {
+        const vatData = JSON.parse(raw);
+        setVatEnabled(vatData.vatEnabled ?? false);
+        setVatRate(vatData.vatRate ?? 15);
+        setVatNumber(vatData.vatNumber ?? '');
+      }
+    } catch {
+      // ignore parse errors
+    }
 
     // Then load authoritative copy from Supabase (if we have a tenant)
     if (!tenantId) return;
@@ -251,6 +269,17 @@ export default function SettingsPage() {
       }
     } finally {
       setSavingList(false);
+    }
+  };
+
+  const handleSaveVat = async () => {
+    setSavingVat(true);
+    try {
+      const vatSettings = { vatEnabled, vatRate, vatNumber };
+      localStorage.setItem('talabk_store_settings', JSON.stringify(vatSettings));
+      toast.success('تم حفظ إعدادات الضريبة');
+    } finally {
+      setSavingVat(false);
     }
   };
 
@@ -510,6 +539,75 @@ export default function SettingsPage() {
             </p>
           </div>
 
+          {/* قسم الضريبة (VAT) */}
+          <div className="bg-white rounded-xl border border-slate-200 p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Percent className="w-5 h-5 text-indigo-600" />
+              <h2 className="text-base font-semibold text-slate-900">الضريبة (VAT)</h2>
+            </div>
+
+            <div className="space-y-4">
+              {/* Toggle */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-800">تفعيل حساب الضريبة</p>
+                  <p className="text-xs text-slate-500 mt-0.5">إضافة ضريبة القيمة المضافة على الفواتير والطلبات</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setVatEnabled(!vatEnabled)}
+                  className={`w-12 h-6 rounded-full transition-colors ${vatEnabled ? 'bg-indigo-600' : 'bg-slate-300'} relative flex-shrink-0`}
+                >
+                  <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${vatEnabled ? 'translate-x-7' : 'translate-x-1'}`} />
+                </button>
+              </div>
+
+              {vatEnabled && (
+                <>
+                  {/* VAT Rate */}
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">نسبة الضريبة %</label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      step={0.1}
+                      value={vatRate}
+                      onChange={(e) => setVatRate(Number(e.target.value))}
+                      className="w-32 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-left"
+                      dir="ltr"
+                    />
+                  </div>
+
+                  {/* VAT Number */}
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">الرقم الضريبي (اختياري)</label>
+                    <input
+                      type="text"
+                      value={vatNumber}
+                      onChange={(e) => setVatNumber(e.target.value)}
+                      placeholder="300XXXXXXXXX1234"
+                      className="w-full max-w-sm px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      dir="ltr"
+                    />
+                  </div>
+                </>
+              )}
+
+              <div className="pt-2">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  icon={savingVat ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  onClick={handleSaveVat}
+                  disabled={savingVat}
+                >
+                  {savingVat ? 'جارٍ الحفظ...' : 'حفظ إعدادات الضريبة'}
+                </Button>
+              </div>
+            </div>
+          </div>
+
           {/* منطقة الخطر */}
           <div className="bg-white rounded-xl border border-red-200 p-6">
             <h2 className="text-base font-semibold text-red-700 mb-1">منطقة الخطر</h2>
@@ -541,3 +639,5 @@ export default function SettingsPage() {
     </div>
   );
 }
+
+

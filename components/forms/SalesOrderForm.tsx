@@ -22,6 +22,7 @@ type CartItem = {
   quantity: number;
   sellingPrice: number;
   costSnapshot: number;
+  serialNumbers?: string[];  // Feature B
 };
 
 const inputClass =
@@ -61,6 +62,16 @@ export default function SalesOrderForm({ onSuccess, onCancel }: Props) {
 
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
+
+  // Load VAT settings from localStorage
+  const vatSettings = (() => {
+    try {
+      const raw = typeof window !== 'undefined' ? localStorage.getItem('talabk_store_settings') : null;
+      return raw ? JSON.parse(raw) : {};
+    } catch { return {}; }
+  })();
+  const vatEnabled: boolean = vatSettings.vatEnabled ?? false;
+  const vatRate: number = vatSettings.vatRate ?? 15;
 
   // Coupon
   const [couponInput, setCouponInput] = useState('');
@@ -157,6 +168,13 @@ export default function SalesOrderForm({ onSuccess, onCancel }: Props) {
     setCart((prev) => prev.filter((c) => c.itemId !== itemId));
   };
 
+  const updateSerialNumbers = (itemId: string, raw: string) => {
+    const serials = raw.split('\n').map((s) => s.trim()).filter(Boolean);
+    setCart((prev) =>
+      prev.map((c) => (c.itemId === itemId ? { ...c, serialNumbers: serials } : c))
+    );
+  };
+
   const handleShippingChange = useCallback((result: ShippingCalcResult | null) => {
     setShippingResult(result);
   }, []);
@@ -195,6 +213,8 @@ export default function SalesOrderForm({ onSuccess, onCancel }: Props) {
     discountAmount +
     (shippingOnStore ? 0 : shippingCost) +
     (packagingOnStore ? 0 : packagingCost);
+  const vatBase = subtotalProducts - discountAmount;
+  const vatAmount = vatEnabled ? (vatBase * vatRate) / 100 : 0;
   const grossProfit = subtotalProducts - discountAmount - totalCOGS;
   const netProfit = grossProfit - storeShippingExpense - storePackagingExpense;
   const profitMargin = subtotalProducts > 0 ? (netProfit / subtotalProducts) * 100 : 0;
@@ -480,9 +500,9 @@ export default function SalesOrderForm({ onSuccess, onCancel }: Props) {
             ) : (
               <div className="space-y-2">
                 {cart.map((c) => (
+                  <div key={c.itemId} className="rounded-xl overflow-hidden bg-[#F2F2F7]">
                   <div
-                    key={c.itemId}
-                    className="flex items-center gap-3 p-3 bg-[#F2F2F7] rounded-xl"
+                    className="flex items-center gap-3 p-3"
                   >
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-[#1C1C1E] truncate">{c.itemName}</p>
@@ -543,6 +563,32 @@ export default function SalesOrderForm({ onSuccess, onCancel }: Props) {
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
+                  </div>
+                  {/* Feature B: Serial Numbers textarea */}
+                  {(() => {
+                    const item = items.find((i) => i.id === c.itemId);
+                    if (!item?.isSerialTracked) return null;
+                    const serialText = (c.serialNumbers ?? []).join('\n');
+                    const count = (c.serialNumbers ?? []).length;
+                    return (
+                      <div className="px-3 pb-3">
+                        <label className="block text-xs font-medium text-[#6C6C70] mb-1">
+                          أرقام السيريال (رقم لكل سطر)
+                          <span className={`mr-2 font-semibold ${count > c.quantity ? 'text-red-500' : 'text-[#1C1C1E]'}`}>
+                            {count}/{c.quantity}
+                          </span>
+                        </label>
+                        <textarea
+                          rows={Math.min(4, Math.max(2, c.quantity))}
+                          value={serialText}
+                          onChange={(e) => updateSerialNumbers(c.itemId, e.target.value)}
+                          placeholder={'SN-0001\nSN-0002\n...'}
+                          className="w-full px-2.5 py-2 text-xs font-mono border border-[#E5E5EA] rounded-lg focus:outline-none focus:border-[#E5302A] bg-white resize-none"
+                          dir="ltr"
+                        />
+                      </div>
+                    );
+                  })()}
                   </div>
                 ))}
                 {/* Subtotal */}
@@ -705,10 +751,18 @@ export default function SalesOrderForm({ onSuccess, onCancel }: Props) {
                 </div>
               )}
 
+              {/* VAT line */}
+              {vatEnabled && vatAmount > 0 && (
+                <div className="flex items-center justify-between text-xs text-indigo-700">
+                  <span>ضريبة القيمة المضافة ({vatRate}%)</span>
+                  <span className="font-semibold">+{fmt(vatAmount)} د.ل</span>
+                </div>
+              )}
+
               {/* Customer total */}
               <div className="py-3 border-t border-b border-[#E5E5EA]">
                 <p className="text-xs text-[#6C6C70] mb-1">الإجمالي المطلوب من العميل</p>
-                <p className="text-3xl font-bold text-[#E5302A]">{fmt(customerTotal)}</p>
+                <p className="text-3xl font-bold text-[#E5302A]">{fmt(customerTotal + vatAmount)}</p>
                 <p className="text-xs text-[#6C6C70]">دينار ليبي</p>
               </div>
 
@@ -783,3 +837,5 @@ export default function SalesOrderForm({ onSuccess, onCancel }: Props) {
     </div>
   );
 }
+
+

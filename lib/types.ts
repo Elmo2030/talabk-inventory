@@ -53,6 +53,23 @@ export type Item = {
     price: number;    // price per unit at this tier
     label?: string;   // e.g. "جملة", "نصف جملة"
   }>;
+  // Bill of Materials — التصنيع
+  isManufactured?: boolean;               // منتج مصنّع (يُجمَّع من أصناف أخرى)
+  bom?: Array<{                           // قائمة مواد التصنيع
+    componentItemId: string;
+    quantity: number;
+  }>;
+  // Feature A: Batch & Expiry
+  isPerishable?: boolean;    // يحتاج تتبع الصلاحية
+  // Feature B: Serial Number Tracking
+  isSerialTracked?: boolean; // يحتاج أرقام سيريال
+};
+
+// ── Store Settings (VAT & general) ───────────────────────────────────────────
+export type StoreSettings = {
+  vatEnabled?: boolean;      // تفعيل الضريبة
+  vatRate?: number;          // نسبة الضريبة % (e.g. 15)
+  vatNumber?: string;        // الرقم الضريبي
 };
 
 export type StockInMovement = {
@@ -70,6 +87,9 @@ export type StockInMovement = {
   totalCost: number;
   responsibleEmployee: string;
   notes?: string;
+  // Feature A: Batch & Expiry
+  batchNumber?: string;   // رقم الدفعة e.g. "BATCH-001"
+  expiryDate?: string;    // تاريخ انتهاء الصلاحية ISO date string "2026-12-31"
 };
 
 export type StockOutMovement = {
@@ -191,6 +211,8 @@ export type SalesOrderItem = {
   lineCost: number;           // quantity * costSnapshot
   variantId?: string;         // optional variant (color/size)
   variantLabel?: string;      // e.g. "أحمر / L"
+  // Feature B: Serial Number Tracking
+  serialNumbers?: string[];   // أرقام السيريال المبيعة
 };
 
 // ── Coupons & Discounts ───────────────────────────────────────────────────────
@@ -299,6 +321,23 @@ export type SalesOrder = {
     method: 'cash' | 'bank_transfer' | 'check';
     notes?: string;
   }>;
+};
+
+// ── Appointments ─────────────────────────────────────────────────────────────
+export type AppointmentStatus = 'SCHEDULED' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
+
+export type Appointment = {
+  id: string;
+  customerName: string;
+  customerPhone: string;
+  service: string;
+  staffName?: string;
+  date: string;             // "2026-05-20"
+  time: string;             // "14:30"
+  durationMinutes: number;
+  notes?: string;
+  status: AppointmentStatus;
+  createdAt: string;
 };
 
 // ── Multi-Tenant / SaaS ───────────────────────────────────────────────────────
@@ -439,3 +478,4 @@ export const DEFAULT_PERMISSIONS: Record<UserRole, Record<Permission, boolean>> 
     'purchase_prices:read': false,
   },
 };
+

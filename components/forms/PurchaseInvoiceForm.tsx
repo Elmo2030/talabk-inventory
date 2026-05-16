@@ -73,6 +73,16 @@ export default function PurchaseInvoiceForm({ onSuccess, onCancel }: Props) {
   // Loading
   const [saving, setSaving] = useState(false);
 
+  // VAT settings from localStorage
+  const vatSettings = (() => {
+    try {
+      const raw = typeof window !== 'undefined' ? localStorage.getItem('talabk_store_settings') : null;
+      return raw ? JSON.parse(raw) : {};
+    } catch { return {}; }
+  })();
+  const vatEnabled: boolean = vatSettings.vatEnabled ?? false;
+  const vatRate: number = vatSettings.vatRate ?? 15;
+
   // ── Derived data ─────────────────────────────────────────────────────────────
 
   const activeSuppliers = useMemo(() => suppliers.filter((s) => s.isActive), [suppliers]);
@@ -86,6 +96,7 @@ export default function PurchaseInvoiceForm({ onSuccess, onCancel }: Props) {
   [rows]);
 
   const grandTotal = subtotal + totalLandedCosts;
+  const vatAmount: number = vatEnabled ? (grandTotal * vatRate) / 100 : 0;
 
   // Current balances and MACs for preview
   const currentBalances = useMemo(() => {
@@ -483,9 +494,15 @@ export default function PurchaseInvoiceForm({ onSuccess, onCancel }: Props) {
                 <p className="text-xs text-[#6C6C70]">المصاريف الإضافية</p>
                 <p className="font-mono font-semibold text-amber-700">+ {totalLandedCosts.toFixed(2)}</p>
               </div>
+              {vatEnabled && vatAmount > 0 && (
+                <div className="text-center">
+                  <p className="text-xs text-[#6C6C70]">ضريبة القيمة المضافة ({vatRate}%)</p>
+                  <p className="font-mono font-semibold text-indigo-600">+ {vatAmount.toFixed(2)}</p>
+                </div>
+              )}
               <div className="text-center border-r border-[#E5E5EA] pr-6">
                 <p className="text-xs font-semibold text-[#6C6C70]">الإجمالي الكلي</p>
-                <p className="font-mono font-bold text-lg text-[#E5302A]">{grandTotal.toFixed(2)} ر.س</p>
+                <p className="font-mono font-bold text-lg text-[#E5302A]">{(grandTotal + vatAmount).toFixed(2)} ر.س</p>
               </div>
             </div>
           </div>
@@ -518,3 +535,5 @@ export default function PurchaseInvoiceForm({ onSuccess, onCancel }: Props) {
     </div>
   );
 }
+
+

@@ -5,8 +5,9 @@ import { Item, Supplier, ItemVariant } from '@/lib/types';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import Button from '@/components/ui/Button';
-import { Save, Plus, Trash2, Layers, BadgeDollarSign } from 'lucide-react';
+import { Save, Plus, Trash2, Layers, BadgeDollarSign, Hammer } from 'lucide-react';
 import { itemCategories, storageLocations, measurementUnits } from '@/data/mock-data';
+import { useStock } from '@/lib/StockContext';
 
 interface ItemFormProps {
   initialData?: Partial<Item>;
@@ -29,7 +30,15 @@ type PriceTier = {
 const COLORS = ['أحمر', 'أزرق', 'أخضر', 'أسود', 'أبيض', 'رمادي', 'أصفر', 'بنفسجي', 'بني', 'وردي', 'برتقالي', 'بيج'];
 const SIZES  = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', '36', '37', '38', '39', '40', '41', '42', '43', '44', '45'];
 
+type BomRow = {
+  id: string;
+  componentItemId: string;
+  quantity: number;
+};
+
 export default function ItemForm({ initialData, suppliers, onSubmit, onCancel }: ItemFormProps) {
+  const { items: allItems } = useStock();
+
   const [formData, setFormData] = useState({
     code: initialData?.code || '',
     name: initialData?.name || '',
@@ -44,6 +53,10 @@ export default function ItemForm({ initialData, suppliers, onSubmit, onCancel }:
     location: initialData?.location || storageLocations[0],
     status: initialData?.status || ('ACTIVE' as 'ACTIVE' | 'SUSPENDED'),
   });
+
+  // ── Feature A & B: Perishable / Serial Tracked ───────────────────────────────
+  const [isPerishable, setIsPerishable] = useState(initialData?.isPerishable ?? false);
+  const [isSerialTracked, setIsSerialTracked] = useState(initialData?.isSerialTracked ?? false);
 
   // ── Variants ─────────────────────────────────────────────────────────────────
   const [hasVariants, setHasVariants] = useState(initialData?.hasVariants ?? false);
@@ -72,6 +85,31 @@ export default function ItemForm({ initialData, suppliers, onSubmit, onCancel }:
     price: 0,
     label: '',
   });
+
+  // ── BOM (قائمة مواد التصنيع) ──────────────────────────────────────────────────────
+  const [isManufactured, setIsManufactured] = useState(initialData?.isManufactured ?? false);
+  const [bomRows, setBomRows] = useState<BomRow[]>(
+    (initialData?.bom ?? []).map((b, i) => ({
+      id: `bom-${i}-${Date.now()}`,
+      componentItemId: b.componentItemId,
+      quantity: b.quantity,
+    }))
+  );
+
+  const addBomRow = () => {
+    setBomRows((prev) => [
+      ...prev,
+      { id: `bom-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, componentItemId: '', quantity: 1 },
+    ]);
+  };
+
+  const removeBomRow = (id: string) => {
+    setBomRows((prev) => prev.filter((r) => r.id !== id));
+  };
+
+  const updateBomRow = (id: string, field: keyof Omit<BomRow, 'id'>, value: string | number) => {
+    setBomRows((prev) => prev.map((r) => r.id === id ? { ...r, [field]: value } : r));
+  };
 
   const addTier = () => {
     if (newTier.minQty < 1 || newTier.price <= 0) return;
@@ -112,18 +150,28 @@ export default function ItemForm({ initialData, suppliers, onSubmit, onCancel }:
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
+    const validBom = bomRows
+      .filter((r) => r.componentItemId && r.quantity > 0)
+      .map(({ componentItemId, quantity }) => ({ componentItemId, quantity }));
     onSubmit({
       ...formData,
+      isPerishable,
+      isSerialTracked,
       hasVariants,
       variants: hasVariants ? variants : [],
       priceTiers: hasPriceTiers
         ? priceTiers.map(({ minQty, price, label }) => ({ minQty, price, label: label || undefined }))
         : [],
+      isManufactured,
+      bom: isManufactured ? validBom : [],
     });
   };
 
   const inputClass =
     'w-full px-3 py-2 rounded-xl border border-slate-200 text-sm text-slate-900 bg-white focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20';
+
+  // Exclude current item from component dropdown (when editing)
+  const componentOptions = allItems.filter((i) => i.id !== initialData?.id);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5" dir="rtl">
@@ -225,6 +273,28 @@ export default function ItemForm({ initialData, suppliers, onSubmit, onCancel }:
             { value: 'SUSPENDED', label: 'موقوف' },
           ]}
         />
+      </div>
+
+      {/* ── Feature A & B: Perishable / Serial Tracked checkboxes ──────────── */}
+      <div className="flex flex-col sm:flex-row gap-4 p-4 bg-slate-50 border border-slate-200 rounded-xl">
+        <label className="flex items-center gap-2 cursor-pointer select-none flex-1">
+          <input
+            type="checkbox"
+            checked={isPerishable}
+            onChange={(e) => setIsPerishable(e.target.checked)}
+            className="w-4 h-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+          />
+          <span className="text-sm font-medium text-slate-700">منتج له تاريخ صلاحية</span>
+        </label>
+        <label className="flex items-center gap-2 cursor-pointer select-none flex-1">
+          <input
+            type="checkbox"
+            checked={isSerialTracked}
+            onChange={(e) => setIsSerialTracked(e.target.checked)}
+            className="w-4 h-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+          />
+          <span className="text-sm font-medium text-slate-700">يحتاج أرقام سيريال</span>
+        </label>
       </div>
 
       {/* ── Variants Toggle ─────────────────────────────────────────────────── */}
@@ -474,6 +544,103 @@ export default function ItemForm({ initialData, suppliers, onSubmit, onCancel }:
         )}
       </div>
 
+
+      {/* ── BOM Toggle (التصنيع) ───────────────────────────────────────────────── */}
+      <div className="border border-slate-200 rounded-xl overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setIsManufactured(!isManufactured)}
+          className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 hover:bg-slate-100 transition-colors text-right"
+        >
+          <div className="flex items-center gap-2">
+            <Hammer className="w-4 h-4 text-orange-600" />
+            <span className="text-sm font-semibold text-slate-900">التصنيع (BOM)</span>
+            {isManufactured && bomRows.length > 0 && (
+              <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-medium">
+                {bomRows.length} مكوّن
+              </span>
+            )}
+          </div>
+          <div className={`w-10 h-5 rounded-full transition-colors ${isManufactured ? 'bg-orange-500' : 'bg-slate-300'} relative`}>
+            <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${isManufactured ? 'translate-x-0.5' : 'translate-x-5'}`} />
+          </div>
+        </button>
+
+        {isManufactured && (
+          <div className="p-4 space-y-4">
+            <p className="text-xs text-slate-500">
+              هذا المنتج مصنّع من أصناف أخرى. عند استلام وارد منه سيتم خصم المكوّنات تلقائياً من المخزون.
+            </p>
+
+            {bomRows.length > 0 && (
+              <div className="border border-slate-100 rounded-xl overflow-hidden">
+                <table className="w-full text-xs">
+                  <thead className="bg-slate-50 border-b border-slate-100">
+                    <tr>
+                      <th className="px-3 py-2 text-right font-semibold text-slate-600">المكوّن</th>
+                      <th className="px-3 py-2 text-right font-semibold text-slate-600">الكمية المطلوبة</th>
+                      <th className="px-3 py-2" />
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {bomRows.map((row) => (
+                      <tr key={row.id} className="hover:bg-slate-50">
+                        <td className="px-3 py-2 w-3/5">
+                          <select
+                            className={inputClass}
+                            value={row.componentItemId}
+                            onChange={(e) => updateBomRow(row.id, 'componentItemId', e.target.value)}
+                          >
+                            <option value="">— اختر الصنف —</option>
+                            {componentOptions.map((item) => (
+                              <option key={item.id} value={item.id}>
+                                {item.name} ({item.code})
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                        <td className="px-3 py-2 w-28">
+                          <input
+                            type="number"
+                            min={0.001}
+                            step={0.001}
+                            className={inputClass}
+                            value={row.quantity}
+                            onChange={(e) => updateBomRow(row.id, 'quantity', Number(e.target.value))}
+                          />
+                        </td>
+                        <td className="px-3 py-2">
+                          <button
+                            type="button"
+                            onClick={() => removeBomRow(row.id)}
+                            className="p-1 text-red-500 hover:bg-red-50 rounded"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={addBomRow}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white text-xs font-semibold rounded-lg transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              إضافة مكوّن
+            </button>
+
+            {bomRows.length === 0 && (
+              <p className="text-xs text-slate-400 text-center py-2">أضف مكوّناً واحداً على الأقل</p>
+            )}
+          </div>
+        )}
+      </div>
+
       <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-200">
         <Button type="button" variant="secondary" onClick={onCancel}>إلغاء</Button>
         <Button type="submit" icon={<Save className="w-4 h-4" />}>حفظ الصنف</Button>
@@ -481,3 +648,6 @@ export default function ItemForm({ initialData, suppliers, onSubmit, onCancel }:
     </form>
   );
 }
+
+
+

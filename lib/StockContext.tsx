@@ -40,6 +40,7 @@ import { setInvoicesTenantPrefix } from '@/lib/storage/purchaseInvoicesStorage';
 import { setOrdersTenantPrefix }   from '@/lib/storage/salesOrdersStorage';
 import { setCouponsTenantPrefix }  from '@/lib/storage/couponsStorage';
 import { setReturnsTenantPrefix }  from '@/lib/storage/returnsStorage';
+import { setAppointmentsTenantPrefix } from '@/lib/storage/appointmentsStorage';
 import { getSupabaseClient } from '@/lib/supabase/client';
 
 // ── Service selector ──────────────────────────────────────────────────────────
@@ -210,6 +211,7 @@ export function StockProvider({ children }: { children: ReactNode }) {
       setOrdersTenantPrefix(prefix);
       setCouponsTenantPrefix(prefix);
       setReturnsTenantPrefix(prefix);
+      setAppointmentsTenantPrefix(prefix);
     });
   }, []);
 
@@ -244,6 +246,26 @@ export function StockProvider({ children }: { children: ReactNode }) {
         const newMovement = await _stockIn.create(movement);
         setStockIn((prev) => [newMovement, ...prev]);
         await refreshStock();
+
+        // BOM: deduct component materials automatically when receiving manufactured goods
+        const manufacturedItem = await _items.getAll().then((all) => all.find((i) => i.id === movement.itemId));
+        if (manufacturedItem?.isManufactured && manufacturedItem.bom && manufacturedItem.bom.length > 0) {
+          for (const bomEntry of manufacturedItem.bom) {
+            const deductQty = movement.quantity * bomEntry.quantity;
+            await _stockOut.create({
+              date: movement.date,
+              itemId: bomEntry.componentItemId,
+              recipientDept: 'قسم التصنيع',
+              quantity: deductQty,
+              unitPrice: 0,
+              reason: 'تصنيع',
+              responsibleEmployee: movement.responsibleEmployee || 'نظام التصنيع',
+              notes: `خصم تلقائي - تصنيع ${manufacturedItem.name}`,
+            });
+          }
+          await refreshStock();
+        }
+
         return { success: true };
       } catch (err) {
         const message = err instanceof Error ? err.message : 'فشل الحفظ';
@@ -616,3 +638,4 @@ export function useStock() {
   if (!ctx) throw new Error('useStock must be used within StockProvider');
   return ctx;
 }
+

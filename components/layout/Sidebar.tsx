@@ -26,6 +26,7 @@ import {
   Tag,
   MessageSquare,
   Warehouse,
+  CalendarClock,
 } from 'lucide-react';
 import { useStock } from '@/lib/StockContext';
 import { useAuth } from '@/lib/AuthContext';
@@ -50,6 +51,7 @@ const navGroups: NavGroup[] = [
       { href: '/stock-out', label: 'صرف مخزون', icon: ArrowUpFromLine },
       { href: '/current-stock', label: 'المخزون الحالي', icon: BarChart3 },
       { href: '/warehouses', label: 'المستودعات', icon: Warehouse },
+      { href: '/batches', label: 'الدفعات والصلاحية', icon: CalendarClock },
     ],
   },
   {
@@ -69,6 +71,7 @@ const navGroups: NavGroup[] = [
       { href: '/analytics', label: 'التحليلات', icon: BarChart2 },
       { href: '/reports', label: 'التقارير', icon: FileText },
       { href: '/delivery', label: 'لوحة التوصيل', icon: Truck },
+      { href: '/appointments', label: 'المواعيد', icon: CalendarClock },
       { href: '/shipping-calculator', label: 'حاسبة الشحن', icon: Truck },
     ],
   },

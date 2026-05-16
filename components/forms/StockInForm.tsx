@@ -43,6 +43,11 @@ export default function StockInForm({
     notes: initialData?.notes || '',
   });
 
+  // Feature A: Batch & Expiry
+  const [hasExpiry, setHasExpiry] = useState(!!(initialData?.expiryDate));
+  const [batchNumber, setBatchNumber] = useState(initialData?.batchNumber || '');
+  const [expiryDate, setExpiryDate] = useState(initialData?.expiryDate || '');
+
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
 
@@ -80,6 +85,12 @@ export default function StockInForm({
       return;
     }
 
+    // Validate expiry fields
+    if (hasExpiry && !expiryDate) {
+      setSubmitError('يرجى تحديد تاريخ انتهاء الصلاحية');
+      return;
+    }
+
     const payload = {
       date: formData.date,
       invoiceNo: formData.invoiceNo,
@@ -89,6 +100,8 @@ export default function StockInForm({
       unitPrice: formData.unitPrice,
       responsibleEmployee: formData.responsibleEmployee,
       notes: formData.notes,
+      batchNumber: hasExpiry && batchNumber.trim() ? batchNumber.trim() : undefined,
+      expiryDate: hasExpiry ? expiryDate : undefined,
     };
 
     setSubmitting(true);
@@ -211,6 +224,39 @@ export default function StockInForm({
           value={formData.notes}
           onChange={(e) => handleChange('notes', e.target.value)}
         />
+      </div>
+
+      {/* Feature A: Batch & Expiry */}
+      <div className="border border-slate-200 rounded-xl p-4 space-y-3">
+        <label className="flex items-center gap-2 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={hasExpiry}
+            onChange={(e) => {
+              setHasExpiry(e.target.checked);
+              if (!e.target.checked) { setBatchNumber(''); setExpiryDate(''); }
+            }}
+            className="w-4 h-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+          />
+          <span className="text-sm font-medium text-slate-700">هذه الدفعة لها تاريخ صلاحية</span>
+        </label>
+        {hasExpiry && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+            <Input
+              label="رقم الدفعة"
+              placeholder="مثال: BATCH-001"
+              value={batchNumber}
+              onChange={(e) => setBatchNumber(e.target.value)}
+            />
+            <Input
+              label="تاريخ انتهاء الصلاحية"
+              type="date"
+              required
+              value={expiryDate}
+              onChange={(e) => setExpiryDate(e.target.value)}
+            />
+          </div>
+        )}
       </div>
 
       {submitError && (
