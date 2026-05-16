@@ -403,6 +403,20 @@ export interface RegistrationRequest {
   reviewed_at?: string;
 }
 
+export interface SubscriptionPayment {
+  id: string;
+  tenantId: string;
+  amount: number;
+  currency: string;
+  moyasarId?: string;
+  moyasarStatus?: string;
+  plan: string;
+  billingMonths: number;
+  description?: string;
+  createdAt: string;
+  confirmedAt?: string;
+}
+
 export interface SubscriptionEvent {
   id: string;
   tenant_id: string;

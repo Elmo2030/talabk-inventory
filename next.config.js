@@ -1,4 +1,5 @@
 /** @type {import('next').NextConfig} */
+const { withSentryConfig } = require('@sentry/nextjs');
 
 const securityHeaders = [
   // Prevent clickjacking
@@ -24,7 +25,7 @@ const securityHeaders = [
     value: [
       "default-src 'self'",
       // Supabase API + realtime websocket
-      "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.sentry.io https://o*.ingest.sentry.io",
       // Scripts: self + Next.js inline chunks
       "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
       // Styles: self + Tailwind inline styles
@@ -71,4 +72,28 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+// Wrap with Sentry — uploads source maps on build, instruments server/edge
+module.exports = withSentryConfig(nextConfig, {
+  // Sentry organisation + project (set via env or hardcode after creating a project)
+  org:     process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+
+  // Auth token for source-map upload (CI secret — never commit)
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+
+  // Silence Sentry's own build output unless something goes wrong
+  silent: true,
+
+  // Upload source maps so stack traces show original TypeScript code
+  widenClientFileUpload: true,
+
+  // Tree-shake Sentry debug code in production
+  disableLogger: true,
+
+  // Automatically instrument Next.js server routes
+  autoInstrumentServerFunctions: true,
+  autoInstrumentMiddleware: true,
+
+  // Tunnel Sentry requests through our own domain to avoid adblockers
+  tunnelRoute: '/monitoring',
+});

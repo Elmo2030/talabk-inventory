@@ -578,6 +578,48 @@ export type Database = {
           }
         ];
       };
+      subscription_payments: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          amount: number;
+          currency: string;
+          moyasar_id: string | null;
+          moyasar_status: string | null;
+          plan: string;
+          billing_months: number;
+          description: string | null;
+          metadata: Record<string, unknown>;
+          created_at: string;
+          confirmed_at: string | null;
+          confirmed_by: string | null;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          amount: number;
+          currency?: string;
+          moyasar_id?: string | null;
+          moyasar_status?: string | null;
+          plan: string;
+          billing_months?: number;
+          description?: string | null;
+          metadata?: Record<string, unknown>;
+          created_at?: string;
+          confirmed_at?: string | null;
+          confirmed_by?: string | null;
+        };
+        Update: Partial<Database['public']['Tables']['subscription_payments']['Insert']>;
+        Relationships: [
+          {
+            foreignKeyName: "subscription_payments_tenant_id_fkey";
+            columns: ["tenant_id"];
+            isOneToOne: false;
+            referencedRelation: "tenants";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
     };
     Views: {
       current_stock_view: {

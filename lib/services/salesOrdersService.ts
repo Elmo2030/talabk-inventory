@@ -162,7 +162,13 @@ export const salesOrdersService = {
       .select()
       .single();
 
-    if (error) throw new Error(`فشل إنشاء طلب البيع: ${error.message}`);
+    if (error) {
+      // Plan limit exceeded — surface the Arabic message from the trigger
+      if (error.message?.includes('تجاوزت الحد')) {
+        throw new Error(error.message);
+      }
+      throw new Error(`فشل إنشاء طلب البيع: ${error.message}`);
+    }
     return mapRow(data as SORow);
   },
 

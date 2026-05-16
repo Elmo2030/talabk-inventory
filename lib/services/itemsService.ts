@@ -76,7 +76,13 @@ export const itemsService = {
       .select('*, suppliers(name)')
       .single();
 
-    if (error) throw new Error(`فشل إضافة الصنف: ${error.message}`);
+    if (error) {
+      // Plan limit exceeded — surface the Arabic message from the trigger
+      if (error.message?.includes('تجاوزت الحد')) {
+        throw new Error(error.message);
+      }
+      throw new Error(`فشل إضافة الصنف: ${error.message}`);
+    }
     return mapItem(data as ItemRow & { suppliers?: { name?: string } | null });
   },
 
