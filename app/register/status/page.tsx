@@ -41,6 +41,7 @@ export default function RegisterStatusPage() {
   const [result,     setResult]     = useState<RequestResult | null>(null);
   const [notFound,   setNotFound]   = useState(false);
   const [error,      setError]      = useState('');
+  const [lastChecked, setLastChecked] = useState<Date | null>(null);
 
   // Auto-search if email passed via URL
   useEffect(() => {
@@ -56,6 +57,18 @@ export default function RegisterStatusPage() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Auto-poll every 30s while the request is still pending. Stops the
+  // moment the row is approved/rejected so we don't hammer the API.
+  useEffect(() => {
+    if (!email || result?.status !== 'pending') return;
+    const interval = setInterval(() => {
+      document.getElementById('status-form')?.dispatchEvent(
+        new Event('submit', { bubbles: true, cancelable: true })
+      );
+    }, 30_000);
+    return () => clearInterval(interval);
+  }, [email, result?.status]);
 
   const handleCheck = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,6 +101,7 @@ export default function RegisterStatusPage() {
     }
 
     setResult(data as RequestResult);
+    setLastChecked(new Date());
   };
 
   const fmt = (iso: string) =>
@@ -190,6 +204,13 @@ export default function RegisterStatusPage() {
                     <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
                     <span className="text-amber-400 text-xs font-semibold">في انتظار الموافقة</span>
                   </div>
+                  {lastChecked && (
+                    <p className="mt-3 text-xs text-white/30">
+                      آخر تحديث:{' '}
+                      {lastChecked.toLocaleTimeString('ar-LY', { hour: '2-digit', minute: '2-digit' })}
+                      {' · '}يُحدّث تلقائياً كل 30 ثانية
+                    </p>
+                  )}
                 </div>
               )}
 

@@ -112,5 +112,8 @@ export async function GET(request: NextRequest) {
   }
 
   // ── Fallback: something went wrong ────────────────────────────────────────
-  return NextResponse.redirect(`${origin}/login?error=auth_callback_failed`);
+  // Route to /login with an explicit error code the page can surface.
+  const params = new URLSearchParams({ error: 'auth_callback_failed' });
+  if (type) params.set('type', type);
+  return NextResponse.redirect(`${origin}/login?${params.toString()}`);
 }

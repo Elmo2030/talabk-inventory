@@ -1,15 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { Eye, EyeOff, AlertCircle, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 import TalabkLogo from '@/components/ui/TalabkLogo';
 
 export default function LoginPage() {
-  const router   = useRouter();
-  const supabase = getSupabaseClient();
+  const router       = useRouter();
+  const searchParams = useSearchParams();
+  const supabase     = getSupabaseClient();
 
   const [email,        setEmail]        = useState('');
   const [password,     setPassword]     = useState('');
@@ -17,6 +18,19 @@ export default function LoginPage() {
   const [loading,      setLoading]      = useState(false);
   const [errorMsg,     setErrorMsg]     = useState('');
   const [capsLockOn,   setCapsLockOn]   = useState(false);
+
+  // Surface auth-callback failures (e.g. expired recovery link) as a visible message.
+  useEffect(() => {
+    const err = searchParams.get('error');
+    if (err === 'auth_callback_failed') {
+      const type = searchParams.get('type');
+      setErrorMsg(
+        type === 'recovery'
+          ? 'انتهت صلاحية رابط إعادة تعيين كلمة المرور. اطلب رابطاً جديداً'
+          : 'فشل التحقق من الرابط — قد يكون منتهياً أو مُستخدماً مسبقاً'
+      );
+    }
+  }, [searchParams]);
 
   const [forgotMode,    setForgotMode]    = useState(false);
   const [forgotEmail,   setForgotEmail]   = useState('');
@@ -81,7 +95,20 @@ export default function LoginPage() {
       });
 
       if (error || !data.session) {
-        setErrorMsg('البريد الإلكتروني أو كلمة المرور غير صحيحة');
+        // Differentiate common Supabase auth errors so the user knows
+        // what to fix. We keep the wrong-credentials message intentionally
+        // generic to avoid leaking which emails are registered (account
+        // enumeration), but flag rate-limit / email-not-confirmed cases.
+        const code = error?.message?.toLowerCase() ?? '';
+        if (code.includes('rate') || code.includes('too many')) {
+          setErrorMsg('محاولات كثيرة. حاول مرة أخرى بعد دقائق');
+        } else if (code.includes('confirm') || code.includes('email not confirmed')) {
+          setErrorMsg('الحساب غير مفعّل. افتح البريد لتأكيد البريد الإلكتروني');
+        } else if (code.includes('disabled')) {
+          setErrorMsg('الحساب موقوف. تواصل مع الدعم');
+        } else {
+          setErrorMsg('البريد الإلكتروني أو كلمة المرور غير صحيحة');
+        }
         return;
       }
 

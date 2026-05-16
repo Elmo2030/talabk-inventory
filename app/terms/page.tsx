@@ -47,6 +47,16 @@ export default function TermsPage() {
           </ul>
         </section>
 
+        <section id="refund" className="space-y-3 scroll-mt-12">
+          <h2 className="text-xl font-semibold">سياسة الاسترجاع</h2>
+          <ul className="list-disc pr-6 text-white/80 space-y-1">
+            <li>الاشتراك الشهري قابل للاسترجاع كاملاً خلال 7 أيام من الدفع الأول لباقة جديدة، شرط عدم تجاوز 5 طلبات بيع.</li>
+            <li>الاشتراكات السنوية: استرجاع جزئي حسب الأشهر غير المستخدمة بعد خصم رسوم التشغيل.</li>
+            <li>لا يحق الاسترجاع في حالة إيقاف الحساب بسبب انتهاك الشروط.</li>
+            <li>تتم معالجة طلبات الاسترجاع خلال 7 أيام عمل بنفس وسيلة الدفع الأصلية.</li>
+          </ul>
+        </section>
+
         <section className="space-y-3">
           <h2 className="text-xl font-semibold">حدود المسؤولية</h2>
           <p className="text-white/80">

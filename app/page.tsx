@@ -138,7 +138,7 @@ export default function LandingPage() {
           </h1>
 
           <p className="text-white/50 text-lg sm:text-xl max-w-2xl mx-auto leading-relaxed mb-10">
-            الحل المتكامل لإدارة المبيعات، المخازن، واللوجستيات في ليبيا
+            وفّر ساعات أسبوعياً من المحاسبة اليدوية — أدر مبيعاتك ومخزونك وتوصيلاتك في مكان واحد.
           </p>
 
           {/* CTAs */}
@@ -421,6 +421,7 @@ export default function LandingPage() {
           <div className="flex items-center gap-4 text-xs">
             <a href="/privacy" className="text-white/40 hover:text-white/80 transition-colors">سياسة الخصوصية</a>
             <a href="/terms"   className="text-white/40 hover:text-white/80 transition-colors">شروط الاستخدام</a>
+            <a href="/terms#refund" className="text-white/40 hover:text-white/80 transition-colors">سياسة الاسترجاع</a>
           </div>
           <p className="text-white/30 text-xs">
             جميع الحقوق محفوظة © 2026 — صنع بواسطة{' '}

@@ -177,7 +177,16 @@ function ReviewDialog({ payment, action, onClose, onDone }: ReviewDialogProps) {
           </p>
           {payment.tx_hash && (
             <p className="text-slate-600 dark:text-slate-400">
-              TX: <span className="font-mono text-xs text-slate-700 dark:text-slate-300">{truncate(payment.tx_hash, 24)}</span>
+              TX:{' '}
+              <a
+                href={`https://tronscan.org/#/transaction/${payment.tx_hash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-mono text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                title="افتح المعاملة على TronScan"
+              >
+                {truncate(payment.tx_hash, 24)} ↗
+              </a>
             </p>
           )}
         </div>
@@ -351,8 +360,8 @@ export default function SuperAdminPaymentsPage() {
 
                     {/* Amount */}
                     <td className="px-4 py-3 font-semibold text-slate-800 dark:text-slate-200 whitespace-nowrap">
-                      ${p.amount.toFixed(2)}
-                      <span className="text-xs font-normal text-slate-400 mr-0.5">{p.currency}</span>
+                      {p.amount.toLocaleString('ar-LY', { minimumFractionDigits: 2 })}
+                      <span className="text-xs font-normal text-slate-400 mr-0.5">{p.currency === 'LYD' ? 'د.ل' : p.currency}</span>
                     </td>
 
                     {/* Method */}
@@ -364,9 +373,15 @@ export default function SuperAdminPaymentsPage() {
                     <td className="px-4 py-3">
                       {p.tx_hash ? (
                         <div className="flex items-center gap-1">
-                          <span className="font-mono text-xs text-slate-700 dark:text-slate-300">
-                            {truncate(p.tx_hash, 14)}
-                          </span>
+                          <a
+                            href={`https://tronscan.org/#/transaction/${p.tx_hash}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-mono text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                            title="افتح المعاملة على TronScan"
+                          >
+                            {truncate(p.tx_hash, 14)} ↗
+                          </a>
                           <CopyButton text={p.tx_hash} />
                         </div>
                       ) : (

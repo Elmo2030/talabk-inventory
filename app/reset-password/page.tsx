@@ -275,21 +275,43 @@ function ResetPasswordInner() {
                 </div>
               </div>
 
-              {/* Strength indicator */}
-              {password.length > 0 && (
-                <div className="flex gap-1">
-                  {[...Array(4)].map((_, i) => (
-                    <div
-                      key={i}
-                      className={`h-1 flex-1 rounded-full transition-colors ${
-                        password.length < 6 ? (i === 0 ? 'bg-red-500' : 'bg-white/10') :
-                        password.length < 8 ? (i <= 1 ? 'bg-yellow-500' : 'bg-white/10') :
-                        password.length < 12 ? (i <= 2 ? 'bg-blue-500' : 'bg-white/10') :
-                        'bg-green-500'
-                      }`}
-                    />
-                  ))}
-                </div>
+              {/* Strength indicator (length + character diversity) */}
+              {password.length > 0 && (() => {
+                const lengthScore = password.length >= 12 ? 2 : password.length >= 8 ? 1 : 0;
+                const diversityScore =
+                  (/[a-z]/.test(password) ? 1 : 0) +
+                  (/[A-Z]/.test(password) ? 1 : 0) +
+                  (/[0-9]/.test(password) ? 1 : 0) +
+                  (/[^a-zA-Z0-9]/.test(password) ? 1 : 0);
+                const score = Math.min(4, lengthScore + Math.min(2, diversityScore));
+                const labels = ['ضعيف جداً', 'ضعيف', 'متوسط', 'قوي', 'قوي جداً'];
+                const colors = ['bg-red-500', 'bg-red-500', 'bg-yellow-500', 'bg-blue-500', 'bg-green-500'];
+                const textColors = ['text-red-400', 'text-red-400', 'text-yellow-400', 'text-blue-400', 'text-green-400'];
+                return (
+                  <div className="space-y-1.5">
+                    <div className="flex gap-1">
+                      {[...Array(4)].map((_, i) => (
+                        <div
+                          key={i}
+                          className={`h-1 flex-1 rounded-full transition-colors ${
+                            i < score ? colors[score] : 'bg-white/10'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <p className={`text-[11px] ${textColors[score]}`}>
+                      قوة كلمة المرور: {labels[score]}
+                    </p>
+                  </div>
+                );
+              })()}
+
+              {/* Match feedback */}
+              {confirmPassword.length > 0 && password !== confirmPassword && (
+                <p className="text-[11px] text-red-400">⚠️ كلمتا المرور غير متطابقتين</p>
+              )}
+              {confirmPassword.length > 0 && password === confirmPassword && password.length >= 8 && (
+                <p className="text-[11px] text-green-400">✓ كلمتا المرور متطابقتان</p>
               )}
 
               <button
