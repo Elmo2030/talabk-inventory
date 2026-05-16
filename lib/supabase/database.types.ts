@@ -173,6 +173,150 @@ export type Database = {
           }
         ];
       };
+      // ── Purchase Invoices ─────────────────────────────────────
+      purchase_invoices: {
+        Row: {
+          id: string;
+          invoice_number: string;
+          supplier_id: string | null;
+          supplier_name: string;
+          invoice_date: string;
+          currency: string;
+          exchange_rate: number;
+          intl_shipping: number;
+          local_shipping: number;
+          customs_duties: number;
+          clearance_fees: number;
+          other_expenses: number;
+          allocation_method: 'VALUE' | 'QUANTITY' | 'EQUAL';
+          items: unknown;
+          subtotal: number;
+          total_landed_costs: number;
+          grand_total: number;
+          status: 'DRAFT' | 'CONFIRMED' | 'RECEIVED';
+          notes: string;
+          created_at: string;
+          received_at: string | null;
+          payment_status: 'unpaid' | 'partial' | 'paid';
+          paid_amount: number;
+          due_date: string | null;
+          payments: unknown;
+          tenant_id: string | null;
+        };
+        Insert: {
+          id?: string;
+          invoice_number: string;
+          supplier_id?: string | null;
+          supplier_name?: string;
+          invoice_date: string;
+          currency?: string;
+          exchange_rate?: number;
+          intl_shipping?: number;
+          local_shipping?: number;
+          customs_duties?: number;
+          clearance_fees?: number;
+          other_expenses?: number;
+          allocation_method?: 'VALUE' | 'QUANTITY' | 'EQUAL';
+          items?: unknown;
+          subtotal?: number;
+          total_landed_costs?: number;
+          grand_total?: number;
+          status?: 'DRAFT' | 'CONFIRMED' | 'RECEIVED';
+          notes?: string;
+          created_at?: string;
+          received_at?: string | null;
+          payment_status?: 'unpaid' | 'partial' | 'paid';
+          paid_amount?: number;
+          due_date?: string | null;
+          payments?: unknown;
+          tenant_id?: string | null;
+        };
+        Update: Partial<Database['public']['Tables']['purchase_invoices']['Insert']>;
+        Relationships: [
+          {
+            foreignKeyName: "purchase_invoices_supplier_id_fkey";
+            columns: ["supplier_id"];
+            isOneToOne: false;
+            referencedRelation: "suppliers";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      // ── Sales Orders ──────────────────────────────────────────
+      sales_orders: {
+        Row: {
+          id: string;
+          order_number: string;
+          customer_name: string;
+          customer_phone: string;
+          customer_city: string;
+          customer_address: string;
+          delivery_type: 'home' | 'office' | 'female';
+          items: unknown;
+          shipping_cost: number;
+          shipping_on_store: boolean;
+          subtotal: number;
+          discount_amount: number;
+          discount_type: string | null;
+          discount_value: number | null;
+          coupon_code: string | null;
+          customer_total: number;
+          total_cogs: number;
+          gross_profit: number;
+          net_profit: number;
+          profit_margin: number;
+          vat_rate: number | null;
+          vat_amount: number | null;
+          status: 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
+          tracking_number: string | null;
+          shipping_carrier: string | null;
+          notes: string;
+          customer_payment_status: 'unpaid' | 'partial' | 'paid' | null;
+          customer_paid_amount: number | null;
+          customer_payments: unknown;
+          created_at: string;
+          shipped_at: string | null;
+          delivered_at: string | null;
+          tenant_id: string | null;
+        };
+        Insert: {
+          id?: string;
+          order_number: string;
+          customer_name: string;
+          customer_phone?: string;
+          customer_city?: string;
+          customer_address?: string;
+          delivery_type?: 'home' | 'office' | 'female';
+          items?: unknown;
+          shipping_cost?: number;
+          shipping_on_store?: boolean;
+          subtotal?: number;
+          discount_amount?: number;
+          discount_type?: string | null;
+          discount_value?: number | null;
+          coupon_code?: string | null;
+          customer_total?: number;
+          total_cogs?: number;
+          gross_profit?: number;
+          net_profit?: number;
+          profit_margin?: number;
+          vat_rate?: number | null;
+          vat_amount?: number | null;
+          status?: 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
+          tracking_number?: string | null;
+          shipping_carrier?: string | null;
+          notes?: string;
+          customer_payment_status?: 'unpaid' | 'partial' | 'paid' | null;
+          customer_paid_amount?: number | null;
+          customer_payments?: unknown;
+          created_at?: string;
+          shipped_at?: string | null;
+          delivered_at?: string | null;
+          tenant_id?: string | null;
+        };
+        Update: Partial<Database['public']['Tables']['sales_orders']['Insert']>;
+        Relationships: [];
+      };
       // ── Multi-Tenant tables ───────────────────────────────────
       tenants: {
         Row: {

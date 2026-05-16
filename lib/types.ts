@@ -294,6 +294,8 @@ export type SalesOrder = {
   storeShippingExpense: number; // shippingCost if shippingOnStore else 0
   storePackagingExpense: number; // packagingCost if packagingOnStore else 0
   grossProfit: number;        // subtotalProducts - totalCOGS
+  vatRate?: number;           // نسبة الضريبة %
+  vatAmount?: number;         // مبلغ الضريبة
   netProfit: number;          // grossProfit - storeShippingExpense - storePackagingExpense
   profitMargin: number;       // netProfit / subtotalProducts * 100
 

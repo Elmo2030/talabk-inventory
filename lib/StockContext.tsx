@@ -24,6 +24,8 @@ import { itemsService } from '@/lib/services/itemsService';
 import { stockInService } from '@/lib/services/stockInService';
 import { stockOutService } from '@/lib/services/stockOutService';
 import { currentStockService } from '@/lib/services/currentStockService';
+import { purchaseInvoicesService } from '@/lib/services/purchaseInvoicesService';
+import { salesOrdersService } from '@/lib/services/salesOrdersService';
 
 // Mock mode imports — only active when NEXT_PUBLIC_USE_MOCK=true
 import {
@@ -59,12 +61,9 @@ const _stockIn    = USE_MOCK ? mockStockInService      : stockInService;
 const _stockOut   = USE_MOCK ? mockStockOutService     : stockOutService;
 const _stockView  = USE_MOCK ? mockCurrentStockService : currentStockService;
 
-// Purchase invoices & sales orders use localStorage-backed storage (tenant-scoped by user ID).
-// A future migration to Supabase requires adding purchase_invoices and sales_orders tables
-// to the schema and implementing real services in /lib/services/.
-// Until then these always use the localStorage mock — this is intentional and correct.
-const _purchases  = mockPurchaseInvoicesService;
-const _orders     = mockSalesOrdersService;
+// Purchase invoices & sales orders: use Supabase in production, localStorage mock in demo mode
+const _purchases  = USE_MOCK ? mockPurchaseInvoicesService : purchaseInvoicesService;
+const _orders     = USE_MOCK ? mockSalesOrdersService     : salesOrdersService;
 
 // ============================================
 // Context Type
@@ -468,14 +467,44 @@ export function StockProvider({ children }: { children: ReactNode }) {
   const updateSalesOrder = useCallback(
     async (id: string, updates: Partial<SalesOrder>) => {
       try {
+        // If transitioning to CANCELLED, reverse stock deductions
+        if (updates.status === 'CANCELLED') {
+          const currentOrder = salesOrders.find((o) => o.id === id);
+          if (currentOrder && currentOrder.status !== 'CANCELLED') {
+            for (const orderItem of currentOrder.items) {
+              await _stockIn.create({
+                date: new Date().toISOString().split('T')[0],
+                invoiceNo: `CANCEL-${currentOrder.orderNumber}`,
+                itemId: orderItem.itemId,
+                supplierId: '',
+                quantity: orderItem.quantity,
+                unitPrice: orderItem.costSnapshot,
+                responsibleEmployee: 'نظام الإلغاء',
+                notes: `إعادة مخزون - إلغاء طلب ${currentOrder.orderNumber}`,
+              });
+            }
+          }
+        }
+
         const updated = await _orders.update(id, updates);
         setSalesOrders((prev) => prev.map((o) => (o.id === id ? updated : o)));
+
+        // Refresh stock view after any update (especially CANCELLED, which restored stock)
+        if (updates.status === 'CANCELLED') {
+          const [newStockIn, newStock] = await Promise.all([
+            _stockIn.getAll(),
+            _stockView.getAll(),
+          ]);
+          setStockIn(newStockIn);
+          setCurrentStock(newStock);
+        }
+
         return { success: true };
       } catch (err) {
         return { success: false, error: err instanceof Error ? err.message : 'فشل التعديل' };
       }
     },
-    []
+    [salesOrders, refreshStock]
   );
 
   const deleteSalesOrder = useCallback(async (id: string) => {

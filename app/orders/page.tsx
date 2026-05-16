@@ -16,6 +16,7 @@ import {
   Copy,
   Check,
   Banknote,
+  Printer,
   X,
 } from 'lucide-react';
 import { useStock } from '@/lib/StockContext';
@@ -23,6 +24,8 @@ import { SalesOrder, OrderStatus } from '@/lib/types';
 import EmptyState from '@/components/ui/EmptyState';
 import Pagination from '@/components/ui/Pagination';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
+import Modal from '@/components/ui/Modal';
+import OrderReceipt from '@/components/ui/OrderReceipt';
 
 const PAGE_SIZE = 20;
 
@@ -179,6 +182,8 @@ export default function OrdersPage() {
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'ALL'>('ALL');
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
+  // Receipt modal state
+  const [receiptOrder, setReceiptOrder] = useState<SalesOrder | null>(null);
   // Customer payment modal state
   const [paymentOrder, setPaymentOrder] = useState<SalesOrder | null>(null);
   const [payAmount, setPayAmount] = useState('');
@@ -476,6 +481,14 @@ export default function OrdersPage() {
                           >
                             <Eye className="w-4 h-4" />
                           </button>
+                          <button
+                            onClick={() => setReceiptOrder(order)}
+                            className="p-1.5 text-[#6C6C70] hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="طباعة الفاتورة"
+                            aria-label="طباعة فاتورة الطلب"
+                          >
+                            <Printer className="w-4 h-4" />
+                          </button>
                           {order.customerPaymentStatus !== 'paid' && (
                             <button
                               onClick={() => { setPaymentOrder(order); setPayAmount(''); setPayNotes(''); setPayMethod('cash'); }}
@@ -514,6 +527,71 @@ export default function OrdersPage() {
           </>
         )}
       </div>
+
+      {/* Receipt Modal */}
+      <Modal
+        isOpen={!!receiptOrder}
+        onClose={() => setReceiptOrder(null)}
+        title={`فاتورة الطلب — ${receiptOrder?.orderNumber ?? ''}`}
+        size="sm"
+      >
+        {receiptOrder && (
+          <div dir="rtl" className="space-y-4">
+            {/* Print action row */}
+            <div className="flex justify-end">
+              <OrderReceipt order={receiptOrder} />
+            </div>
+            {/* Receipt preview summary */}
+            <div className="border border-[#E5E5EA] rounded-xl p-4 space-y-2 text-sm text-[#1C1C1E]">
+              <div className="flex justify-between">
+                <span className="text-[#6C6C70]">العميل</span>
+                <span className="font-medium">{receiptOrder.customerName}</span>
+              </div>
+              {receiptOrder.customerPhone && (
+                <div className="flex justify-between">
+                  <span className="text-[#6C6C70]">الهاتف</span>
+                  <span>{receiptOrder.customerPhone}</span>
+                </div>
+              )}
+              {receiptOrder.customerCity && (
+                <div className="flex justify-between">
+                  <span className="text-[#6C6C70]">المدينة</span>
+                  <span>{receiptOrder.customerCity}</span>
+                </div>
+              )}
+              <div className="border-t border-[#E5E5EA] pt-2 mt-2 space-y-1">
+                <div className="flex justify-between">
+                  <span className="text-[#6C6C70]">المجموع الفرعي</span>
+                  <span>{receiptOrder.subtotalProducts.toLocaleString('en-US', { minimumFractionDigits: 2 })} د.ل</span>
+                </div>
+                {receiptOrder.shippingCost > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-[#6C6C70]">الشحن</span>
+                    <span>{receiptOrder.shippingCost.toLocaleString('en-US', { minimumFractionDigits: 2 })} د.ل</span>
+                  </div>
+                )}
+                {receiptOrder.discountAmount && receiptOrder.discountAmount > 0 && (
+                  <div className="flex justify-between text-red-600">
+                    <span>الخصم{receiptOrder.couponCode ? ` (${receiptOrder.couponCode})` : ''}</span>
+                    <span>-{receiptOrder.discountAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })} د.ل</span>
+                  </div>
+                )}
+                {receiptOrder.vatAmount && receiptOrder.vatAmount > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-[#6C6C70]">ضريبة VAT{receiptOrder.vatRate ? ` (${receiptOrder.vatRate}%)` : ''}</span>
+                    <span>{receiptOrder.vatAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })} د.ل</span>
+                  </div>
+                )}
+                <div className="flex justify-between font-bold border-t border-[#E5E5EA] pt-2 text-base">
+                  <span>الإجمالي</span>
+                  <span>{receiptOrder.customerTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })} د.ل</span>
+                </div>
+              </div>
+            </div>
+            <p className="text-xs text-[#6C6C70] text-center">اضغط على زر "طباعة" أعلاه لطباعة الفاتورة أو حفظها كـ PDF</p>
+          </div>
+        )}
+      </Modal>
 
       {/* Customer Payment Modal */}
       {paymentOrder && (

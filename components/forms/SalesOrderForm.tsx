@@ -283,6 +283,8 @@ export default function SalesOrderForm({ onSuccess, onCancel }: Props) {
       storeShippingExpense,
       storePackagingExpense,
       grossProfit,
+      vatRate: vatEnabled ? vatRate : undefined,
+      vatAmount: vatEnabled ? vatAmount : undefined,
       netProfit,
       profitMargin,
       status: 'PENDING',
