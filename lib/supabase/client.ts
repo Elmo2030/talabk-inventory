@@ -1,28 +1,33 @@
 'use client';
 
 import { createBrowserClient } from '@supabase/ssr';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from './database.types';
 
 // ============================================
 // Browser Client — uses @supabase/ssr so the session is written to
 // cookies (sb-*-auth-token) that the Edge middleware and Server
-// Components can read. The previous @supabase/supabase-js client
-// only persisted to localStorage, which caused middleware to bounce
-// authenticated users back to /login.
+// Components can read.
+//
+// We cast the return type to `SupabaseClient<Database>` (the type
+// produced by @supabase/supabase-js) because the rest of the codebase
+// expects that shape — @supabase/ssr's generic inference produces a
+// slightly different SupabaseClient signature that breaks downstream
+// query typing (results become `never`).
 // ============================================
 
-export function createClient() {
+export function createClient(): SupabaseClient<Database> {
   return createBrowserClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  );
+  ) as unknown as SupabaseClient<Database>;
 }
 
 // Singleton instance for consistent state across the app.
 // One client per browser session — token-refresh timers are shared.
-let browserClient: ReturnType<typeof createClient> | undefined;
+let browserClient: SupabaseClient<Database> | undefined;
 
-export function getSupabaseClient() {
+export function getSupabaseClient(): SupabaseClient<Database> {
   if (!browserClient) {
     browserClient = createClient();
   }
