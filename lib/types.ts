@@ -406,15 +406,17 @@ export interface RegistrationRequest {
 export interface SubscriptionPayment {
   id: string;
   tenantId: string;
-  amount: number;
-  currency: string;
-  moyasarId?: string;
-  moyasarStatus?: string;
   plan: string;
   billingMonths: number;
-  description?: string;
+  amount: number;
+  currency: string;
+  paymentMethod: 'cash' | 'usdt';
+  status: 'pending' | 'approved' | 'rejected';
+  txHash?: string;
+  proofNotes?: string;
+  adminNotes?: string;
+  reviewedAt?: string;
   createdAt: string;
-  confirmedAt?: string;
 }
 
 export interface SubscriptionEvent {
