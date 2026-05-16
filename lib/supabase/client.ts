@@ -1,17 +1,20 @@
 'use client';
 
-import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+import { createBrowserClient } from '@supabase/ssr';
 import type { Database } from './database.types';
 
 // ============================================
-// Browser Client - يُستخدم في Client Components
-// نستخدم @supabase/supabase-js مباشرةً لدعم TypeScript الكامل
+// Browser Client — uses @supabase/ssr so the session is written to
+// cookies (sb-*-auth-token) that the Edge middleware and Server
+// Components can read. The previous @supabase/supabase-js client
+// only persisted to localStorage, which caused middleware to bounce
+// authenticated users back to /login.
 // ============================================
 
 export function createClient() {
-  return createSupabaseClient<Database>(
+  return createBrowserClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
   );
 }
 
