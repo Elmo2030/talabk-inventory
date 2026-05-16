@@ -19,7 +19,15 @@ import Pagination from '@/components/ui/Pagination';
 const PAGE_SIZE = 15;
 
 export default function SuppliersPage() {
-  const { suppliers, addSupplier, updateSupplier, deleteSupplier } = useStock();
+  const { suppliers, items, addSupplier, updateSupplier, deleteSupplier } = useStock();
+
+  // Quick stats: how many items each supplier ships. Computed once per
+  // render — cheap because both arrays are small.
+  const itemCountBySupplier = useMemo(() => {
+    const map: Record<string, number> = {};
+    items.forEach(i => { if (i.supplierId) map[i.supplierId] = (map[i.supplierId] ?? 0) + 1; });
+    return map;
+  }, [items]);
   const toast = useToast();
   const { confirm } = useConfirm();
   const [searchQuery, setSearchQuery] = useState('');
@@ -168,7 +176,14 @@ export default function SuppliersPage() {
                   {paginated.map((s) => (
                     <tr key={s.id} className="hover:bg-slate-50">
                       <td className="px-3 py-3 font-mono text-slate-700">{s.code}</td>
-                      <td className="px-3 py-3 font-medium text-slate-900">{s.name}</td>
+                      <td className="px-3 py-3 font-medium text-slate-900">
+                        {s.name}
+                        {itemCountBySupplier[s.id] > 0 && (
+                          <span className="block text-[10px] font-normal text-slate-400 mt-0.5">
+                            {itemCountBySupplier[s.id]} صنف
+                          </span>
+                        )}
+                      </td>
                       <td className="px-3 py-3">
                         <Badge variant="info">{s.productType}</Badge>
                       </td>

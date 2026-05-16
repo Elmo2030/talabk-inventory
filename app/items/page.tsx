@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
-import { Plus, Trash2, Pencil, Package, AlertTriangle, ExternalLink } from 'lucide-react';
+import { Plus, Trash2, Pencil, Package, AlertTriangle, ExternalLink, Download, Upload } from 'lucide-react';
 import { useStock } from '@/lib/StockContext';
 import { Item } from '@/lib/types';
 import Button from '@/components/ui/Button';
@@ -87,6 +87,97 @@ export default function ItemsPage() {
     }
   };
 
+  // ── CSV export / import ───────────────────────────────────────────────────
+  const exportItemsCsv = () => {
+    if (items.length === 0) return;
+    const headers = ['code', 'name', 'category', 'unit', 'purchase_price', 'selling_price', 'opening_qty', 'min_stock_level', 'reorder_level', 'location'];
+    const rows = items.map(i => [
+      i.code, i.name, i.category, i.unit ?? '',
+      i.purchasePrice ?? 0, i.sellingPrice ?? 0, i.openingQty ?? 0,
+      i.minStockLevel ?? 0, i.reorderLevel ?? 0, i.location ?? '',
+    ]);
+    const esc = (v: string | number) => {
+      const s = String(v);
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const csv = [headers, ...rows].map(r => r.map(esc).join(',')).join('\n');
+    // UTF-8 BOM for Excel to render Arabic correctly
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = `items-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`تم تصدير ${items.length} صنف`);
+  };
+
+  const onImportCsv = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // reset so re-selecting same file works
+    if (!file) return;
+    const text = await file.text();
+    // Strip BOM, split on LF/CRLF
+    const lines = text.replace(/^﻿/, '').split(/\r?\n/).filter(Boolean);
+    if (lines.length < 2) {
+      toast.error('الملف فارغ أو لا يحتوي بيانات');
+      return;
+    }
+    // very small CSV parser — handles "..."-quoted cells with commas
+    const parseLine = (line: string): string[] => {
+      const out: string[] = [];
+      let cur = '', inQuote = false;
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (inQuote) {
+          if (ch === '"' && line[i + 1] === '"') { cur += '"'; i++; }
+          else if (ch === '"') inQuote = false;
+          else cur += ch;
+        } else {
+          if (ch === ',') { out.push(cur); cur = ''; }
+          else if (ch === '"') inQuote = true;
+          else cur += ch;
+        }
+      }
+      out.push(cur);
+      return out;
+    };
+    const headers = parseLine(lines[0]).map(h => h.trim());
+    const required = ['code', 'name', 'category'];
+    if (!required.every(r => headers.includes(r))) {
+      toast.error(`الأعمدة المطلوبة: ${required.join(', ')}`);
+      return;
+    }
+    let success = 0, failed = 0;
+    for (let i = 1; i < lines.length; i++) {
+      const cells = parseLine(lines[i]);
+      const row: Record<string, string> = {};
+      headers.forEach((h, idx) => { row[h] = (cells[idx] ?? '').trim(); });
+      if (!row.code || !row.name || !row.category) { failed++; continue; }
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (addItem as any)({
+          code:           row.code,
+          name:           row.name,
+          category:       row.category,
+          unit:           row.unit || 'قطعة',
+          supplierId:     row.supplier_id || '',
+          purchasePrice:  Number(row.purchase_price)  || 0,
+          sellingPrice:   Number(row.selling_price)   || 0,
+          openingQty:     Number(row.opening_qty)     || 0,
+          minStockLevel:  Number(row.min_stock_level) || 0,
+          reorderLevel:   Number(row.reorder_level)   || 0,
+          location:       row.location  || '',
+          status:         'ACTIVE',
+        });
+        success++;
+      } catch {
+        failed++;
+      }
+    }
+    if (failed > 0) toast.error(`نجح ${success}، فشل ${failed} صف`);
+    else toast.success(`تم استيراد ${success} صنف`);
+  };
+
   const handleDelete = async (item: Item) => {
     const confirmed = await confirm({
       title: 'حذف الصنف',
@@ -114,13 +205,36 @@ export default function ItemsPage() {
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">السجل الرئيسي لجميع أصناف المخزون</p>
         </div>
-        <Button
-          onClick={openAddModal}
-          icon={<Plus className="w-4 h-4" />}
-          aria-label="إضافة صنف جديد"
-        >
-          إضافة صنف جديد
-        </Button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            type="button"
+            onClick={exportItemsCsv}
+            disabled={items.length === 0}
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-sm rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            title="تنزيل الأصناف كملف CSV"
+          >
+            <Download className="w-4 h-4" /> تصدير CSV
+          </button>
+          <label
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-sm rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 cursor-pointer"
+            title="استيراد أصناف من ملف CSV"
+          >
+            <Upload className="w-4 h-4" /> استيراد CSV
+            <input
+              type="file"
+              accept=".csv,text/csv"
+              className="hidden"
+              onChange={onImportCsv}
+            />
+          </label>
+          <Button
+            onClick={openAddModal}
+            icon={<Plus className="w-4 h-4" />}
+            aria-label="إضافة صنف جديد"
+          >
+            إضافة صنف جديد
+          </Button>
+        </div>
       </div>
 
       <div className="flex items-center justify-between mb-4 gap-4">
