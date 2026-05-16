@@ -24,6 +24,8 @@ import {
   UserCircle,
   RotateCcw,
   Tag,
+  MessageSquare,
+  Warehouse,
 } from 'lucide-react';
 import { useStock } from '@/lib/StockContext';
 import { useAuth } from '@/lib/AuthContext';
@@ -47,6 +49,7 @@ const navGroups: NavGroup[] = [
       { href: '/stock-in', label: 'إضافة مخزون', icon: ArrowDownToLine },
       { href: '/stock-out', label: 'صرف مخزون', icon: ArrowUpFromLine },
       { href: '/current-stock', label: 'المخزون الحالي', icon: BarChart3 },
+      { href: '/warehouses', label: 'المستودعات', icon: Warehouse },
     ],
   },
   {
@@ -57,6 +60,7 @@ const navGroups: NavGroup[] = [
       { href: '/returns', label: 'المرتجعات', icon: RotateCcw },
       { href: '/coupons', label: 'الكوبونات', icon: Tag },
       { href: '/customers', label: 'العملاء', icon: UserCircle },
+      { href: '/messages', label: 'قوالب الرسائل', icon: MessageSquare },
     ],
   },
   {
@@ -64,6 +68,7 @@ const navGroups: NavGroup[] = [
     items: [
       { href: '/analytics', label: 'التحليلات', icon: BarChart2 },
       { href: '/reports', label: 'التقارير', icon: FileText },
+      { href: '/delivery', label: 'لوحة التوصيل', icon: Truck },
       { href: '/shipping-calculator', label: 'حاسبة الشحن', icon: Truck },
     ],
   },

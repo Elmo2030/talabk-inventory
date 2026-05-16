@@ -47,6 +47,12 @@ export type Item = {
   hasVariants?: boolean;
   variants?: ItemVariant[];
   imageUrl?: string;
+  // Wholesale pricing tiers (شرائح سعرية)
+  priceTiers?: Array<{
+    minQty: number;   // minimum quantity to qualify for this tier
+    price: number;    // price per unit at this tier
+    label?: string;   // e.g. "جملة", "نصف جملة"
+  }>;
 };
 
 export type StockInMovement = {
@@ -283,6 +289,16 @@ export type SalesOrder = {
   shippedAt?: string;
   // Returns reference
   hasReturn?: boolean;
+  // Customer payment tracking
+  customerPaymentStatus?: 'unpaid' | 'partial' | 'paid';
+  customerPaidAmount?: number;
+  customerPayments?: Array<{
+    id: string;
+    amount: number;
+    date: string;
+    method: 'cash' | 'bank_transfer' | 'check';
+    notes?: string;
+  }>;
 };
 
 // ── Multi-Tenant / SaaS ───────────────────────────────────────────────────────
@@ -381,7 +397,9 @@ export type Permission =
   | 'users:read'     | 'users:write'
   | 'customers:read'
   | 'returns:read'   | 'returns:write'
-  | 'coupons:read'   | 'coupons:write';
+  | 'coupons:read'   | 'coupons:write'
+  | 'analytics:read'
+  | 'purchase_prices:read';
 
 export const DEFAULT_PERMISSIONS: Record<UserRole, Record<Permission, boolean>> = {
   super_admin: Object.fromEntries(
@@ -390,6 +408,7 @@ export const DEFAULT_PERMISSIONS: Record<UserRole, Record<Permission, boolean>> 
        'purchases:read','purchases:write','orders:read','orders:write',
        'reports:read','settings:read','settings:write','users:read','users:write',
        'customers:read','returns:read','returns:write','coupons:read','coupons:write',
+       'analytics:read','purchase_prices:read',
     ] as Permission[]).map(k => [k, true])
   ) as Record<Permission, boolean>,
 
@@ -399,6 +418,7 @@ export const DEFAULT_PERMISSIONS: Record<UserRole, Record<Permission, boolean>> 
        'purchases:read','purchases:write','orders:read','orders:write',
        'reports:read','settings:read','settings:write','users:read','users:write',
        'customers:read','returns:read','returns:write','coupons:read','coupons:write',
+       'analytics:read','purchase_prices:read',
     ] as Permission[]).map(k => [k, true])
   ) as Record<Permission, boolean>,
 
@@ -415,5 +435,7 @@ export const DEFAULT_PERMISSIONS: Record<UserRole, Record<Permission, boolean>> 
     'customers:read': true,
     'returns:read': true,   'returns:write': true,
     'coupons:read': true,   'coupons:write': false,
+    'analytics:read': false,
+    'purchase_prices:read': false,
   },
 };

@@ -25,6 +25,7 @@ import {
   Cloud,
   CloudOff,
   Loader2,
+  ShieldCheck,
 } from 'lucide-react';
 
 // ============================================
@@ -461,6 +462,52 @@ export default function SettingsPage() {
                 </Button>
               </div>
             </div>
+          </div>
+
+          {/* صلاحيات المستخدمين */}
+          <div className="bg-white rounded-xl border border-slate-200 p-6">
+            <div className="flex items-center gap-2 mb-3">
+              <ShieldCheck className="w-5 h-5 text-brand-600" />
+              <h2 className="text-base font-semibold text-slate-900">صلاحيات المستخدمين</h2>
+            </div>
+            <p className="text-sm text-slate-500 mb-4">
+              يمكن ضبط صلاحيات المستخدمين بشكل تفصيلي من خلال لوحة إدارة المستخدمين في Supabase أو من صفحة المستخدمين.
+            </p>
+            <div className="space-y-3">
+              {[
+                {
+                  permission: 'purchase_prices:read',
+                  label: 'عرض أسعار الشراء وهامش الربح',
+                  description: 'يتيح للمستخدم رؤية سعر الشراء وهامش الربح في قائمة الأصناف.',
+                  roles: ['super_admin', 'tenant_admin'],
+                },
+                {
+                  permission: 'analytics:read',
+                  label: 'عرض التحليلات والتقارير',
+                  description: 'يتيح الوصول إلى لوحة التحليلات وتقارير المبيعات.',
+                  roles: ['super_admin', 'tenant_admin'],
+                },
+              ].map(({ permission, label, description, roles }) => (
+                <div key={permission} className="flex items-start justify-between gap-4 p-4 border border-slate-100 rounded-xl bg-slate-50">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-slate-800">{label}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">{description}</p>
+                    <p className="text-xs font-mono text-slate-400 mt-1 ltr:text-left">{permission}</p>
+                  </div>
+                  <div className="flex-shrink-0 flex flex-col gap-1 items-end">
+                    {roles.map((r) => (
+                      <span key={r} className="inline-flex items-center px-2 py-0.5 rounded-full bg-brand-100 text-brand-700 text-[10px] font-semibold whitespace-nowrap">
+                        {r}
+                      </span>
+                    ))}
+                    <span className="text-[10px] text-slate-400 mt-0.5">مفعّل افتراضياً</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-slate-400 mt-3">
+              * لتعديل هذه الصلاحيات لمستخدم بعينه، عدّل حقل <span className="font-mono">permissions</span> في جدول <span className="font-mono">user_profiles</span> في Supabase.
+            </p>
           </div>
 
           {/* منطقة الخطر */}

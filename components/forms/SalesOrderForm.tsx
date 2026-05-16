@@ -86,16 +86,38 @@ export default function SalesOrderForm({ onSuccess, onCancel }: Props) {
       i.code.toLowerCase().includes(itemSearch.toLowerCase())
   );
 
+  // ── Tier price helper ─────────────────────────────────────────────────────
+  const getBestTierPrice = (item: Item, qty: number): number | null => {
+    if (!item.priceTiers || item.priceTiers.length === 0) return null;
+    const eligible = item.priceTiers.filter((t) => qty >= t.minQty);
+    if (eligible.length === 0) return null;
+    return eligible.sort((a, b) => b.minQty - a.minQty)[0].price;
+  };
+
+  const getBestTierLabel = (item: Item, qty: number): string | null => {
+    if (!item.priceTiers || item.priceTiers.length === 0) return null;
+    const eligible = item.priceTiers.filter((t) => qty >= t.minQty);
+    if (eligible.length === 0) return null;
+    const best = eligible.sort((a, b) => b.minQty - a.minQty)[0];
+    return best.label ?? null;
+  };
+
   const addToCart = (item: Item) => {
     const existing = cart.find((c) => c.itemId === item.id);
     if (existing) {
+      // When re-adding, bump qty and recalculate tier price
       setCart((prev) =>
-        prev.map((c) =>
-          c.itemId === item.id ? { ...c, quantity: c.quantity + 1 } : c
-        )
+        prev.map((c) => {
+          if (c.itemId !== item.id) return c;
+          const newQty = c.quantity + 1;
+          const tierPrice = getBestTierPrice(item, newQty);
+          return { ...c, quantity: newQty, sellingPrice: tierPrice ?? item.sellingPrice };
+        })
       );
     } else {
       const costSnapshot = item.movingAverageCost ?? item.purchasePrice ?? 0;
+      // At qty=1 check if any tier applies
+      const tierPrice = getBestTierPrice(item, 1);
       setCart((prev) => [
         ...prev,
         {
@@ -104,7 +126,7 @@ export default function SalesOrderForm({ onSuccess, onCancel }: Props) {
           itemCode: item.code,
           category: item.category,
           quantity: 1,
-          sellingPrice: item.sellingPrice,
+          sellingPrice: tierPrice ?? item.sellingPrice,
           costSnapshot,
         },
       ]);
@@ -112,10 +134,16 @@ export default function SalesOrderForm({ onSuccess, onCancel }: Props) {
     setItemSearch('');
   };
 
-  const updateQty = (itemId: string, delta: number) => {
+  const updateQtyWithTier = (itemId: string, delta: number) => {
+    const item = items.find((i) => i.id === itemId);
     setCart((prev) =>
-      prev
-        .map((c) => (c.itemId === itemId ? { ...c, quantity: Math.max(1, c.quantity + delta) } : c))
+      prev.map((c) => {
+        if (c.itemId !== itemId) return c;
+        const newQty = Math.max(1, c.quantity + delta);
+        const tierPrice = item ? getBestTierPrice(item, newQty) : null;
+        const newPrice = tierPrice ?? (item?.sellingPrice ?? c.sellingPrice);
+        return { ...c, quantity: newQty, sellingPrice: newPrice };
+      })
     );
   };
 
@@ -459,11 +487,22 @@ export default function SalesOrderForm({ onSuccess, onCancel }: Props) {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-[#1C1C1E] truncate">{c.itemName}</p>
                       <p className="text-xs text-[#6C6C70]">{c.itemCode}</p>
+                      {(() => {
+                        const item = items.find((i) => i.id === c.itemId);
+                        const tierLabel = item ? getBestTierLabel(item, c.quantity) : null;
+                        const tierPrice = item ? getBestTierPrice(item, c.quantity) : null;
+                        if (!tierPrice) return null;
+                        return (
+                          <span className="inline-flex items-center gap-1 mt-0.5 px-1.5 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-semibold rounded-full">
+                            💰 {tierLabel ? tierLabel : 'سعر الجملة'} (×{c.quantity})
+                          </span>
+                        );
+                      })()}
                     </div>
                     {/* Qty controls */}
                     <div className="flex items-center gap-1.5 flex-shrink-0">
                       <button
-                        onClick={() => updateQty(c.itemId, -1)}
+                        onClick={() => updateQtyWithTier(c.itemId, -1)}
                         className="w-7 h-7 flex items-center justify-center rounded-lg bg-white border border-[#E5E5EA] hover:border-[#E5302A] text-[#6C6C70] hover:text-[#E5302A] transition-colors"
                       >
                         <Minus className="w-3 h-3" />
@@ -472,7 +511,7 @@ export default function SalesOrderForm({ onSuccess, onCancel }: Props) {
                         {c.quantity}
                       </span>
                       <button
-                        onClick={() => updateQty(c.itemId, 1)}
+                        onClick={() => updateQtyWithTier(c.itemId, 1)}
                         className="w-7 h-7 flex items-center justify-center rounded-lg bg-white border border-[#E5E5EA] hover:border-[#E5302A] text-[#6C6C70] hover:text-[#E5302A] transition-colors"
                       >
                         <Plus className="w-3 h-3" />

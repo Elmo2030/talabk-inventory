@@ -5,7 +5,7 @@ import { Item, Supplier, ItemVariant } from '@/lib/types';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import Button from '@/components/ui/Button';
-import { Save, Plus, Trash2, Layers } from 'lucide-react';
+import { Save, Plus, Trash2, Layers, BadgeDollarSign } from 'lucide-react';
 import { itemCategories, storageLocations, measurementUnits } from '@/data/mock-data';
 
 interface ItemFormProps {
@@ -18,6 +18,13 @@ interface ItemFormProps {
 function genVariantId() {
   return `var-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
 }
+
+type PriceTier = {
+  id: string;
+  minQty: number;
+  price: number;
+  label: string;
+};
 
 const COLORS = ['أحمر', 'أزرق', 'أخضر', 'أسود', 'أبيض', 'رمادي', 'أصفر', 'بنفسجي', 'بني', 'وردي', 'برتقالي', 'بيج'];
 const SIZES  = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', '36', '37', '38', '39', '40', '41', '42', '43', '44', '45'];
@@ -47,6 +54,37 @@ export default function ItemForm({ initialData, suppliers, onSubmit, onCancel }:
     additionalPrice: 0,
     openingQty: 0,
   });
+
+  // ── Price Tiers (شرائح سعرية) ───────────────────────────────────────────────
+  const [hasPriceTiers, setHasPriceTiers] = useState(
+    !!(initialData?.priceTiers && initialData.priceTiers.length > 0)
+  );
+  const [priceTiers, setPriceTiers] = useState<PriceTier[]>(
+    (initialData?.priceTiers ?? []).map((t, i) => ({
+      id: `tier-${i}-${Date.now()}`,
+      minQty: t.minQty,
+      price: t.price,
+      label: t.label ?? '',
+    }))
+  );
+  const [newTier, setNewTier] = useState<{ minQty: number; price: number; label: string }>({
+    minQty: 5,
+    price: 0,
+    label: '',
+  });
+
+  const addTier = () => {
+    if (newTier.minQty < 1 || newTier.price <= 0) return;
+    setPriceTiers((prev) => [
+      ...prev,
+      { id: `tier-${Date.now()}`, ...newTier },
+    ]);
+    setNewTier({ minQty: 5, price: 0, label: '' });
+  };
+
+  const removeTier = (id: string) => {
+    setPriceTiers((prev) => prev.filter((t) => t.id !== id));
+  };
 
   const handleChange = (field: string, value: string | number) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -78,6 +116,9 @@ export default function ItemForm({ initialData, suppliers, onSubmit, onCancel }:
       ...formData,
       hasVariants,
       variants: hasVariants ? variants : [],
+      priceTiers: hasPriceTiers
+        ? priceTiers.map(({ minQty, price, label }) => ({ minQty, price, label: label || undefined }))
+        : [],
     });
   };
 
@@ -312,6 +353,122 @@ export default function ItemForm({ initialData, suppliers, onSubmit, onCancel }:
 
             {variants.length === 0 && (
               <p className="text-xs text-slate-400 text-center py-2">أضف متغيراً واحداً على الأقل</p>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* ── Price Tiers Toggle ──────────────────────────────────────────────── */}
+      <div className="border border-slate-200 rounded-xl overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setHasPriceTiers(!hasPriceTiers)}
+          className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 hover:bg-slate-100 transition-colors text-right"
+        >
+          <div className="flex items-center gap-2">
+            <BadgeDollarSign className="w-4 h-4 text-emerald-600" />
+            <span className="text-sm font-semibold text-slate-900">السعر بالجملة (شرائح سعرية)</span>
+            {hasPriceTiers && priceTiers.length > 0 && (
+              <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">
+                {priceTiers.length} شريحة
+              </span>
+            )}
+          </div>
+          <div className={`w-10 h-5 rounded-full transition-colors ${hasPriceTiers ? 'bg-emerald-600' : 'bg-slate-300'} relative`}>
+            <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${hasPriceTiers ? 'translate-x-0.5' : 'translate-x-5'}`} />
+          </div>
+        </button>
+
+        {hasPriceTiers && (
+          <div className="p-4 space-y-4">
+            {/* Existing tiers */}
+            {priceTiers.length > 0 && (
+              <div className="border border-slate-100 rounded-xl overflow-hidden">
+                <table className="w-full text-xs">
+                  <thead className="bg-slate-50 border-b border-slate-100">
+                    <tr>
+                      <th className="px-3 py-2 text-right font-semibold text-slate-600">من كمية</th>
+                      <th className="px-3 py-2 text-right font-semibold text-slate-600">السعر</th>
+                      <th className="px-3 py-2 text-right font-semibold text-slate-600">التصنيف</th>
+                      <th className="px-3 py-2" />
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {priceTiers
+                      .slice()
+                      .sort((a, b) => a.minQty - b.minQty)
+                      .map((tier) => (
+                        <tr key={tier.id} className="hover:bg-slate-50">
+                          <td className="px-3 py-2 text-slate-700 font-mono">{tier.minQty}</td>
+                          <td className="px-3 py-2 text-slate-700 font-mono">{tier.price.toFixed(2)}</td>
+                          <td className="px-3 py-2 text-slate-500">{tier.label || '—'}</td>
+                          <td className="px-3 py-2">
+                            <button
+                              type="button"
+                              onClick={() => removeTier(tier.id)}
+                              className="p-1 text-red-500 hover:bg-red-50 rounded"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Add new tier */}
+            <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3">
+              <p className="text-xs font-semibold text-emerald-800 mb-3">إضافة شريحة جديدة</p>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs text-slate-600 mb-1">من كمية</label>
+                  <input
+                    type="number"
+                    min={1}
+                    className={inputClass}
+                    value={newTier.minQty}
+                    onChange={(e) => setNewTier((p) => ({ ...p, minQty: Number(e.target.value) }))}
+                    placeholder="5"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-slate-600 mb-1">السعر</label>
+                  <input
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    className={inputClass}
+                    value={newTier.price}
+                    onChange={(e) => setNewTier((p) => ({ ...p, price: Number(e.target.value) }))}
+                    placeholder="0.00"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-slate-600 mb-1">التصنيف (اختياري)</label>
+                  <input
+                    type="text"
+                    className={inputClass}
+                    value={newTier.label}
+                    onChange={(e) => setNewTier((p) => ({ ...p, label: e.target.value }))}
+                    placeholder="جملة / نصف جملة"
+                  />
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={addTier}
+                disabled={newTier.minQty < 1 || newTier.price <= 0}
+                className="mt-3 flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white text-xs font-semibold rounded-lg transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                إضافة شريحة
+              </button>
+            </div>
+
+            {priceTiers.length === 0 && (
+              <p className="text-xs text-slate-400 text-center py-2">أضف شريحة سعرية واحدة على الأقل</p>
             )}
           </div>
         )}

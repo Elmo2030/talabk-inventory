@@ -15,6 +15,8 @@ import {
   Truck,
   Copy,
   Check,
+  Banknote,
+  X,
 } from 'lucide-react';
 import { useStock } from '@/lib/StockContext';
 import { SalesOrder, OrderStatus } from '@/lib/types';
@@ -177,6 +179,11 @@ export default function OrdersPage() {
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'ALL'>('ALL');
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
+  // Customer payment modal state
+  const [paymentOrder, setPaymentOrder] = useState<SalesOrder | null>(null);
+  const [payAmount, setPayAmount] = useState('');
+  const [payMethod, setPayMethod] = useState<'cash' | 'bank_transfer' | 'check'>('cash');
+  const [payNotes, setPayNotes] = useState('');
 
   const filtered = salesOrders.filter((o) => {
     const matchSearch =
@@ -245,6 +252,40 @@ export default function OrdersPage() {
 
   async function handleSaveTracking(id: string, data: Partial<SalesOrder>) {
     await updateSalesOrder(id, data);
+  }
+
+  async function handleAddCustomerPayment() {
+    if (!paymentOrder) return;
+    const amount = parseFloat(payAmount);
+    if (!amount || amount <= 0) return;
+
+    const payment = {
+      id: `cpay-${Date.now()}`,
+      amount,
+      date: new Date().toISOString().split('T')[0],
+      method: payMethod,
+      notes: payNotes.trim() || undefined,
+    };
+
+    const prevPaid = paymentOrder.customerPaidAmount ?? 0;
+    const newPaid = prevPaid + amount;
+    const newStatus: SalesOrder['customerPaymentStatus'] =
+      newPaid >= paymentOrder.customerTotal
+        ? 'paid'
+        : newPaid > 0
+        ? 'partial'
+        : 'unpaid';
+
+    await updateSalesOrder(paymentOrder.id, {
+      customerPayments: [...(paymentOrder.customerPayments ?? []), payment],
+      customerPaidAmount: newPaid,
+      customerPaymentStatus: newStatus,
+    });
+
+    setPaymentOrder(null);
+    setPayAmount('');
+    setPayMethod('cash');
+    setPayNotes('');
   }
 
   return (
@@ -353,7 +394,7 @@ export default function OrdersPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-[#F2F2F7] border-b border-[#E5E5EA]">
-                    {['رقم الطلب', 'العميل', 'المدينة', 'المنتجات', 'إجمالي العميل', 'صافي الربح', 'الحالة', 'إجراءات'].map(
+                    {['رقم الطلب', 'العميل', 'المدينة', 'المنتجات', 'إجمالي العميل', 'صافي الربح', 'الحالة', 'الدفع', 'إجراءات'].map(
                       (h) => (
                         <th key={h} className="text-right px-4 py-3 text-xs font-medium text-[#6C6C70]">
                           {h}
@@ -407,6 +448,25 @@ export default function OrdersPage() {
                         </div>
                       </td>
                       <td className="px-4 py-3">
+                        {order.customerPaymentStatus && (
+                          <span
+                            className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${
+                              order.customerPaymentStatus === 'paid'
+                                ? 'bg-green-50 text-green-700 border-green-200'
+                                : order.customerPaymentStatus === 'partial'
+                                ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                : 'bg-red-50 text-red-700 border-red-200'
+                            }`}
+                          >
+                            {order.customerPaymentStatus === 'paid'
+                              ? 'مدفوع'
+                              : order.customerPaymentStatus === 'partial'
+                              ? `جزئي (${fmt(order.customerPaidAmount ?? 0)})`
+                              : 'غير مدفوع'}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => router.push(`/orders/${order.id}`)}
@@ -416,6 +476,16 @@ export default function OrdersPage() {
                           >
                             <Eye className="w-4 h-4" />
                           </button>
+                          {order.customerPaymentStatus !== 'paid' && (
+                            <button
+                              onClick={() => { setPaymentOrder(order); setPayAmount(''); setPayNotes(''); setPayMethod('cash'); }}
+                              className="p-1.5 text-green-600 hover:text-green-700 hover:bg-green-50 rounded-lg transition-colors"
+                              title="تسجيل دفعة عميل"
+                              aria-label="تسجيل دفعة من العميل"
+                            >
+                              <Banknote className="w-4 h-4" />
+                            </button>
+                          )}
                           {(order.status === 'PENDING' || order.status === 'CANCELLED') && (
                             <button
                               onClick={() => handleDelete(order.id)}
@@ -444,6 +514,88 @@ export default function OrdersPage() {
           </>
         )}
       </div>
+
+      {/* Customer Payment Modal */}
+      {paymentOrder && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+          onClick={() => setPaymentOrder(null)}
+        >
+          <div
+            className="bg-white rounded-2xl w-full max-w-sm shadow-2xl p-5"
+            dir="rtl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-[#1C1C1E]">تسجيل دفعة — {paymentOrder.orderNumber}</h3>
+              <button
+                onClick={() => setPaymentOrder(null)}
+                className="p-1 text-[#6C6C70] hover:text-[#1C1C1E] rounded"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="text-xs text-[#6C6C70] mb-4 space-y-0.5">
+              <div>إجمالي الطلب: <span className="font-semibold text-[#1C1C1E]">{fmt(paymentOrder.customerTotal)} د.ل</span></div>
+              <div>المدفوع: <span className="font-semibold text-green-600">{fmt(paymentOrder.customerPaidAmount ?? 0)} د.ل</span></div>
+              <div>المتبقي: <span className="font-semibold text-red-600">{fmt(paymentOrder.customerTotal - (paymentOrder.customerPaidAmount ?? 0))} د.ل</span></div>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs text-[#6C6C70] mb-1">المبلغ (د.ل) *</label>
+                <input
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  max={paymentOrder.customerTotal - (paymentOrder.customerPaidAmount ?? 0)}
+                  value={payAmount}
+                  onChange={(e) => setPayAmount(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-[#E5E5EA] text-sm focus:outline-none focus:border-[#E5302A] focus:ring-2 focus:ring-[#E5302A]/20"
+                  placeholder="0.00"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-[#6C6C70] mb-1">طريقة الدفع</label>
+                <select
+                  value={payMethod}
+                  onChange={(e) => setPayMethod(e.target.value as typeof payMethod)}
+                  className="w-full px-3 py-2 rounded-xl border border-[#E5E5EA] text-sm focus:outline-none focus:border-[#E5302A]"
+                >
+                  <option value="cash">نقداً</option>
+                  <option value="bank_transfer">تحويل بنكي</option>
+                  <option value="check">شيك</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-[#6C6C70] mb-1">ملاحظات</label>
+                <input
+                  type="text"
+                  value={payNotes}
+                  onChange={(e) => setPayNotes(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-[#E5E5EA] text-sm focus:outline-none focus:border-[#E5302A]"
+                  placeholder="اختياري..."
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-4">
+              <button
+                onClick={() => setPaymentOrder(null)}
+                className="flex-1 px-4 py-2 border border-[#E5E5EA] text-sm text-[#6C6C70] rounded-xl hover:bg-[#F2F2F7] transition-colors"
+              >
+                إلغاء
+              </button>
+              <button
+                onClick={handleAddCustomerPayment}
+                disabled={!payAmount || parseFloat(payAmount) <= 0}
+                className="flex-1 px-4 py-2 bg-[#E5302A] hover:bg-[#C42B24] text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-50"
+              >
+                تسجيل الدفعة
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

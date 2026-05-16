@@ -15,6 +15,7 @@ import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useKeyboardShortcuts } from '@/lib/useKeyboardShortcuts';
 import EmptyState from '@/components/ui/EmptyState';
 import Pagination from '@/components/ui/Pagination';
+import { usePermissions } from '@/lib/usePermissions';
 
 const PAGE_SIZE = 15;
 
@@ -22,6 +23,8 @@ export default function ItemsPage() {
   const { items, suppliers, currentStock, addItem, updateItem, deleteItem } = useStock();
   const toast = useToast();
   const { confirm } = useConfirm();
+  const { can } = usePermissions();
+  const canSeePurchasePrices = can('purchase_prices:read');
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Item | null>(null);
@@ -191,6 +194,11 @@ export default function ItemsPage() {
                       <div className="text-left">
                         <p className="text-xs text-slate-400">سعر البيع</p>
                         <p className="text-sm font-semibold text-slate-700">{item.sellingPrice.toFixed(2)} د.ل</p>
+                        {canSeePurchasePrices && (
+                          <p className="text-xs text-slate-400 mt-0.5">
+                            شراء: {item.purchasePrice.toFixed(2)} د.ل
+                          </p>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-1 pt-1 border-t border-slate-100">
@@ -230,7 +238,9 @@ export default function ItemsPage() {
                     <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">اسم الصنف</th>
                     <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">التصنيف</th>
                     <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">المورد</th>
-                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">سعر الشراء</th>
+                    {canSeePurchasePrices && (
+                      <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">سعر الشراء</th>
+                    )}
                     <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">سعر البيع</th>
                     <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">الرصيد الحالي</th>
                     <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">الحد الأدنى</th>
@@ -255,9 +265,11 @@ export default function ItemsPage() {
                         <td className="px-3 py-3 font-medium text-slate-900">{item.name}</td>
                         <td className="px-3 py-3 text-slate-600">{item.category}</td>
                         <td className="px-3 py-3 text-slate-600 text-xs">{item.supplierName}</td>
-                        <td className="px-3 py-3 font-mono text-slate-700">
-                          {item.purchasePrice.toFixed(2)}
-                        </td>
+                        {canSeePurchasePrices && (
+                          <td className="px-3 py-3 font-mono text-slate-700">
+                            {item.purchasePrice.toFixed(2)}
+                          </td>
+                        )}
                         <td className="px-3 py-3 font-mono text-slate-700">
                           {item.sellingPrice.toFixed(2)}
                         </td>
