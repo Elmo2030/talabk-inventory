@@ -27,6 +27,7 @@ function mapItem(row: ItemRow & { suppliers?: { name?: string } | null }): Item 
     reorderLevel: row.reorder_level,
     location: row.location ?? '',
     status: row.status,
+    movingAverageCost: row.moving_average_cost ?? undefined,
   };
 }
 
@@ -93,6 +94,7 @@ export const itemsService = {
     if (updates.reorderLevel !== undefined) dbUpdates.reorder_level = updates.reorderLevel;
     if (updates.location !== undefined) dbUpdates.location = updates.location;
     if (updates.status) dbUpdates.status = updates.status;
+    if (updates.movingAverageCost !== undefined) dbUpdates.moving_average_cost = updates.movingAverageCost ?? null;
 
     const { data, error } = await supabase()
       .from('items')

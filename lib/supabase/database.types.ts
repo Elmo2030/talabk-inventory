@@ -55,6 +55,7 @@ export type Database = {
           reorder_level: number;
           location: string | null;
           status: 'ACTIVE' | 'SUSPENDED' | 'UNDER_REVIEW';
+          moving_average_cost: number | null;
           metadata: Record<string, unknown>;
           created_at: string;
           updated_at: string;
@@ -73,6 +74,7 @@ export type Database = {
           reorder_level: number;
           location?: string | null;
           status: 'ACTIVE' | 'SUSPENDED' | 'UNDER_REVIEW';
+          moving_average_cost?: number | null;
           metadata?: Record<string, unknown>;
         };
         Update: Partial<Database['public']['Tables']['items']['Insert']>;
@@ -101,6 +103,7 @@ export type Database = {
           notes: string | null;
           created_at: string;
           created_by: string | null;
+          tenant_id: string | null;
         };
         Insert: {
           id?: string;
@@ -108,12 +111,13 @@ export type Database = {
           date: string;
           invoice_no?: string | null;
           item_id: string;
-          supplier_id: string;
+          supplier_id?: string | null;
           quantity: number;
           unit_price: number;
           responsible_employee: string;
           notes?: string | null;
           created_by?: string | null;
+          tenant_id?: string | null;
         };
         Update: Partial<Database['public']['Tables']['stock_in_movements']['Insert']>;
         Relationships: [
@@ -148,6 +152,7 @@ export type Database = {
           notes: string | null;
           created_at: string;
           created_by: string | null;
+          tenant_id: string | null;
         };
         Insert: {
           id?: string;
@@ -161,6 +166,7 @@ export type Database = {
           responsible_employee: string;
           notes?: string | null;
           created_by?: string | null;
+          tenant_id?: string | null;
         };
         Update: Partial<Database['public']['Tables']['stock_out_movements']['Insert']>;
         Relationships: [

@@ -438,23 +438,66 @@ export function StockProvider({ children }: { children: ReactNode }) {
   const addSalesOrder = useCallback(
     async (order: Parameters<StockContextType['addSalesOrder']>[0]) => {
       try {
-        const data = await _orders.create(order);
+        let data: SalesOrder;
 
-        // Decrement stock for each item
-        for (const item of order.items) {
-          await _stockOut.create({
-            date: new Date().toISOString().split('T')[0],
-            itemId: item.itemId,
-            recipientDept: order.customerName,
-            quantity: item.quantity,
-            unitPrice: item.sellingPrice,
-            reason: 'بيع',
-            responsibleEmployee: 'نظام المبيعات',
-            notes: `طلب مبيعات ${data.orderNumber}`,
-          });
+        if (!USE_MOCK) {
+          // Non-mock: use atomic RPC so order + stock-out are one DB transaction
+          const { data: rpcData, error } = await (getSupabaseClient().rpc as any)(
+            'place_sales_order',
+            {
+              p_order: {
+                customerName: order.customerName,
+                customerPhone: order.customerPhone,
+                customerCity: order.customerCity,
+                deliveryType: order.deliveryType,
+                items: order.items,
+                shippingCost: order.shippingCost,
+                shippingOnStore: order.shippingOnStore,
+                subtotalProducts: order.subtotalProducts,
+                discountAmount: order.discountAmount,
+                discountType: order.discountType,
+                discountValue: order.discountValue,
+                couponCode: order.couponCode,
+                customerTotal: order.customerTotal,
+                totalCOGS: order.totalCOGS,
+                grossProfit: order.grossProfit,
+                netProfit: order.netProfit,
+                profitMargin: order.profitMargin,
+                vatRate: order.vatRate,
+                vatAmount: order.vatAmount,
+                status: order.status ?? 'PENDING',
+                trackingNumber: order.trackingNumber,
+                shippingCarrier: order.shippingCarrier,
+                notes: order.notes,
+                customerPaymentStatus: order.customerPaymentStatus,
+                customerPaidAmount: order.customerPaidAmount,
+                customerPayments: order.customerPayments ?? [],
+                shippedAt: order.shippedAt,
+              },
+            }
+          );
+          if (error) throw new Error(error.message);
+          data = rpcData as SalesOrder;
+        } else {
+          // Mock mode: keep existing multi-step logic
+          data = await _orders.create(order);
+
+          // Decrement stock for each item
+          for (const item of order.items) {
+            await _stockOut.create({
+              date: new Date().toISOString().split('T')[0],
+              itemId: item.itemId,
+              recipientDept: order.customerName,
+              quantity: item.quantity,
+              unitPrice: item.sellingPrice,
+              reason: 'بيع',
+              responsibleEmployee: 'نظام المبيعات',
+              notes: `طلب مبيعات ${data.orderNumber}`,
+            });
+          }
         }
 
-        // Refresh sales orders + stock
+        // Refresh sales orders + stock (both paths)
         const [newOrders, newStockOut, newStock] = await Promise.all([
           _orders.getAll(),
           _stockOut.getAll(),
@@ -556,28 +599,45 @@ export function StockProvider({ children }: { children: ReactNode }) {
           currentMACs
         );
 
-        // 2. Create StockIn movement for each item
-        for (const ci of computedItems) {
-          await _stockIn.create({
-            date: new Date().toISOString().split('T')[0],
-            invoiceNo: invoice.invoiceNumber,
-            itemId: ci.itemId,
-            supplierId: invoice.supplierId,
-            quantity: ci.quantity,
-            unitPrice: ci.totalUnitCost,
-            responsibleEmployee: 'نظام المشتريات',
-            notes: `فاتورة مشتريات ${invoice.invoiceNumber} — تكلفة استيرادية: ${ci.totalUnitCost.toFixed(2)}`,
+        // 2. Create StockIn movements + update MACs + mark RECEIVED — atomically in non-mock mode
+        if (!USE_MOCK) {
+          const { error } = await (getSupabaseClient().rpc as any)(
+            'receive_purchase_invoice',
+            {
+              p_invoice_id: id,
+              p_computed_items: computedItems,
+              p_invoice_number: invoice.invoiceNumber,
+              p_supplier_id: invoice.supplierId || null,
+            }
+          );
+          if (error) throw new Error(error.message);
+        } else {
+          // Mock mode: keep existing multi-step logic
+          for (const ci of computedItems) {
+            await _stockIn.create({
+              date: new Date().toISOString().split('T')[0],
+              invoiceNo: invoice.invoiceNumber,
+              itemId: ci.itemId,
+              supplierId: invoice.supplierId,
+              quantity: ci.quantity,
+              unitPrice: ci.totalUnitCost,
+              responsibleEmployee: 'نظام المشتريات',
+              notes: `فاتورة مشتريات ${invoice.invoiceNumber} — تكلفة استيرادية: ${ci.totalUnitCost.toFixed(2)}`,
+            });
+            // Update item's movingAverageCost
+            await _items.update(ci.itemId, { movingAverageCost: ci.newMAC });
+          }
+
+          await _purchases.update(id, {
+            status: 'RECEIVED',
+            receivedAt: new Date().toISOString(),
+            items: computedItems,
           });
-          // Update item's movingAverageCost
-          await _items.update(ci.itemId, { movingAverageCost: ci.newMAC });
         }
 
-        // 3. Mark invoice as RECEIVED with final computed items
-        const receivedInvoice = await _purchases.update(id, {
-          status: 'RECEIVED',
-          receivedAt: new Date().toISOString(),
-          items: computedItems,
-        });
+        // For refreshing state we need the latest invoice — refetch it
+        const receivedInvoice = (await _purchases.getAll()).find((p) => p.id === id)
+          ?? { ...invoice, status: 'RECEIVED' as const, receivedAt: new Date().toISOString(), items: computedItems };
 
         // 4. Refresh local state
         setPurchaseInvoices((prev) => prev.map((p) => (p.id === id ? receivedInvoice : p)));
