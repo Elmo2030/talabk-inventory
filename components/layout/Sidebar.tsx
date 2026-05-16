@@ -27,10 +27,15 @@ import {
   MessageSquare,
   Warehouse,
   CalendarClock,
+  Calculator,
+  CreditCard,
 } from 'lucide-react';
 import { useStock } from '@/lib/StockContext';
 import { useAuth } from '@/lib/AuthContext';
 import { useTenant } from '@/lib/TenantContext';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
+import { useToast } from '@/components/ui/Toast';
+import { resetSupabaseClient } from '@/lib/supabase/client';
 import NotificationCenter from '@/components/ui/NotificationCenter';
 
 type NavItem = { href: string; label: string; icon: React.ElementType };
@@ -46,42 +51,43 @@ const navGroups: NavGroup[] = [
   {
     label: 'المخزون',
     items: [
-      { href: '/items', label: 'الأصناف', icon: Package },
-      { href: '/suppliers', label: 'الموردين', icon: Users },
-      { href: '/stock-in', label: 'إضافة مخزون', icon: ArrowDownToLine },
-      { href: '/stock-out', label: 'صرف مخزون', icon: ArrowUpFromLine },
-      { href: '/current-stock', label: 'المخزون الحالي', icon: BarChart3 },
-      { href: '/warehouses', label: 'المستودعات', icon: Warehouse },
-      { href: '/batches', label: 'الدفعات والصلاحية', icon: CalendarClock },
+      { href: '/items',          label: 'الأصناف',            icon: Package },
+      { href: '/suppliers',      label: 'الموردين',           icon: Users },
+      { href: '/purchases',      label: 'فواتير الشراء',      icon: ShoppingCart },
+      { href: '/stock-in',       label: 'إضافة مخزون',        icon: ArrowDownToLine },
+      { href: '/stock-out',      label: 'صرف مخزون',          icon: ArrowUpFromLine },
+      { href: '/current-stock',  label: 'المخزون الحالي',     icon: BarChart3 },
+      { href: '/warehouses',     label: 'المستودعات',         icon: Warehouse },
+      { href: '/batches',        label: 'الدفعات والصلاحية',  icon: CalendarClock },
     ],
   },
   {
     label: 'المبيعات',
     items: [
-      { href: '/purchases', label: 'فواتير الشراء', icon: ShoppingCart },
-      { href: '/orders', label: 'طلبات البيع', icon: ShoppingBag },
-      { href: '/returns', label: 'المرتجعات', icon: RotateCcw },
-      { href: '/coupons', label: 'الكوبونات', icon: Tag },
-      { href: '/customers', label: 'العملاء', icon: UserCircle },
-      { href: '/messages', label: 'قوالب الرسائل', icon: MessageSquare },
+      { href: '/orders',     label: 'طلبات البيع',     icon: ShoppingBag },
+      { href: '/returns',    label: 'المرتجعات',       icon: RotateCcw },
+      { href: '/coupons',    label: 'الكوبونات',       icon: Tag },
+      { href: '/customers',  label: 'العملاء',         icon: UserCircle },
+      { href: '/delivery',   label: 'لوحة التوصيل',    icon: Truck },
+      { href: '/messages',   label: 'قوالب الرسائل',   icon: MessageSquare },
     ],
   },
   {
     label: 'التقارير والأدوات',
     items: [
-      { href: '/analytics', label: 'التحليلات', icon: BarChart2 },
-      { href: '/reports', label: 'التقارير', icon: FileText },
-      { href: '/delivery', label: 'لوحة التوصيل', icon: Truck },
-      { href: '/appointments', label: 'المواعيد', icon: CalendarClock },
-      { href: '/shipping-calculator', label: 'حاسبة الشحن', icon: Truck },
+      { href: '/analytics',            label: 'التحليلات',        icon: BarChart2 },
+      { href: '/reports',              label: 'التقارير',         icon: FileText },
+      { href: '/appointments',         label: 'المواعيد',         icon: CalendarClock },
+      { href: '/shipping-calculator',  label: 'حاسبة الشحن',      icon: Calculator },
     ],
   },
   {
     label: 'الإعدادات',
     items: [
-      { href: '/settings', label: 'الإعدادات', icon: Settings },
-      { href: '/store', label: 'الملف التجاري', icon: Store },
-      { href: '/guide', label: 'دليل المستخدم', icon: BookOpen },
+      { href: '/settings',  label: 'الإعدادات',       icon: Settings },
+      { href: '/store',     label: 'الملف التجاري',   icon: Store },
+      { href: '/billing',   label: 'الفواتير والاشتراك', icon: CreditCard },
+      { href: '/guide',     label: 'دليل المستخدم',   icon: BookOpen },
     ],
   },
 ];
@@ -136,7 +142,24 @@ export default function Sidebar() {
   const { currentStock } = useStock();
   const { username, logout } = useAuth();
   const { tenant } = useTenant();
+  const { confirm } = useConfirm();
+  const toast = useToast();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const handleLogout = async () => {
+    const ok = await confirm({
+      title:        'تأكيد تسجيل الخروج',
+      description:  'هل تريد فعلاً الخروج من حسابك؟',
+      confirmLabel: 'خروج',
+      cancelLabel:  'إلغاء',
+      variant:      'danger',
+    });
+    if (!ok) return;
+    logout();
+    resetSupabaseClient();
+    toast.success('تم تسجيل الخروج بنجاح');
+    router.push('/login');
+  };
 
   const alertCount = currentStock.filter(
     (s) => s.status === 'OUT_OF_STOCK' || s.status === 'NEEDS_REORDER'
@@ -238,7 +261,7 @@ export default function Sidebar() {
             <p className="text-xs text-white/35 truncate">talabk.system</p>
           </div>
           <button
-            onClick={() => { logout(); router.push('/login'); }}
+            onClick={handleLogout}
             title="تسجيل الخروج"
             className="flex items-center justify-center w-7 h-7 rounded-lg text-white/40 hover:text-white/80 hover:bg-white/10 transition-all flex-shrink-0"
           >

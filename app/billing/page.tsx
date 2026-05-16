@@ -28,7 +28,7 @@ import type { SubscriptionPayment } from '@/lib/types';
 interface PlanDef {
   key: string;
   name: string;
-  pricePerMonth: number; // USD
+  pricePerMonth: number; // LYD (Libyan Dinar)
   description: string;
   features: string[];
   badge?: string;
@@ -38,24 +38,24 @@ const PLANS: PlanDef[] = [
   {
     key: 'starter',
     name: 'أساسي',
-    pricePerMonth: 29,
-    description: '$29 / شهر',
-    features: ['حتى 5,000 صنف', '1,000 طلب/شهر'],
+    pricePerMonth: 99,
+    description: '99 د.ل / شهر',
+    features: ['حتى 500 صنف', '500 طلب/شهر', '5 مستخدمين'],
   },
   {
     key: 'pro',
     name: 'احترافي',
-    pricePerMonth: 59,
-    description: '$59 / شهر',
-    features: ['حتى 20,000 صنف', '5,000 طلب/شهر'],
+    pricePerMonth: 249,
+    description: '249 د.ل / شهر',
+    features: ['حتى 5,000 صنف', '5,000 طلب/شهر', '15 مستخدم'],
     badge: 'الأكثر شعبية',
   },
   {
     key: 'enterprise',
     name: 'مؤسسي',
-    pricePerMonth: 99,
-    description: '$99 / شهر',
-    features: ['أصناف غير محدودة', 'طلبات غير محدودة'],
+    pricePerMonth: 599,
+    description: '599 د.ل / شهر',
+    features: ['أصناف غير محدودة', 'طلبات غير محدودة', 'دعم أولوية'],
   },
 ];
 
@@ -397,7 +397,7 @@ export default function BillingPage() {
                       )}
                     </td>
                     <td className="px-6 py-4 font-semibold text-slate-800 dark:text-slate-200 whitespace-nowrap">
-                      ${p.amount.toFixed(2)} {p.currency}
+                      {p.amount.toLocaleString('ar-LY')} {p.currency === 'LYD' ? 'د.ل' : p.currency}
                     </td>
                     <td className="px-6 py-4 text-slate-600 dark:text-slate-400">
                       {p.paymentMethod === 'usdt' ? '🔐 USDT' : '💵 كاش'}
@@ -467,7 +467,7 @@ export default function BillingPage() {
                           </span>
                         )}
                         <p className="font-bold text-slate-900 dark:text-white">{plan.name}</p>
-                        <p className="text-lg font-bold text-[#E5302A] mt-1">${plan.pricePerMonth}<span className="text-xs font-normal text-slate-400">/شهر</span></p>
+                        <p className="text-lg font-bold text-[#E5302A] mt-1">{plan.pricePerMonth.toLocaleString('ar-LY')} <span className="text-xs font-normal text-slate-400">د.ل/شهر</span></p>
                         <ul className="mt-3 space-y-1">
                           {plan.features.map((f) => (
                             <li key={f} className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400">
@@ -512,8 +512,8 @@ export default function BillingPage() {
                       <div>
                         <p className="text-xs text-slate-500">الإجمالي</p>
                         <p className="text-2xl font-bold text-slate-900 dark:text-white">
-                          ${finalAmount.toFixed(2)}
-                          <span className="text-sm font-normal text-slate-500 mr-1">USD</span>
+                          {finalAmount.toLocaleString('ar-LY', { minimumFractionDigits: 2 })}
+                          <span className="text-sm font-normal text-slate-500 mr-1">د.ل</span>
                         </p>
                         {period.discount > 0 && (
                           <p className="text-xs text-green-600 dark:text-green-400">
@@ -546,7 +546,7 @@ export default function BillingPage() {
                     <span className="text-slate-600 dark:text-slate-400">
                       {selectedPlan.name} — {period.label}
                     </span>
-                    <span className="font-bold text-slate-900 dark:text-white">${finalAmount.toFixed(2)} USD</span>
+                    <span className="font-bold text-slate-900 dark:text-white">{finalAmount.toLocaleString('ar-LY', { minimumFractionDigits: 2 })} د.ل</span>
                   </div>
 
                   <div className="grid sm:grid-cols-2 gap-4">
@@ -626,7 +626,7 @@ export default function BillingPage() {
                     <span className="text-slate-600 dark:text-slate-400">
                       {selectedPlan.name} — {period.label} — {paymentMethod === 'usdt' ? 'USDT' : 'كاش'}
                     </span>
-                    <span className="font-bold text-slate-900 dark:text-white">${finalAmount.toFixed(2)} USD</span>
+                    <span className="font-bold text-slate-900 dark:text-white">{finalAmount.toLocaleString('ar-LY', { minimumFractionDigits: 2 })} د.ل</span>
                   </div>
 
                   {submitted ? (
@@ -670,7 +670,7 @@ export default function BillingPage() {
                           <div className="flex items-center justify-between bg-blue-50 dark:bg-blue-900/20 rounded-xl px-4 py-3 text-sm">
                             <span className="text-slate-600 dark:text-slate-400">المبلغ المطلوب</span>
                             <span className="font-bold text-blue-700 dark:text-blue-400">
-                              ${finalAmount.toFixed(2)} USDT
+                              {finalAmount.toLocaleString('ar-LY', { minimumFractionDigits: 2 })} د.ل
                             </span>
                           </div>
 

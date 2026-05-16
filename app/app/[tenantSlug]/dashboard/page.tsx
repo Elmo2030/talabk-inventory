@@ -6,7 +6,7 @@ import {
 } from 'recharts';
 import {
   TrendingUp, ShoppingBag, Package, AlertTriangle, Truck,
-  CheckCircle2, Sun, Moon,
+  CheckCircle2,
   Layers, DollarSign, Target, RotateCw, Receipt, ShoppingCart as CartIcon,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -14,10 +14,14 @@ import { useParams } from 'next/navigation';
 import { useStock } from '@/lib/StockContext';
 import { useTheme } from '@/lib/ThemeContext';
 import { MONTHS } from '@/lib/constants';
+import OnboardingChecklist from '@/components/dashboard/OnboardingChecklist';
 
 export default function DashboardPage() {
-  const { items, currentStock, salesOrders, purchaseInvoices, stockIn } = useStock();
-  const { isDark, toggleTheme } = useTheme();
+  const { items, currentStock, salesOrders, purchaseInvoices, stockIn, suppliers } = useStock();
+  // toggleTheme is intentionally not destructured — the visible toggle was
+  // removed pending full dark-mode coverage across all pages. `isDark` is
+  // still used for chart palette selection.
+  const { isDark } = useTheme();
   const params = useParams();
   const tenantSlug = params?.tenantSlug as string ?? '';
 
@@ -71,17 +75,11 @@ export default function DashboardPage() {
   }, [salesOrders, currentStock, items]);
 
   // ── Order status donut data ───────────────────────────────────────────────────
+  // No more fake demo data — when there are no orders we return an empty list
+  // and the UI renders a "getting started" empty state instead of fabricated %.
   const orderStatusData = useMemo(() => {
     const counts = { PENDING: 0, PROCESSING: 0, SHIPPED: 0, DELIVERED: 0, CANCELLED: 0 };
     salesOrders.forEach(o => { counts[o.status]++; });
-    if (salesOrders.length === 0) {
-      return [
-        { name: 'تم التسليم', value: 68, color: '#22C55E' },
-        { name: 'قيد التجهيز', value: 18, color: '#3B82F6' },
-        { name: 'في الطريق',   value: 10, color: '#F59E0B' },
-        { name: 'ملغي',        value: 4,  color: '#EF4444' },
-      ];
-    }
     return [
       { name: 'تم التسليم',  value: counts.DELIVERED,                        color: '#22C55E' },
       { name: 'قيد التجهيز', value: counts.PROCESSING + counts.PENDING,      color: '#3B82F6' },
@@ -89,6 +87,9 @@ export default function DashboardPage() {
       { name: 'ملغي',        value: counts.CANCELLED,                        color: '#EF4444' },
     ].filter(d => d.value > 0);
   }, [salesOrders]);
+
+  // Show onboarding checklist if the tenant has no data yet
+  const isNewTenant = items.length === 0 && salesOrders.length === 0;
 
   // ── Top 5 most profitable products ───────────────────────────────────────────
   const topProducts = useMemo(() => {
@@ -188,6 +189,16 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-5 pb-8">
+      {/* ── Onboarding for brand-new tenants ────────────────────────────── */}
+      {isNewTenant && (
+        <OnboardingChecklist
+          hasSuppliers={suppliers.length > 0}
+          hasItems={items.length > 0}
+          hasStockIn={stockIn.length > 0}
+          hasOrders={salesOrders.length > 0}
+        />
+      )}
+
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -198,13 +209,9 @@ export default function DashboardPage() {
             نظرة تنفيذية شاملة على أداء المتجر والربحية
           </p>
         </div>
-        <button
-          onClick={toggleTheme}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl border border-[#E5E5EA] dark:border-[#27272A] bg-white dark:bg-[#18181B] text-[#1C1C1E] dark:text-[#F4F4F5] text-sm font-medium hover:bg-[#F2F2F7] dark:hover:bg-[#27272A] transition-all"
-        >
-          {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-          {isDark ? 'فاتح' : 'داكن'}
-        </button>
+        {/* Dark-mode toggle disabled until full theming coverage lands.
+            See OPERATIONS.md → Dark mode roadmap. Re-enable once all pages
+            consistently style for the `dark:` variant. */}
       </div>
 
       {/* Getting Started — only shown when no real data */}

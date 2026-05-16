@@ -16,6 +16,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading,      setLoading]      = useState(false);
   const [errorMsg,     setErrorMsg]     = useState('');
+  const [capsLockOn,   setCapsLockOn]   = useState(false);
 
   const [forgotMode,    setForgotMode]    = useState(false);
   const [forgotEmail,   setForgotEmail]   = useState('');
@@ -213,6 +214,8 @@ export default function LoginPage() {
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={e => { setPassword(e.target.value); setErrorMsg(''); }}
+                    onKeyDown={e => setCapsLockOn(e.getModifierState && e.getModifierState('CapsLock'))}
+                    onKeyUp={e => setCapsLockOn(e.getModifierState && e.getModifierState('CapsLock'))}
                     placeholder="أدخل كلمة المرور"
                     autoComplete="current-password"
                     className="w-full px-4 py-2.5 rounded-xl border border-[#E5E5EA] text-[#1C1C1E] text-sm bg-white placeholder-[#AEAEB2] outline-none transition-all focus:border-[#E5302A] focus:ring-2 focus:ring-[#E5302A]/20 pl-10"
@@ -225,6 +228,11 @@ export default function LoginPage() {
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+                {capsLockOn && (
+                  <p className="mt-1.5 text-xs text-amber-600 flex items-center gap-1">
+                    ⚠️ مفتاح Caps Lock مفعّل
+                  </p>
+                )}
               </div>
 
               {/* Forgot password link */}

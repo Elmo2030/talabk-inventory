@@ -8,11 +8,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import type { TablesInsert } from '@/lib/supabase/database.types';
 
-// ── Plan pricing (must match /billing/page.tsx PLANS) ─────────────────────────
+// ── Plan pricing (LYD — must match /billing/page.tsx PLANS) ───────────────────
 const PLAN_PRICES: Record<string, number> = {
-  starter:    29,
-  pro:        59,
-  enterprise: 99,
+  starter:     99,
+  pro:        249,
+  enterprise: 599,
 };
 
 const BILLING_DISCOUNTS: Record<number, number> = {
@@ -114,7 +114,7 @@ export async function POST(req: NextRequest) {
       plan,
       billing_months,
       amount,
-      currency:       'USD',
+      currency:       'LYD',
       payment_method,
       status:         'pending',
       tx_hash:        payment_method === 'usdt' ? tx_hash.trim() : null,

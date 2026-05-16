@@ -67,15 +67,24 @@ export default function RegisterPage() {
     email:      '',
     phone:      '',
   });
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
-  const [errors, setErrors] = useState<Partial<typeof form>>({});
+  const [errors, setErrors] = useState<Partial<typeof form> & { terms?: string }>({});
 
   const validate = () => {
-    const e: Partial<typeof form> = {};
+    const e: Partial<typeof form> & { terms?: string } = {};
     if (!form.store_name.trim()) e.store_name = 'اسم المتجر مطلوب';
+    else if (form.store_name.trim().length < 2) e.store_name = 'الاسم قصير جداً';
     if (!form.owner_name.trim()) e.owner_name = 'الاسم مطلوب';
     if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
       e.email = 'بريد إلكتروني صحيح مطلوب';
+    // Libyan phone format (optional): +218XXXXXXXXX or 09XXXXXXXX
+    if (form.phone.trim()) {
+      const cleaned = form.phone.replace(/\s|-/g, '');
+      if (!/^(\+218|00218|0)?9[1-5]\d{7}$/.test(cleaned))
+        e.phone = 'رقم هاتف ليبي غير صالح (مثال: 0912345678)';
+    }
+    if (!acceptedTerms) e.terms = 'يجب الموافقة على الشروط للمتابعة';
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -293,9 +302,37 @@ export default function RegisterPage() {
                   value={form.phone}
                   onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
                   placeholder="0912 345 678"
-                  className="w-full px-4 py-2.5 rounded-xl border border-[#E5E5EA] text-sm text-[#1C1C1E] bg-white placeholder-[#AEAEB2] outline-none focus:border-[#E5302A] focus:ring-2 focus:ring-[#E5302A]/20 transition-all"
+                  className={`w-full px-4 py-2.5 rounded-xl border text-sm text-[#1C1C1E] bg-white placeholder-[#AEAEB2] outline-none focus:ring-2 transition-all ${
+                    errors.phone
+                      ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20'
+                      : 'border-[#E5E5EA] focus:border-[#E5302A] focus:ring-[#E5302A]/20'
+                  }`}
                 />
+                {errors.phone && <p className="text-xs text-red-600 mt-1">{errors.phone}</p>}
               </div>
+            </div>
+
+            {/* Terms acceptance */}
+            <div className="space-y-1">
+              <label className="flex items-start gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={acceptedTerms}
+                  onChange={e => setAcceptedTerms(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 rounded border-[#E5E5EA] text-[#E5302A] focus:ring-2 focus:ring-[#E5302A]/20"
+                />
+                <span className="text-xs text-[#6C6C70] leading-relaxed">
+                  أوافق على{' '}
+                  <Link href="/terms" target="_blank" className="text-[#E5302A] hover:underline font-medium">
+                    شروط الاستخدام
+                  </Link>
+                  {' '}و{' '}
+                  <Link href="/privacy" target="_blank" className="text-[#E5302A] hover:underline font-medium">
+                    سياسة الخصوصية
+                  </Link>
+                </span>
+              </label>
+              {errors.terms && <p className="text-xs text-red-600">{errors.terms}</p>}
             </div>
 
             {/* Submit */}

@@ -38,10 +38,10 @@ interface AuditEntry {
 }
 
 const PLANS = [
-  { code: 'trial',      label: 'تجريبي',     users: 3,  items: 100,  orders: 200,  price: 0  },
-  { code: 'starter',    label: 'Starter',    users: 5,  items: 500,  orders: 1000, price: 29 },
-  { code: 'pro',        label: 'Pro',        users: 15, items: 5000, orders: 10000, price: 59 },
-  { code: 'enterprise', label: 'Enterprise', users: 50, items: 50000, orders: 100000, price: 99 },
+  { code: 'trial',      label: 'تجريبي',     users: 3,  items: 100,   orders: 200,    price: 0   },
+  { code: 'starter',    label: 'أساسي',      users: 5,  items: 500,   orders: 1000,   price: 99  },
+  { code: 'pro',        label: 'احترافي',    users: 15, items: 5000,  orders: 10000,  price: 249 },
+  { code: 'enterprise', label: 'مؤسسي',      users: 50, items: 50000, orders: 100000, price: 599 },
 ];
 
 export default function SuperAdminSettingsPage() {
@@ -168,7 +168,7 @@ export default function SuperAdminSettingsPage() {
               {PLANS.map(p => (
                 <tr key={p.code} className="border-b border-slate-100 dark:border-[#2C2C2E]/50">
                   <td className="p-3 font-semibold text-slate-900 dark:text-white">{p.label}</td>
-                  <td className="p-3 text-slate-700 dark:text-slate-300">{p.price === 0 ? 'مجاناً' : `$${p.price}`}</td>
+                  <td className="p-3 text-slate-700 dark:text-slate-300">{p.price === 0 ? 'مجاناً' : `${p.price.toLocaleString('ar-LY')} د.ل`}</td>
                   <td className="p-3 text-slate-700 dark:text-slate-300">{p.users}</td>
                   <td className="p-3 text-slate-700 dark:text-slate-300">{p.items.toLocaleString()}</td>
                   <td className="p-3 text-slate-700 dark:text-slate-300">{p.orders.toLocaleString()}</td>

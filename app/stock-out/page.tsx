@@ -13,7 +13,7 @@ import StockOutForm from '@/components/forms/StockOutForm';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useKeyboardShortcuts } from '@/lib/useKeyboardShortcuts';
-import { employees, issueReasons } from '@/data/mock-data';
+import { STOCK_OUT_REASONS } from '@/lib/constants';
 
 interface Filters {
   fromDate: string;
@@ -47,6 +47,15 @@ export default function StockOutPage() {
   const [filters, setFilters] = useState<Filters>(emptyFilters);
 
   const hasActiveFilters = Object.values(filters).some(Boolean);
+
+  // Derive employee list from actual stock-out movements rather than a
+  // hardcoded mock list — keeps the filter accurate to whoever has been
+  // recording movements in this tenant.
+  const employees = useMemo(() => {
+    const set = new Set<string>();
+    stockOut.forEach(m => { if (m.responsibleEmployee) set.add(m.responsibleEmployee); });
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'ar'));
+  }, [stockOut]);
 
   const filteredMovements = useMemo(() => {
     let result = stockOut;
@@ -220,7 +229,7 @@ export default function StockOutPage() {
               value={filters.reason}
               onChange={(e) => setFilter('reason', e.target.value)}
               placeholder="كل الأسباب"
-              options={issueReasons.map((r) => ({ value: r, label: r }))}
+              options={STOCK_OUT_REASONS.map((r) => ({ value: r, label: r }))}
             />
           </div>
         </div>

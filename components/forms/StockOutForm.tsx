@@ -8,7 +8,8 @@ import Select from '@/components/ui/Select';
 import Button from '@/components/ui/Button';
 import { Save, AlertTriangle, CheckCircle2, Loader2, Pencil } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
-import { employees, recipientDepartments, issueReasons } from '@/data/mock-data';
+import { employees, recipientDepartments } from '@/data/mock-data';
+import { STOCK_OUT_REASONS as issueReasons } from '@/lib/constants';
 
 interface StockOutFormProps {
   onSuccess: () => void;
