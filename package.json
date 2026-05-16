@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "supabase:types": "supabase gen types typescript --project-id YOUR_PROJECT_ID > lib/supabase/database.types.ts",
+    "supabase:types": "supabase gen types typescript --project-id bleezrdtmthhvsrsvfmp > lib/supabase/database.types.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:ui": "vitest --ui"
