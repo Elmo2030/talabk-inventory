@@ -55,24 +55,40 @@ export default function DashboardPage() {
     });
   }, [last30Days, salesByDay]);
 
-  // ── KPI computations ─────────────────────────────────────────────────────────
-  const kpis = useMemo(() => {
-    const totalRevenue = salesOrders.reduce((s, o) => s + o.subtotalProducts, 0);
-    const netProfit = salesOrders.reduce((s, o) => s + o.netProfit, 0);
-    const profitMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
+  // ── O(1) item lookup map — built once and shared between KPI memos.
+  // Replaces the O(N×M) `items.find()` inside the inventory-value reducer
+  // (was iterated twice: once in `kpis`, once in `extraKpis`).
+  const itemById = useMemo(() => {
+    const map = new Map<string, typeof items[number]>();
+    for (const item of items) map.set(item.id, item);
+    return map;
+  }, [items]);
 
-    const inventoryValue = currentStock.reduce((s, cs) => {
-      const item = items.find(i => i.id === cs.itemId);
+  // Inventory value — single computation referenced by both kpi blocks.
+  const inventoryValue = useMemo(() => {
+    let total = 0;
+    for (const cs of currentStock) {
+      const item = itemById.get(cs.itemId);
       const cost = item?.movingAverageCost ?? item?.purchasePrice ?? 0;
-      return s + cs.currentBalance * cost;
-    }, 0);
+      total += cs.currentBalance * cost;
+    }
+    return total;
+  }, [currentStock, itemById]);
 
-    const activeOrders = salesOrders.filter(
-      o => o.status === 'PENDING' || o.status === 'PROCESSING' || o.status === 'SHIPPED'
-    ).length;
-
+  // ── Primary KPIs ─────────────────────────────────────────────────────────
+  const kpis = useMemo(() => {
+    let totalRevenue = 0, netProfit = 0, activeOrders = 0;
+    // Single pass instead of three separate reducers/filters.
+    for (const o of salesOrders) {
+      totalRevenue += o.subtotalProducts;
+      netProfit    += o.netProfit;
+      if (o.status === 'PENDING' || o.status === 'PROCESSING' || o.status === 'SHIPPED') {
+        activeOrders++;
+      }
+    }
+    const profitMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
     return { totalRevenue, netProfit, profitMargin, inventoryValue, activeOrders };
-  }, [salesOrders, currentStock, items]);
+  }, [salesOrders, inventoryValue]);
 
   // ── Order status donut data ───────────────────────────────────────────────────
   // No more fake demo data — when there are no orders we return an empty list
@@ -130,61 +146,73 @@ export default function DashboardPage() {
     };
   }, [salesOrders]);
 
-  // ── Extra KPIs ────────────────────────────────────────────────────────────────
+  // ── Secondary KPIs — reuse pre-computed `inventoryValue` ─────────────────
   const extraKpis = useMemo(() => {
     const total = salesOrders.length;
-    const delivered = salesOrders.filter(o => o.status === 'DELIVERED').length;
-    const aov = total > 0 ? salesOrders.reduce((s, o) => s + o.customerTotal, 0) / total : 0;
+    let delivered = 0, customerTotalSum = 0, cogsSum = 0;
+    for (const o of salesOrders) {
+      if (o.status === 'DELIVERED') delivered++;
+      customerTotalSum += o.customerTotal;
+      cogsSum          += o.totalCOGS ?? 0;
+    }
+    const aov          = total > 0 ? customerTotalSum / total : 0;
     const deliveredPct = total > 0 ? (delivered / total) * 100 : 0;
-    const totalCOGS = salesOrders.reduce((s, o) => s + (o.totalCOGS ?? 0), 0);
-    const inventoryValue = currentStock.reduce((s, cs) => {
-      const item = items.find(i => i.id === cs.itemId);
-      const cost = item?.movingAverageCost ?? item?.purchasePrice ?? 0;
-      return s + cs.currentBalance * cost;
-    }, 0);
-    const turnover = inventoryValue > 0 ? totalCOGS / inventoryValue : 0;
+    const turnover     = inventoryValue > 0 ? cogsSum / inventoryValue : 0;
     return { aov, deliveredPct, turnover, purchaseCount: purchaseInvoices.length };
-  }, [salesOrders, currentStock, items, purchaseInvoices]);
+  }, [salesOrders, inventoryValue, purchaseInvoices.length]);
 
-  // ── Monthly sales data (last 12 months) ──────────────────────────────────────
-  const monthlySalesData = useMemo(() => {
+  // ── Monthly + quarterly time series — single pass over salesOrders ───────
+  // Previously these were two separate `useMemo`s, each doing 12× or 4× full
+  // array filters (O(N×M)). One reducer fills a year→month bucket map, then
+  // we project it into the chart shapes. Complexity drops to O(N).
+  const { monthlySalesData, quarterlyData } = useMemo(() => {
     const now = new Date();
-    return Array.from({ length: 12 }, (_, i) => {
-      const d = new Date(now.getFullYear(), now.getMonth() - 11 + i, 1);
+    const currentYear  = now.getFullYear();
+    const currentMonth = now.getMonth();
+
+    // Bucket key = `${year}-${month}` → { revenue, profit }
+    type Bucket = { revenue: number; profit: number };
+    const buckets = new Map<string, Bucket>();
+
+    for (const o of salesOrders) {
+      const d = new Date(o.createdAt);
+      const k = `${d.getFullYear()}-${d.getMonth()}`;
+      const bucket = buckets.get(k);
+      if (bucket) {
+        bucket.revenue += o.customerTotal;
+        bucket.profit  += o.netProfit;
+      } else {
+        buckets.set(k, { revenue: o.customerTotal, profit: o.netProfit });
+      }
+    }
+
+    const monthlySalesData = Array.from({ length: 12 }, (_, i) => {
+      const d  = new Date(currentYear, currentMonth - 11 + i, 1);
       const yr = d.getFullYear();
       const mo = d.getMonth();
-      const filtered = salesOrders.filter(o => {
-        const od = new Date(o.createdAt);
-        return od.getFullYear() === yr && od.getMonth() === mo;
-      });
+      const b  = buckets.get(`${yr}-${mo}`);
       return {
-        month: MONTHS[mo].slice(0, 3),
-        revenue: Math.round(filtered.reduce((s, o) => s + o.customerTotal, 0)),
-        netProfit: Math.round(filtered.reduce((s, o) => s + o.netProfit, 0)),
+        month:     MONTHS[mo].slice(0, 3),
+        revenue:   Math.round(b?.revenue ?? 0),
+        netProfit: Math.round(b?.profit  ?? 0),
       };
     });
-  }, [salesOrders]);
 
-  // ── Quarterly data ────────────────────────────────────────────────────────────
-  const quarterlyData = useMemo(() => {
-    const now = new Date();
-    const yr = now.getFullYear();
-    return [
-      { name: 'Q1', months: [0,1,2] },
-      { name: 'Q2', months: [3,4,5] },
-      { name: 'Q3', months: [6,7,8] },
-      { name: 'Q4', months: [9,10,11] },
+    const quarterlyData = [
+      { name: 'Q1', months: [0,1,2]  },
+      { name: 'Q2', months: [3,4,5]  },
+      { name: 'Q3', months: [6,7,8]  },
+      { name: 'Q4', months: [9,10,11]},
     ].map(q => {
-      const filtered = salesOrders.filter(o => {
-        const od = new Date(o.createdAt);
-        return od.getFullYear() === yr && q.months.includes(od.getMonth());
-      });
-      return {
-        name: q.name,
-        revenue: Math.round(filtered.reduce((s, o) => s + o.customerTotal, 0)),
-        profit: Math.round(filtered.reduce((s, o) => s + o.netProfit, 0)),
-      };
+      let revenue = 0, profit = 0;
+      for (const m of q.months) {
+        const b = buckets.get(`${currentYear}-${m}`);
+        if (b) { revenue += b.revenue; profit += b.profit; }
+      }
+      return { name: q.name, revenue: Math.round(revenue), profit: Math.round(profit) };
     });
+
+    return { monthlySalesData, quarterlyData };
   }, [salesOrders]);
 
   return (

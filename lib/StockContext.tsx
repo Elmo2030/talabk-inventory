@@ -164,14 +164,28 @@ export function StockProvider({ children }: { children: ReactNode }) {
   // ============================================
   // Load all data
   // ============================================
+  // Synchronously apply the tenant prefix BEFORE any data load so localStorage
+  // reads/writes target the correct tenant's namespace from the very first
+  // call. Previously a race could read with the `anon` prefix while the
+  // session resolved in the background — leaking another tenant's cached data.
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
+      // 1. Resolve session and lock in the tenant prefix BEFORE any service call
+      const { data: { session } } = await getSupabaseClient().auth.getSession();
+      const prefix = session?.user?.id ?? 'anon';
+      setInvoicesTenantPrefix(prefix);
+      setOrdersTenantPrefix(prefix);
+      setCouponsTenantPrefix(prefix);
+      setReturnsTenantPrefix(prefix);
+      setAppointmentsTenantPrefix(prefix);
+
       // Seed demo data on first run in mock mode
       if (USE_MOCK) seedMockDataIfNeeded();
 
+      // 2. Now safe to fetch — localStorage keys are correctly tenant-scoped
       const [itemsData, suppliersData, stockInData, stockOutData, stockData, purchasesData, ordersData] =
         await Promise.all([
           _items.getAll(),
@@ -209,19 +223,6 @@ export function StockProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // Set tenant-isolated localStorage keys for purchases/orders
-  // Uses Supabase session user ID as prefix to prevent cross-tenant data leaks
-  useEffect(() => {
-    getSupabaseClient().auth.getSession().then(({ data: { session } }) => {
-      const prefix = session?.user?.id ?? 'anon';
-      setInvoicesTenantPrefix(prefix);
-      setOrdersTenantPrefix(prefix);
-      setCouponsTenantPrefix(prefix);
-      setReturnsTenantPrefix(prefix);
-      setAppointmentsTenantPrefix(prefix);
-    });
-  }, []);
-
   useEffect(() => {
     loadData();
   }, [loadData]);
@@ -254,8 +255,9 @@ export function StockProvider({ children }: { children: ReactNode }) {
         setStockIn((prev) => [newMovement, ...prev]);
         await refreshStock();
 
-        // BOM: deduct component materials automatically when receiving manufactured goods
-        const manufacturedItem = await _items.getAll().then((all) => all.find((i) => i.id === movement.itemId));
+        // BOM: deduct component materials automatically when receiving manufactured goods.
+        // Use in-memory `items` rather than refetching — they're already loaded.
+        const manufacturedItem = items.find((i) => i.id === movement.itemId);
         if (manufacturedItem?.isManufactured && manufacturedItem.bom && manufacturedItem.bom.length > 0) {
           for (const bomEntry of manufacturedItem.bom) {
             const deductQty = movement.quantity * bomEntry.quantity;
@@ -279,7 +281,7 @@ export function StockProvider({ children }: { children: ReactNode }) {
         return { success: false, error: message };
       }
     },
-    [refreshStock]
+    [refreshStock, items]
   );
 
   const addStockOut = useCallback(
@@ -515,33 +517,51 @@ export function StockProvider({ children }: { children: ReactNode }) {
     []
   );
 
+  /**
+   * Optimistic status / field update for sales orders.
+   * Strategy:
+   *  1. Snapshot the previous row and apply the change locally **immediately**
+   *     so the UI feels native (status badge flips before the network round-trip).
+   *  2. Fire the server update + side-effects (stock reversal on CANCELLED).
+   *  3. On success, replace the optimistic row with the canonical server copy.
+   *  4. On failure, roll back to the snapshot and surface the error.
+   * Uses the functional `setSalesOrders(prev => …)` form throughout so this
+   * callback has no `salesOrders` dependency — preventing stale closures.
+   */
   const updateSalesOrder = useCallback(
     async (id: string, updates: Partial<SalesOrder>) => {
+      // 1. Snapshot + optimistic apply
+      let snapshot: SalesOrder | undefined;
+      setSalesOrders((prev) => {
+        snapshot = prev.find((o) => o.id === id);
+        return prev.map((o) => (o.id === id ? { ...o, ...updates } : o));
+      });
+      const wasCancelled = snapshot?.status === 'CANCELLED';
+      const becomingCancelled = updates.status === 'CANCELLED' && !wasCancelled;
+
       try {
-        // If transitioning to CANCELLED, reverse stock deductions
-        if (updates.status === 'CANCELLED') {
-          const currentOrder = salesOrders.find((o) => o.id === id);
-          if (currentOrder && currentOrder.status !== 'CANCELLED') {
-            for (const orderItem of currentOrder.items) {
-              await _stockIn.create({
-                date: new Date().toISOString().split('T')[0],
-                invoiceNo: `CANCEL-${currentOrder.orderNumber}`,
-                itemId: orderItem.itemId,
-                supplierId: '',
-                quantity: orderItem.quantity,
-                unitPrice: orderItem.costSnapshot,
-                responsibleEmployee: 'نظام الإلغاء',
-                notes: `إعادة مخزون - إلغاء طلب ${currentOrder.orderNumber}`,
-              });
-            }
+        // 2. Reverse stock deductions if transitioning to CANCELLED
+        if (becomingCancelled && snapshot) {
+          for (const orderItem of snapshot.items) {
+            await _stockIn.create({
+              date: new Date().toISOString().split('T')[0],
+              invoiceNo: `CANCEL-${snapshot.orderNumber}`,
+              itemId: orderItem.itemId,
+              supplierId: '',
+              quantity: orderItem.quantity,
+              unitPrice: orderItem.costSnapshot,
+              responsibleEmployee: 'نظام الإلغاء',
+              notes: `إعادة مخزون - إلغاء طلب ${snapshot.orderNumber}`,
+            });
           }
         }
 
+        // 3. Persist + replace optimistic row with canonical copy
         const updated = await _orders.update(id, updates);
         setSalesOrders((prev) => prev.map((o) => (o.id === id ? updated : o)));
 
-        // Refresh stock view after any update (especially CANCELLED, which restored stock)
-        if (updates.status === 'CANCELLED') {
+        // Refresh stock view only when balances actually changed
+        if (becomingCancelled) {
           const [newStockIn, newStock] = await Promise.all([
             _stockIn.getAll(),
             _stockView.getAll(),
@@ -552,10 +572,14 @@ export function StockProvider({ children }: { children: ReactNode }) {
 
         return { success: true };
       } catch (err) {
+        // 4. Roll back optimistic mutation
+        if (snapshot) {
+          setSalesOrders((prev) => prev.map((o) => (o.id === id ? snapshot! : o)));
+        }
         return { success: false, error: err instanceof Error ? err.message : 'فشل التعديل' };
       }
     },
-    [salesOrders, refreshStock]
+    []
   );
 
   const deleteSalesOrder = useCallback(async (id: string) => {
