@@ -295,6 +295,27 @@ export default function AnalyticsPage() {
   const thisMonthProfit  = thisMonthOrders.reduce((s, o) => s + o.netProfit, 0);
   const thisMonthCount   = thisMonthOrders.length;
 
+  // ── Comparison toggle: this month vs same month last year ─────────────────
+  const [compareEnabled, setCompareEnabled] = useState(false);
+  const prevYearMonthOrders = useMemo(
+    () => salesOrders.filter(o => {
+      const d = new Date(o.createdAt);
+      return d.getFullYear() === currentYear - 1 && d.getMonth() === currentMonth;
+    }),
+    [salesOrders, currentYear, currentMonth],
+  );
+  const prevYearRevenue = prevYearMonthOrders.reduce((s, o) => s + o.customerTotal, 0);
+  const prevYearProfit  = prevYearMonthOrders.reduce((s, o) => s + o.netProfit, 0);
+  const prevYearCount   = prevYearMonthOrders.length;
+
+  const pct = (curr: number, prev: number): number | null => {
+    if (prev === 0) return curr === 0 ? null : 100;
+    return Math.round(((curr - prev) / prev) * 100);
+  };
+  const revenuePct = pct(thisMonthRevenue, prevYearRevenue);
+  const profitPct  = pct(thisMonthProfit,  prevYearProfit);
+  const countPct   = pct(thisMonthCount,   prevYearCount);
+
   // tooltip style helper
   const tooltipStyle = {
     contentStyle: {
@@ -325,19 +346,59 @@ export default function AnalyticsPage() {
             تحليل شامل للمبيعات والأرباح والمخزون
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <label className="text-sm text-[#6C6C70] dark:text-[#A1A1AA]">السنة:</label>
-          <select
-            value={selectedYear}
-            onChange={e => setSelectedYear(Number(e.target.value))}
-            className="px-3 py-2 rounded-xl border border-[#E5E5EA] dark:border-[#27272A] bg-white dark:bg-[#18181B] text-[#1C1C1E] dark:text-[#F4F4F5] text-sm font-medium"
-          >
-            {yearOptions.map(y => (
-              <option key={y} value={y}>{y}</option>
-            ))}
-          </select>
+        <div className="flex items-center gap-3 flex-wrap">
+          <label className="inline-flex items-center gap-2 text-xs text-[#6C6C70] dark:text-[#A1A1AA] cursor-pointer">
+            <input
+              type="checkbox"
+              checked={compareEnabled}
+              onChange={e => setCompareEnabled(e.target.checked)}
+              className="w-4 h-4 rounded border-slate-300 text-[#E5302A] focus:ring-2 focus:ring-[#E5302A]/20"
+            />
+            مقارنة بالعام السابق
+          </label>
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-[#6C6C70] dark:text-[#A1A1AA]">السنة:</label>
+            <select
+              value={selectedYear}
+              onChange={e => setSelectedYear(Number(e.target.value))}
+              className="px-3 py-2 rounded-xl border border-[#E5E5EA] dark:border-[#27272A] bg-white dark:bg-[#18181B] text-[#1C1C1E] dark:text-[#F4F4F5] text-sm font-medium"
+            >
+              {yearOptions.map(y => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
+
+      {/* Comparison strip — only when toggle is on */}
+      {compareEnabled && (
+        <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/50 rounded-2xl p-4">
+          <p className="text-xs font-semibold text-blue-700 dark:text-blue-300 mb-3">
+            مقارنة هذا الشهر مع نفس الشهر من العام السابق
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <ComparisonRow
+              label="الإيرادات"
+              current={`${fmt(thisMonthRevenue)} د.ل`}
+              previous={`${fmt(prevYearRevenue)} د.ل`}
+              pct={revenuePct}
+            />
+            <ComparisonRow
+              label="الأرباح"
+              current={`${fmt(thisMonthProfit)} د.ل`}
+              previous={`${fmt(prevYearProfit)} د.ل`}
+              pct={profitPct}
+            />
+            <ComparisonRow
+              label="عدد الطلبات"
+              current={`${thisMonthCount}`}
+              previous={`${prevYearCount}`}
+              pct={countPct}
+            />
+          </div>
+        </div>
+      )}
 
       {/* ── Section: KPIs ──────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -693,6 +754,35 @@ export default function AnalyticsPage() {
           <div className="flex items-center gap-1.5"><div className="w-3 h-0.5 bg-[#E5302A] rounded" /> المبيعات</div>
         </div>
       </ChartCard>
+    </div>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Comparison row for the analytics this-vs-previous-year strip.
+// Renders current value, previous value, and a coloured % delta.
+// ────────────────────────────────────────────────────────────────────────────
+function ComparisonRow({
+  label, current, previous, pct,
+}: { label: string; current: string; previous: string; pct: number | null }) {
+  const isUp   = (pct ?? 0) > 0;
+  const isDown = (pct ?? 0) < 0;
+  return (
+    <div className="bg-white dark:bg-[#18181B] rounded-xl p-3 border border-blue-100 dark:border-blue-900/40">
+      <p className="text-[10px] uppercase tracking-wider text-slate-500 mb-1">{label}</p>
+      <div className="flex items-baseline justify-between gap-2">
+        <p className="text-lg font-bold text-slate-900 dark:text-white">{current}</p>
+        {pct === null ? (
+          <span className="text-xs text-slate-400">—</span>
+        ) : (
+          <span className={`text-xs font-semibold ${
+            isUp ? 'text-emerald-600' : isDown ? 'text-red-600' : 'text-slate-500'
+          }`}>
+            {isUp ? '↑' : isDown ? '↓' : '·'} {Math.abs(pct)}%
+          </span>
+        )}
+      </div>
+      <p className="text-[10px] text-slate-400 mt-0.5">العام السابق: {previous}</p>
     </div>
   );
 }

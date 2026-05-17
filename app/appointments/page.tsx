@@ -210,6 +210,10 @@ export default function AppointmentsPage() {
   const [statusFilter, setStatusFilter] = useState<AppointmentStatus | 'ALL'>('ALL');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editing, setEditing] = useState<Appointment | null>(null);
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+  const [calMonth, setCalMonth] = useState(() => {
+    const d = new Date(); return { year: d.getFullYear(), month: d.getMonth() };
+  });
 
   // Load from Supabase on mount
   useEffect(() => {
@@ -329,13 +333,35 @@ export default function AppointmentsPage() {
             حجز وإدارة مواعيد العملاء لخدمات التجميل والرعاية
           </p>
         </div>
-        <button
-          onClick={() => { setEditing(null); setIsFormOpen(true); }}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm rounded-xl transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          موعد جديد
-        </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="inline-flex p-0.5 rounded-xl bg-slate-100 border border-slate-200">
+            <button
+              type="button"
+              onClick={() => setViewMode('list')}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
+                viewMode === 'list' ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-600 hover:text-slate-800'
+              }`}
+            >
+              قائمة
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('calendar')}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
+                viewMode === 'calendar' ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-600 hover:text-slate-800'
+              }`}
+            >
+              تقويم شهري
+            </button>
+          </div>
+          <button
+            onClick={() => { setEditing(null); setIsFormOpen(true); }}
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm rounded-xl transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            موعد جديد
+          </button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -379,8 +405,21 @@ export default function AppointmentsPage() {
         </div>
       </div>
 
-      {/* Content */}
-      {grouped.length === 0 ? (
+      {/* Calendar view */}
+      {viewMode === 'calendar' && (
+        <CalendarView
+          year={calMonth.year}
+          month={calMonth.month}
+          appointments={appointments}
+          onPrev={() => setCalMonth(c => c.month === 0 ? { year: c.year - 1, month: 11 } : { ...c, month: c.month - 1 })}
+          onNext={() => setCalMonth(c => c.month === 11 ? { year: c.year + 1, month: 0 } : { ...c, month: c.month + 1 })}
+          onToday={() => { const d = new Date(); setCalMonth({ year: d.getFullYear(), month: d.getMonth() }); }}
+          onClickAppointment={(a) => { setEditing(a); setIsFormOpen(true); }}
+        />
+      )}
+
+      {/* List view content */}
+      {viewMode === 'list' && (grouped.length === 0 ? (
         <EmptyState
           icon={CalendarDays}
           title="لا توجد مواعيد"
@@ -503,7 +542,7 @@ export default function AppointmentsPage() {
             </div>
           ))}
         </div>
-      )}
+      ))}
 
       {/* Form modal */}
       <Modal
@@ -518,6 +557,161 @@ export default function AppointmentsPage() {
           onClose={() => { setIsFormOpen(false); setEditing(null); }}
         />
       </Modal>
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// Monthly calendar — 7×6 grid showing appointment counts per day, with
+// click-to-edit on the appointment chips.
+// ──────────────────────────────────────────────────────────────────────────
+const MONTH_NAMES = [
+  'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
+  'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر',
+];
+const WEEKDAY_NAMES = ['أحد', 'إثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت'];
+
+function CalendarView({
+  year, month, appointments, onPrev, onNext, onToday, onClickAppointment,
+}: {
+  year: number;
+  month: number;  // 0-indexed
+  appointments: Appointment[];
+  onPrev: () => void;
+  onNext: () => void;
+  onToday: () => void;
+  onClickAppointment: (a: Appointment) => void;
+}) {
+  const firstDay = new Date(year, month, 1);
+  const lastDay  = new Date(year, month + 1, 0);
+  // JS getDay(): 0=Sun..6=Sat — Arabic week starts Sunday so this is fine.
+  const startWeekday = firstDay.getDay();
+  const daysInMonth  = lastDay.getDate();
+  const today = new Date().toISOString().slice(0, 10);
+
+  // Build 7×6 grid (42 cells)
+  const cells: { date: string; day: number; inMonth: boolean }[] = [];
+  // Leading blank cells from previous month (we just show day number from prev month)
+  const prevMonthLast = new Date(year, month, 0).getDate();
+  for (let i = startWeekday - 1; i >= 0; i--) {
+    const d = prevMonthLast - i;
+    const m = month === 0 ? 12 : month;
+    const y = month === 0 ? year - 1 : year;
+    cells.push({
+      date: `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`,
+      day:  d,
+      inMonth: false,
+    });
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    cells.push({
+      date: `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`,
+      day:  d,
+      inMonth: true,
+    });
+  }
+  // Fill trailing
+  let nextDay = 1;
+  while (cells.length < 42) {
+    const m = month === 11 ? 1 : month + 2;
+    const y = month === 11 ? year + 1 : year;
+    cells.push({
+      date: `${y}-${String(m).padStart(2, '0')}-${String(nextDay).padStart(2, '0')}`,
+      day:  nextDay++,
+      inMonth: false,
+    });
+  }
+
+  // Group appointments by date for fast lookup
+  const byDate: Record<string, Appointment[]> = {};
+  appointments.forEach(a => { (byDate[a.date] ??= []).push(a); });
+
+  return (
+    <div className="bg-white border border-slate-200 rounded-2xl p-4">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
+        <h3 className="text-base font-bold text-slate-900">
+          {MONTH_NAMES[month]} {year}
+        </h3>
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={onPrev}
+            className="px-3 py-1.5 text-xs rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+            aria-label="الشهر السابق"
+          >
+            ›
+          </button>
+          <button
+            onClick={onToday}
+            className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+          >
+            اليوم
+          </button>
+          <button
+            onClick={onNext}
+            className="px-3 py-1.5 text-xs rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+            aria-label="الشهر التالي"
+          >
+            ‹
+          </button>
+        </div>
+      </div>
+
+      {/* Weekday headers */}
+      <div className="grid grid-cols-7 gap-1 mb-1">
+        {WEEKDAY_NAMES.map(w => (
+          <div key={w} className="text-center text-[10px] font-semibold text-slate-500 uppercase py-1">
+            {w}
+          </div>
+        ))}
+      </div>
+
+      {/* Day cells */}
+      <div className="grid grid-cols-7 gap-1">
+        {cells.map((cell, idx) => {
+          const apts = byDate[cell.date] ?? [];
+          const isToday = cell.date === today;
+          return (
+            <div
+              key={idx}
+              className={`min-h-[80px] p-1.5 rounded-lg border text-right ${
+                !cell.inMonth ? 'bg-slate-50 border-slate-100' :
+                isToday        ? 'bg-brand-50 border-brand-300'
+                               : 'bg-white border-slate-100'
+              }`}
+            >
+              <div className={`text-[11px] font-semibold mb-1 ${
+                !cell.inMonth ? 'text-slate-300' :
+                isToday        ? 'text-brand-700'
+                               : 'text-slate-700'
+              }`}>
+                {cell.day}
+              </div>
+              <div className="space-y-0.5">
+                {apts.slice(0, 3).map(a => {
+                  const cfg = STATUS_CONFIG[a.status];
+                  return (
+                    <button
+                      key={a.id}
+                      onClick={() => onClickAppointment(a)}
+                      className={`block w-full text-right text-[9px] px-1 py-0.5 rounded truncate ${cfg.bg} ${cfg.text}`}
+                      title={`${a.time} · ${a.customerName} · ${a.service}`}
+                    >
+                      <span className="font-mono">{a.time}</span>
+                      <span className="mr-1 truncate">{a.customerName}</span>
+                    </button>
+                  );
+                })}
+                {apts.length > 3 && (
+                  <p className="text-[9px] text-slate-400 px-1">
+                    +{apts.length - 3} أخرى
+                  </p>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
