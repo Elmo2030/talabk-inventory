@@ -15,6 +15,7 @@ import {
   type ReactNode,
 } from 'react';
 import { getSupabaseClient } from '@/lib/supabase/client';
+import { useAuth } from '@/lib/AuthContext';
 import type { Tenant, UserProfile, UserRole, Permission } from '@/lib/types';
 import { can as rbacCan } from '@/lib/auth/rbac';
 
@@ -99,17 +100,16 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     }
   }, [supabase]);
 
-  // Load on mount
+  // Load on mount, then react to auth-state changes.
+  // PREVIOUSLY this opened its own `onAuthStateChange` subscription — a
+  // second listener on top of AuthContext's. Every token refresh fired two
+  // state cascades. We now consume `useAuth().isLoggedIn` so the single
+  // subscription in AuthContext is the source of truth and TenantContext
+  // simply re-loads when `isLoggedIn` flips.
+  const { isLoggedIn } = useAuth();
   useEffect(() => {
     loadContext();
-
-    // Re-load whenever auth state changes (login / logout / token refresh)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
-      loadContext();
-    });
-
-    return () => subscription.unsubscribe();
-  }, [loadContext, supabase.auth]);
+  }, [loadContext, isLoggedIn]);
 
   // Stable permission helper
   const canDo = useCallback(

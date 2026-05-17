@@ -265,21 +265,24 @@ export function StockProvider({ children }: { children: ReactNode }) {
 
         // BOM: deduct component materials automatically when receiving manufactured goods.
         // Use in-memory `items` rather than refetching — they're already loaded.
+        // Parallelize the per-component _stockOut.create calls — they're
+        // independent, so awaiting them serially was N round-trips for no reason.
         const manufacturedItem = items.find((i) => i.id === movement.itemId);
         if (manufacturedItem?.isManufactured && manufacturedItem.bom && manufacturedItem.bom.length > 0) {
-          for (const bomEntry of manufacturedItem.bom) {
-            const deductQty = movement.quantity * bomEntry.quantity;
-            await _stockOut.create({
-              date: movement.date,
-              itemId: bomEntry.componentItemId,
-              recipientDept: 'قسم التصنيع',
-              quantity: deductQty,
-              unitPrice: 0,
-              reason: 'تصنيع',
-              responsibleEmployee: movement.responsibleEmployee || 'نظام التصنيع',
-              notes: `خصم تلقائي - تصنيع ${manufacturedItem.name}`,
-            });
-          }
+          await Promise.all(
+            manufacturedItem.bom.map((bomEntry) =>
+              _stockOut.create({
+                date: movement.date,
+                itemId: bomEntry.componentItemId,
+                recipientDept: 'قسم التصنيع',
+                quantity: movement.quantity * bomEntry.quantity,
+                unitPrice: 0,
+                reason: 'تصنيع',
+                responsibleEmployee: movement.responsibleEmployee || 'نظام التصنيع',
+                notes: `خصم تلقائي - تصنيع ${manufacturedItem.name}`,
+              })
+            )
+          );
           await refreshStock();
         }
 
@@ -432,21 +435,48 @@ export function StockProvider({ children }: { children: ReactNode }) {
   );
 
   // ============================================
-  // Mutations - Suppliers
+  // Mutations - Suppliers (optimistic with rollback — mirrors items pattern)
   // ============================================
   const addSupplier = useCallback(async (supplier: Omit<Supplier, 'id' | 'createdAt'>) => {
-    const newSupplier = await _suppliers.create(supplier);
-    setSuppliers((prev) => [...prev, newSupplier]);
+    const tempId = `tmp_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const optimistic = { ...supplier, id: tempId, createdAt: new Date().toISOString() } as Supplier;
+    setSuppliers((prev) => [...prev, optimistic]);
+    try {
+      const newSupplier = await _suppliers.create(supplier);
+      setSuppliers((prev) => prev.map((s) => (s.id === tempId ? newSupplier : s)));
+    } catch (err) {
+      setSuppliers((prev) => prev.filter((s) => s.id !== tempId));
+      throw err;
+    }
   }, []);
 
   const updateSupplier = useCallback(async (id: string, updates: Partial<Supplier>) => {
-    const updated = await _suppliers.update(id, updates);
-    setSuppliers((prev) => prev.map((s) => (s.id === id ? updated : s)));
+    let snapshot: Supplier | undefined;
+    setSuppliers((prev) => {
+      snapshot = prev.find((s) => s.id === id);
+      return prev.map((s) => (s.id === id ? { ...s, ...updates } : s));
+    });
+    try {
+      const updated = await _suppliers.update(id, updates);
+      setSuppliers((prev) => prev.map((s) => (s.id === id ? updated : s)));
+    } catch (err) {
+      if (snapshot) setSuppliers((prev) => prev.map((s) => (s.id === id ? snapshot! : s)));
+      throw err;
+    }
   }, []);
 
   const deleteSupplier = useCallback(async (id: string) => {
-    await _suppliers.delete(id);
-    setSuppliers((prev) => prev.filter((s) => s.id !== id));
+    let snapshot: Supplier | undefined;
+    setSuppliers((prev) => {
+      snapshot = prev.find((s) => s.id === id);
+      return prev.filter((s) => s.id !== id);
+    });
+    try {
+      await _suppliers.delete(id);
+    } catch (err) {
+      if (snapshot) setSuppliers((prev) => [...prev, snapshot!]);
+      throw err;
+    }
   }, []);
 
   // ============================================

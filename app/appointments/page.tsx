@@ -215,17 +215,24 @@ export default function AppointmentsPage() {
     const d = new Date(); return { year: d.getFullYear(), month: d.getMonth() };
   });
 
-  // Load from Supabase on mount
+  // Load from Supabase on mount. Distinguish "no data yet" from "load failed":
+  // a silent fallback to [] (the old behaviour) made transient network errors
+  // look like an empty calendar, which is a worse UX than a clear error toast.
   useEffect(() => {
     appointmentsService.getAll()
       .then((data) => setAppointments(data))
-      .catch(() => setAppointments([]));
+      .catch(() => {
+        toast.error('تعذّر تحميل المواعيد — تحقق من الاتصال ثم أعد المحاولة');
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const reload = () => {
     appointmentsService.getAll()
       .then((data) => setAppointments(data))
-      .catch(() => {});
+      .catch(() => {
+        toast.error('تعذّر تحديث قائمة المواعيد');
+      });
   };
 
   const filtered = useMemo(() => {
