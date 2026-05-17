@@ -29,6 +29,7 @@ export default function ItemsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Item | null>(null);
   const [page, setPage] = useState(1);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   useKeyboardShortcuts({
     'Ctrl+N': () => { setEditingItem(null); setIsModalOpen(true); },
@@ -178,6 +179,52 @@ export default function ItemsPage() {
     else toast.success(`تم استيراد ${success} صنف`);
   };
 
+  // ── Bulk selection helpers ───────────────────────────────────────────────
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+  const toggleSelectAll = () => {
+    if (paginatedItems.every(i => selectedIds.has(i.id))) {
+      // Currently all selected on this page — deselect them
+      setSelectedIds(prev => {
+        const next = new Set(prev);
+        paginatedItems.forEach(i => next.delete(i.id));
+        return next;
+      });
+    } else {
+      // Select all on this page
+      setSelectedIds(prev => {
+        const next = new Set(prev);
+        paginatedItems.forEach(i => next.add(i.id));
+        return next;
+      });
+    }
+  };
+  const clearSelection = () => setSelectedIds(new Set());
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    const ok = await confirm({
+      title:        `حذف ${selectedIds.size} صنف؟`,
+      description:  `سيتم حذف ${selectedIds.size} صنف وكل بياناتهم. لا يمكن التراجع.`,
+      confirmLabel: 'حذف الكل',
+      cancelLabel:  'إلغاء',
+      variant:      'danger',
+    });
+    if (!ok) return;
+    let success = 0, failed = 0;
+    for (const id of selectedIds) {
+      try { await deleteItem(id); success++; } catch { failed++; }
+    }
+    clearSelection();
+    if (failed > 0) toast.error(`نجح ${success}، فشل ${failed}`);
+    else toast.success(`تم حذف ${success} صنف`);
+  };
+
   const handleDelete = async (item: Item) => {
     const confirmed = await confirm({
       title: 'حذف الصنف',
@@ -248,6 +295,30 @@ export default function ItemsPage() {
           إجمالي: <span className="font-bold text-slate-900">{filteredItems.length}</span>
         </div>
       </div>
+
+      {/* Bulk-action bar — appears only when there's a selection */}
+      {selectedIds.size > 0 && (
+        <div className="flex items-center justify-between gap-3 mb-4 p-3 rounded-xl bg-[#E5302A]/5 border border-[#E5302A]/20">
+          <p className="text-sm font-semibold text-[#E5302A]">
+            تم اختيار {selectedIds.size} صنف
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={clearSelection}
+              className="px-3 py-1.5 text-xs rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+            >
+              إلغاء التحديد
+            </button>
+            <button
+              onClick={handleBulkDelete}
+              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-lg bg-red-600 hover:bg-red-700 text-white font-semibold"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              حذف المحدد
+            </button>
+          </div>
+        </div>
+      )}
 
       <div
         className="bg-white rounded-xl border border-slate-200 overflow-hidden card-hover"
@@ -348,6 +419,15 @@ export default function ItemsPage() {
               <table className="w-full text-sm min-w-[700px]">
                 <thead className="bg-slate-50 border-b border-slate-200">
                   <tr>
+                    <th className="px-3 py-3 text-right w-10">
+                      <input
+                        type="checkbox"
+                        checked={paginatedItems.length > 0 && paginatedItems.every(i => selectedIds.has(i.id))}
+                        onChange={toggleSelectAll}
+                        className="w-4 h-4 rounded border-slate-300 text-[#E5302A] focus:ring-2 focus:ring-[#E5302A]/20"
+                        aria-label="تحديد الكل"
+                      />
+                    </th>
                     <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">الكود</th>
                     <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">اسم الصنف</th>
                     <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">التصنيف</th>
@@ -372,9 +452,19 @@ export default function ItemsPage() {
                       <tr
                         key={item.id}
                         className={`transition-colors ${
+                          selectedIds.has(item.id) ? 'bg-[#E5302A]/5' :
                           isSuspended ? 'bg-red-50/60 hover:bg-red-50' : 'hover:bg-slate-50'
                         }`}
                       >
+                        <td className="px-3 py-3">
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.has(item.id)}
+                            onChange={() => toggleSelect(item.id)}
+                            className="w-4 h-4 rounded border-slate-300 text-[#E5302A] focus:ring-2 focus:ring-[#E5302A]/20"
+                            aria-label={`تحديد ${item.name}`}
+                          />
+                        </td>
                         <td className="px-3 py-3 font-mono text-slate-700">{item.code}</td>
                         <td className="px-3 py-3 font-medium text-slate-900">{item.name}</td>
                         <td className="px-3 py-3 text-slate-600">{item.category}</td>

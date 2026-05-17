@@ -1,5 +1,5 @@
 'use client';
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Plus, Minus, Trash2, Search, X, ShoppingCart, User, MapPin, Package, Tag, CheckCircle, AlertCircle } from 'lucide-react';
 import { useStock } from '@/lib/StockContext';
 import { Item, Coupon } from '@/lib/types';
@@ -64,6 +64,64 @@ export default function SalesOrderForm({ onSuccess, onCancel }: Props) {
 
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
+
+  // ── Draft autosave (localStorage) ──────────────────────────────────────
+  // Restores any in-progress order on mount and persists every change so
+  // accidental refreshes / closed tabs don't lose work. Cleared on submit.
+  const DRAFT_KEY = 'talabk_order_draft_v1';
+  const isHydrated = useRef(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (raw) {
+        const d = JSON.parse(raw) as Partial<{
+          customerName: string;
+          customerPhone: string;
+          customerCity: string;
+          deliveryType: DeliveryType;
+          notes: string;
+          cart: CartItem[];
+          shippingOnStore: boolean;
+          packagingOnStore: boolean;
+          couponInput: string;
+        }>;
+        if (d.customerName)    setCustomerName(d.customerName);
+        if (d.customerPhone)   setCustomerPhone(d.customerPhone);
+        if (d.customerCity)    setCustomerCity(d.customerCity);
+        if (d.deliveryType)    setDeliveryType(d.deliveryType);
+        if (d.notes)           setNotes(d.notes);
+        if (d.cart)            setCart(d.cart);
+        if (d.shippingOnStore !== undefined)  setShippingOnStore(d.shippingOnStore);
+        if (d.packagingOnStore !== undefined) setPackagingOnStore(d.packagingOnStore);
+        if (d.couponInput)     setCouponInput(d.couponInput);
+      }
+    } catch { /* corrupt JSON — ignore */ }
+    isHydrated.current = true;
+  }, []);
+
+  useEffect(() => {
+    if (!isHydrated.current || typeof window === 'undefined') return;
+    // Only persist a draft when there's actual content
+    const hasContent = customerName || customerPhone || customerCity || cart.length > 0 || notes;
+    if (!hasContent) {
+      localStorage.removeItem(DRAFT_KEY);
+      return;
+    }
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({
+        customerName, customerPhone, customerCity, deliveryType, notes, cart,
+        shippingOnStore, packagingOnStore, couponInput,
+      }));
+    } catch { /* quota error — ignore */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customerName, customerPhone, customerCity, deliveryType, notes, cart,
+      shippingOnStore, packagingOnStore]);
+
+  const clearDraft = () => {
+    if (typeof window !== 'undefined') localStorage.removeItem(DRAFT_KEY);
+  };
 
   // VAT settings — loaded from Supabase with localStorage fallback
   const [storeSettings, setStoreSettings] = useState<StoreSettings>(() => {
@@ -308,6 +366,7 @@ export default function SalesOrderForm({ onSuccess, onCancel }: Props) {
 
     setSaving(false);
     if (result.success) {
+      clearDraft();
       onSuccess();
     } else {
       setErrors([result.error ?? 'فشل حفظ الطلب']);

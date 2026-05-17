@@ -47,23 +47,39 @@ function fmtCurrency(n: number) {
 
 // ── KPI Card ─────────────────────────────────────────────────────────────────
 function KPICard({
-  icon: Icon, label, value, sub, color = '#E5302A',
+  icon: Icon, label, value, sub, color = '#E5302A', delta,
 }: {
   icon: React.ElementType;
   label: string;
   value: string;
   sub?: string;
   color?: string;
+  /** 24-hour change. Positive renders green arrow ↑, negative red ↓, 0 hidden. */
+  delta?: number;
 }) {
+  const hasDelta = typeof delta === 'number' && delta !== 0;
+  const isUp     = (delta ?? 0) > 0;
   return (
     <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl border border-[#E5E5EA] dark:border-[#2C2C2E] p-5 flex items-center gap-4">
       <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
            style={{ background: `${color}18` }}>
         <Icon className="w-6 h-6" style={{ color }} />
       </div>
-      <div>
+      <div className="flex-1 min-w-0">
         <p className="text-xs text-[#6C6C70] dark:text-[#A1A1AA] mb-0.5">{label}</p>
-        <p className="text-2xl font-bold text-[#1C1C1E] dark:text-[#F4F4F5] leading-none">{value}</p>
+        <div className="flex items-baseline gap-2">
+          <p className="text-2xl font-bold text-[#1C1C1E] dark:text-[#F4F4F5] leading-none">{value}</p>
+          {hasDelta && (
+            <span
+              className={`text-xs font-semibold inline-flex items-center gap-0.5 ${
+                isUp ? 'text-emerald-600' : 'text-red-600'
+              }`}
+              title="مقارنةً بالـ 24 ساعة الماضية"
+            >
+              {isUp ? '↑' : '↓'}{Math.abs(delta!)}
+            </span>
+          )}
+        </div>
         {sub && <p className="text-xs text-[#6C6C70] dark:text-[#A1A1AA] mt-1">{sub}</p>}
       </div>
     </div>
@@ -158,6 +174,19 @@ export default function SuperAdminDashboard() {
     .filter(t => t.status === 'active' && t.subscription_plan !== 'trial')
     .reduce((s, t) => s + (t.monthly_fee ?? 0), 0);
   const pendingCount   = requests.filter(r => r.status === 'pending').length;
+
+  // ── 24-hour deltas ────────────────────────────────────────────────────────
+  // How many of each KPI's rows were created in the last 24 hours. Helps the
+  // super-admin spot growth or sudden spikes at a glance.
+  const DAY_AGO = Date.now() - 86_400_000;
+  const isRecent = (iso?: string) => !!iso && new Date(iso).getTime() >= DAY_AGO;
+
+  const activeDelta   = stats.filter(t => t.status === 'active' && isRecent(t.created_at)).length;
+  const trialDelta    = stats.filter(t => t.subscription_plan === 'trial' && isRecent(t.created_at)).length;
+  const pendingDelta  = requests.filter(r => r.status === 'pending' && isRecent(r.created_at)).length;
+  const mrrDelta      = stats
+    .filter(t => t.status === 'active' && t.subscription_plan !== 'trial' && isRecent(t.created_at))
+    .reduce((s, t) => s + (t.monthly_fee ?? 0), 0);
 
   // Plan distribution for donut chart
   const planData = (['trial', 'starter', 'pro', 'enterprise'] as SubscriptionPlan[]).map(plan => ({
@@ -303,6 +332,7 @@ export default function SuperAdminDashboard() {
           value={fmt(activeTenants)}
           sub={`${fmt(trialTenants)} تجريبي`}
           color="#34C759"
+          delta={activeDelta}
         />
         <KPICard
           icon={TrendingUp}
@@ -310,6 +340,7 @@ export default function SuperAdminDashboard() {
           value={fmtCurrency(mrr)}
           sub={`${fmt(stats.filter(t => t.subscription_plan !== 'trial' && t.status === 'active').length)} اشتراك مدفوع`}
           color="#E5302A"
+          delta={mrrDelta}
         />
         <KPICard
           icon={UserPlus}
@@ -317,12 +348,13 @@ export default function SuperAdminDashboard() {
           value={fmt(pendingCount)}
           sub="في انتظار المراجعة"
           color="#FF9F0A"
+          delta={pendingDelta}
         />
         <KPICard
           icon={AlertCircle}
           label="متاجر موقوفة"
           value={fmt(stats.filter(t => t.status === 'suspended').length)}
-          sub={`${fmt(stats.filter(t => t.status === 'cancelled').length)} ملغي`}
+          sub={`${fmt(stats.filter(t => t.status === 'cancelled').length)} ملغي · ${fmt(trialDelta)} تجريبي جديد اليوم`}
           color="#6C6C70"
         />
       </div>
