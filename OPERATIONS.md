@@ -161,3 +161,39 @@ UPDATE tenants
    SET max_users = 10, max_items = 1000, max_orders_per_month = 5000
  WHERE slug = 'mystore';
 ```
+
+## Deferred refactors (queued for a deliberate session)
+
+### Recharts dynamic import
+**Issue:** `recharts` (~95KB gzipped) is statically imported in 3 chart-heavy
+pages: `app/app/[tenantSlug]/dashboard/page.tsx`, `app/analytics/page.tsx`,
+`app/superadmin/(protected)/page.tsx`. On their own page bundles this isn't
+disastrous (Next.js code-splits per-route), but the in-page paint sequence
+blocks KPI cards until recharts hydrates.
+
+**Why deferred:** A clean fix requires extracting each chart block into a
+separate `'use client'` component and dynamic-importing it. Recharts'
+`Tooltip` generic types (Formatter<ValueType, NameType>) lose precision
+under `next/dynamic`, so a wrapper-component approach is needed (not
+per-component dynamic imports). The chart pages are ~2,000 LOC combined —
+this is a 4-6h refactor that needs its own session with full attention.
+
+**Roadmap:**
+1. Create `components/dashboard/DashboardCharts.tsx` wrapping all dashboard
+   chart blocks; dynamic-import from page.
+2. Same for `components/analytics/AnalyticsCharts.tsx`.
+3. Same for `components/superadmin/SuperadminCharts.tsx`.
+
+### StockContext split
+**Issue:** `lib/StockContext.tsx` holds items, suppliers, stockIn, stockOut,
+currentStock, purchaseInvoices, salesOrders in one provider. Its value
+memo has 30+ deps; any mutation triggers re-render in every consumer.
+
+**Why deferred:** Splitting it touches dozens of files. The optimistic
+mutations + O(1) balance Map already absorbed the worst pain points.
+
+**Roadmap:**
+1. Extract `ItemsContext`, `SuppliersContext`, `MovementsContext`,
+   `OrdersContext`, `PurchasesContext`.
+2. Or migrate to TanStack Query for per-resource cache invalidation.
+3. Audit each consumer to subscribe to the minimal slice it needs.

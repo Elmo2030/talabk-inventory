@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useStock } from '@/lib/StockContext';
 import { SalesOrder } from '@/lib/types';
+import { AnimatedList, AnimatedRow } from '@/components/ui/AnimatedList';
 
 // ── Customer aggregate type ───────────────────────────────────────────────────
 interface CustomerData {
@@ -267,14 +268,17 @@ export default function CustomersPage() {
         </div>
       ) : (
         <div className="space-y-3">
+         <AnimatedList>
           {filteredCustomers.map(customer => {
             const key        = customer.phone || customer.name;
             const isExpanded = expandedKey === key;
             const isVip      = customer.totalSpent > 1000;
 
             return (
-              <div
+              <AnimatedRow
                 key={key}
+                rowKey={key}
+                as="div"
                 className="bg-white dark:bg-[#18181B] border border-[#E5E5EA] dark:border-[#27272A] rounded-2xl overflow-hidden"
               >
                 {/* Customer row */}
@@ -397,9 +401,10 @@ export default function CustomersPage() {
                     </div>
                   </div>
                 )}
-              </div>
+              </AnimatedRow>
             );
           })}
+         </AnimatedList>
         </div>
       )}
     </div>

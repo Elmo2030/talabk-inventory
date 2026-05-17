@@ -18,6 +18,7 @@ import {
   X,
 } from 'lucide-react';
 import { getSupabaseClient } from '@/lib/supabase/client';
+import { useToast } from '@/components/ui/Toast';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -115,6 +116,7 @@ function ReviewDialog({ payment, action, onClose, onDone }: ReviewDialogProps) {
   const [note,      setNote]      = useState('');
   const [loading,   setLoading]   = useState(false);
   const [error,     setError]     = useState('');
+  const toast = useToast();
 
   async function submit() {
     if (action === 'reject' && !note.trim()) {
@@ -130,24 +132,38 @@ function ReviewDialog({ payment, action, onClose, onDone }: ReviewDialogProps) {
     // (when approving) in a single transaction with FOR UPDATE locking,
     // and writes an audit_log entry. Idempotency: the RPC throws if the
     // payment is no longer `pending`, so a double-click cannot double-approve.
+    //
+    // Wrapped in toast.promise: the RPC touches multiple tables + audit log,
+    // so on a busy network it can run 500-1500ms — long enough that a silent
+    // button spinner alone underspecs the feedback. Loading toast surfaces
+    // only if the op exceeds 500ms; under 500ms the success toast fires
+    // directly without any flash.
     const rpc = action === 'approve'
       ? 'approve_subscription_payment'
       : 'reject_subscription_payment';
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: rpcErr } = await (supabase as any).rpc(rpc, {
-      p_payment_id: payment.id,
-      p_admin_note: note.trim() || null,
-    });
-
-    if (rpcErr) {
-      setError(rpcErr.message || 'فشل تنفيذ العملية');
+    try {
+      await toast.promise(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase as any).rpc(rpc, {
+          p_payment_id: payment.id,
+          p_admin_note: note.trim() || null,
+        }).then((r: { error?: { message?: string } }) => {
+          if (r.error) throw new Error(r.error.message || 'فشل تنفيذ العملية');
+          return r;
+        }),
+        {
+          loading: action === 'approve' ? 'جاري اعتماد الدفعة...' : 'جاري رفض الدفعة...',
+          success: action === 'approve' ? 'تم اعتماد الدفعة وتفعيل المتجر ✓' : 'تم رفض الدفعة',
+          error:   (e) => e.message,
+        },
+      );
       setLoading(false);
-      return;
+      onDone();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'فشل تنفيذ العملية');
+      setLoading(false);
     }
-
-    setLoading(false);
-    onDone();
   }
 
   const isApprove = action === 'approve';

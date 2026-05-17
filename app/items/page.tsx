@@ -148,35 +148,50 @@ export default function ItemsPage() {
       toast.error(`الأعمدة المطلوبة: ${required.join(', ')}`);
       return;
     }
-    let success = 0, failed = 0;
-    for (let i = 1; i < lines.length; i++) {
-      const cells = parseLine(lines[i]);
-      const row: Record<string, string> = {};
-      headers.forEach((h, idx) => { row[h] = (cells[idx] ?? '').trim(); });
-      if (!row.code || !row.name || !row.category) { failed++; continue; }
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (addItem as any)({
-          code:           row.code,
-          name:           row.name,
-          category:       row.category,
-          unit:           row.unit || 'قطعة',
-          supplierId:     row.supplier_id || '',
-          purchasePrice:  Number(row.purchase_price)  || 0,
-          sellingPrice:   Number(row.selling_price)   || 0,
-          openingQty:     Number(row.opening_qty)     || 0,
-          minStockLevel:  Number(row.min_stock_level) || 0,
-          reorderLevel:   Number(row.reorder_level)   || 0,
-          location:       row.location  || '',
-          status:         'ACTIVE',
-        });
-        success++;
-      } catch {
-        failed++;
+    // CSV import is the slowest operation in the app — N row inserts run
+    // serially (each goes through optimistic addItem with rollback). For
+    // a 500-row file this can take 30+ seconds. Wrap in toast.promise so
+    // the user sees "جاري استيراد X صف..." while it runs.
+    const importJob = async (): Promise<{ success: number; failed: number }> => {
+      let success = 0, failed = 0;
+      for (let i = 1; i < lines.length; i++) {
+        const cells = parseLine(lines[i]);
+        const row: Record<string, string> = {};
+        headers.forEach((h, idx) => { row[h] = (cells[idx] ?? '').trim(); });
+        if (!row.code || !row.name || !row.category) { failed++; continue; }
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (addItem as any)({
+            code:           row.code,
+            name:           row.name,
+            category:       row.category,
+            unit:           row.unit || 'قطعة',
+            supplierId:     row.supplier_id || '',
+            purchasePrice:  Number(row.purchase_price)  || 0,
+            sellingPrice:   Number(row.selling_price)   || 0,
+            openingQty:     Number(row.opening_qty)     || 0,
+            minStockLevel:  Number(row.min_stock_level) || 0,
+            reorderLevel:   Number(row.reorder_level)   || 0,
+            location:       row.location  || '',
+            status:         'ACTIVE',
+          });
+          success++;
+        } catch {
+          failed++;
+        }
       }
+      return { success, failed };
+    };
+    try {
+      await toast.promise(importJob(), {
+        loading: `جاري استيراد ${lines.length - 1} صف...`,
+        success: ({ success, failed }) =>
+          failed > 0 ? `نجح ${success}، فشل ${failed} صف` : `تم استيراد ${success} صنف`,
+        error:   (e) => `فشل الاستيراد: ${e.message}`,
+      });
+    } catch {
+      // toast already surfaced the error
     }
-    if (failed > 0) toast.error(`نجح ${success}، فشل ${failed} صف`);
-    else toast.success(`تم استيراد ${success} صنف`);
   };
 
   // ── Bulk selection helpers ───────────────────────────────────────────────
