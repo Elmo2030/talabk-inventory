@@ -154,6 +154,9 @@ export default function StorePage() {
         </span>
       </div>
 
+      {/* Live preview — how customers see your store card */}
+      <StorePreviewCard profile={profile} />
+
       {/* Card 1 — Basic info */}
       <div className="bg-white rounded-2xl border border-[#E5E5EA] p-6">
         <div className="flex items-center gap-2 mb-5">
@@ -368,6 +371,100 @@ export default function StorePage() {
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// Live storefront preview — replicates the public-facing business card
+// without requiring an iframe. Reflects every keystroke from the form.
+// ──────────────────────────────────────────────────────────────────────────
+function StorePreviewCard({ profile }: { profile: StoreProfile }) {
+  const initial = (profile.name || 'م').trim().charAt(0).toUpperCase();
+  const socials: { label: string; value: string; href: string; icon: React.ReactNode }[] = [];
+  if (profile.facebook)  socials.push({ label: 'Facebook',  value: profile.facebook,  href: profile.facebook,                                       icon: <Facebook className="w-3.5 h-3.5" /> });
+  if (profile.instagram) socials.push({ label: 'Instagram', value: profile.instagram, href: `https://instagram.com/${profile.instagram.replace('@', '')}`, icon: <Instagram className="w-3.5 h-3.5" /> });
+  if (profile.twitter)   socials.push({ label: 'X',         value: profile.twitter,   href: profile.twitter,                                        icon: <Twitter className="w-3.5 h-3.5" /> });
+  if (profile.tiktok)    socials.push({ label: 'TikTok',    value: profile.tiktok,    href: profile.tiktok,                                         icon: <TikTokIcon className="w-3.5 h-3.5" /> });
+  if (profile.snapchat)  socials.push({ label: 'Snapchat',  value: profile.snapchat,  href: profile.snapchat,                                       icon: <SnapchatIcon className="w-3.5 h-3.5" /> });
+
+  return (
+    <div className="bg-gradient-to-br from-slate-50 to-white rounded-2xl border-2 border-dashed border-[#E5E5EA] p-5">
+      <div className="flex items-center gap-2 mb-4">
+        <Eye className="w-4 h-4 text-slate-500" />
+        <p className="text-xs font-semibold text-slate-600 uppercase tracking-wider">
+          معاينة — هكذا يرى عملاؤك متجرك
+        </p>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-[#E5E5EA] shadow-sm p-6 max-w-md mx-auto">
+        <div className="flex items-center gap-4 mb-5">
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#E5302A] to-[#C42B24] flex items-center justify-center text-white text-2xl font-bold flex-shrink-0">
+            {initial}
+          </div>
+          <div className="min-w-0 flex-1">
+            <h3 className="text-lg font-bold text-[#1C1C1E] truncate">
+              {profile.name || 'اسم المتجر'}
+            </h3>
+            <p className="text-xs text-slate-400 mt-0.5">رقم #{profile.storeId}</p>
+          </div>
+        </div>
+
+        <div className="space-y-2 text-sm">
+          {profile.phone && (
+            <a href={`tel:${profile.phone}`} className="flex items-center gap-2 text-slate-700 hover:text-[#E5302A] transition-colors">
+              📞 <span dir="ltr">{profile.phone}</span>
+            </a>
+          )}
+          {profile.whatsapp && (
+            <a href={`https://wa.me/${profile.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-slate-700 hover:text-emerald-600 transition-colors">
+              💬 واتساب <span dir="ltr">{profile.whatsapp}</span>
+            </a>
+          )}
+          {profile.email && (
+            <a href={`mailto:${profile.email}`} className="flex items-center gap-2 text-slate-700 hover:text-[#E5302A] transition-colors">
+              ✉️ <span dir="ltr">{profile.email}</span>
+            </a>
+          )}
+          {profile.address && (
+            <p className="flex items-start gap-2 text-slate-700">
+              📍 <span>{profile.address}</span>
+            </p>
+          )}
+          {profile.website && (
+            <a href={profile.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-blue-600 hover:underline">
+              <Globe className="w-3.5 h-3.5" /> <span dir="ltr">{profile.website}</span>
+            </a>
+          )}
+        </div>
+
+        {socials.length > 0 && (
+          <>
+            <div className="my-4 h-px bg-slate-100" />
+            <div className="flex flex-wrap items-center gap-2">
+              {socials.map(s => (
+                <a
+                  key={s.label}
+                  href={s.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs"
+                  title={s.value}
+                >
+                  {s.icon}
+                  {s.label}
+                </a>
+              ))}
+            </div>
+          </>
+        )}
+
+        {(!profile.phone && !profile.whatsapp && !profile.email && !profile.address && socials.length === 0) && (
+          <p className="text-xs text-slate-400 text-center py-3">
+            أضف معلومات الاتصال أدناه لتظهر هنا
+          </p>
+        )}
       </div>
     </div>
   );
