@@ -16,6 +16,7 @@ import { useKeyboardShortcuts } from '@/lib/useKeyboardShortcuts';
 import EmptyState from '@/components/ui/EmptyState';
 import Pagination from '@/components/ui/Pagination';
 import { usePermissions } from '@/lib/usePermissions';
+import { AnimatedList, AnimatedRow } from '@/components/ui/AnimatedList';
 
 const PAGE_SIZE = 15;
 
@@ -358,13 +359,16 @@ export default function ItemsPage() {
           <>
             {/* Mobile cards — sm and below */}
             <div className="sm:hidden divide-y divide-slate-100 dark:divide-[#27272A]/50">
+             <AnimatedList>
               {paginatedItems.map((item) => {
                 const balance = getBalance(item.id);
                 const isBelowMin = balance <= item.minStockLevel;
                 const isSuspended = item.status === 'SUSPENDED';
                 return (
-                  <div
+                  <AnimatedRow
                     key={item.id}
+                    rowKey={item.id}
+                    as="div"
                     className={`bg-white dark:bg-[#18181B] border border-[#E5E5EA] dark:border-[#27272A] rounded-xl p-4 space-y-2 m-3 ${isSuspended ? 'bg-red-50/60' : ''}`}
                   >
                     <div className="flex items-start justify-between gap-2">
@@ -424,9 +428,10 @@ export default function ItemsPage() {
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
-                  </div>
+                  </AnimatedRow>
                 );
               })}
+             </AnimatedList>
             </div>
 
             {/* Desktop table — md and above */}
