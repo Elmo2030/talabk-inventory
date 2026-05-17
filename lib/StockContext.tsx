@@ -145,6 +145,70 @@ interface StockContextType {
   refresh: () => Promise<void>;
 }
 
+// ============================================
+// Per-slice context types — narrower surfaces for targeted consumers
+// ============================================
+// A component that only renders items doesn't need to re-render when an
+// order is created. By splitting the value memo into per-slice contexts
+// (while keeping the same state owner inside StockProvider), each consumer
+// can subscribe to only the slice it actually reads.
+
+export interface ItemsContextType {
+  items: Item[];
+  addItem:    StockContextType['addItem'];
+  updateItem: StockContextType['updateItem'];
+  deleteItem: StockContextType['deleteItem'];
+}
+
+export interface SuppliersContextType {
+  suppliers: Supplier[];
+  addSupplier:    StockContextType['addSupplier'];
+  updateSupplier: StockContextType['updateSupplier'];
+  deleteSupplier: StockContextType['deleteSupplier'];
+}
+
+export interface MovementsContextType {
+  stockIn:           StockInMovement[];
+  stockOut:          StockOutMovement[];
+  currentStock:      CurrentStock[];
+  getCurrentBalance: StockContextType['getCurrentBalance'];
+  canIssueQuantity:  StockContextType['canIssueQuantity'];
+  addStockIn:        StockContextType['addStockIn'];
+  addStockOut:       StockContextType['addStockOut'];
+  updateStockIn:     StockContextType['updateStockIn'];
+  updateStockOut:    StockContextType['updateStockOut'];
+  deleteStockIn:     StockContextType['deleteStockIn'];
+  deleteStockOut:    StockContextType['deleteStockOut'];
+}
+
+export interface OrdersContextType {
+  salesOrders:       SalesOrder[];
+  addSalesOrder:     StockContextType['addSalesOrder'];
+  updateSalesOrder:  StockContextType['updateSalesOrder'];
+  deleteSalesOrder:  StockContextType['deleteSalesOrder'];
+}
+
+export interface PurchasesContextType {
+  purchaseInvoices:        PurchaseInvoice[];
+  addPurchaseInvoice:      StockContextType['addPurchaseInvoice'];
+  updatePurchaseInvoice:   StockContextType['updatePurchaseInvoice'];
+  deletePurchaseInvoice:   StockContextType['deletePurchaseInvoice'];
+  receivePurchaseInvoice:  StockContextType['receivePurchaseInvoice'];
+}
+
+export interface StockMetaContextType {
+  loading: boolean;
+  error:   string | null;
+  refresh: StockContextType['refresh'];
+}
+
+const ItemsContext     = createContext<ItemsContextType | undefined>(undefined);
+const SuppliersContext = createContext<SuppliersContextType | undefined>(undefined);
+const MovementsContext = createContext<MovementsContextType | undefined>(undefined);
+const OrdersContext    = createContext<OrdersContextType | undefined>(undefined);
+const PurchasesContext = createContext<PurchasesContextType | undefined>(undefined);
+const StockMetaContext = createContext<StockMetaContextType | undefined>(undefined);
+
 const StockContext = createContext<StockContextType | undefined>(undefined);
 
 // ============================================
@@ -766,78 +830,147 @@ export function StockProvider({ children }: { children: ReactNode }) {
     [purchaseInvoices, currentStock, items]
   );
 
+  // ============================================
+  // Per-slice context values (memoized with only their own deps)
+  // ============================================
+  // Strategy: the StockProvider keeps the same single source of truth — every
+  // setState owner is in this component — but we expose 5 narrowly-scoped
+  // contexts in addition to the legacy `StockContext`. Consumers that only
+  // need items (e.g. /items page) can switch from `useStock()` to `useItems()`
+  // and stop re-rendering when, say, sales orders change.
+  //
+  // The legacy `useStock()` still works (it gathers from all slices) — this
+  // split is a non-breaking addition; consumers migrate at their own pace.
+  // See OPERATIONS.md → "StockContext split" for the migration playbook.
+
+  const itemsValue = useMemo<ItemsContextType>(
+    () => ({ items, addItem, updateItem, deleteItem }),
+    [items, addItem, updateItem, deleteItem],
+  );
+
+  const suppliersValue = useMemo<SuppliersContextType>(
+    () => ({ suppliers, addSupplier, updateSupplier, deleteSupplier }),
+    [suppliers, addSupplier, updateSupplier, deleteSupplier],
+  );
+
+  const movementsValue = useMemo<MovementsContextType>(
+    () => ({
+      stockIn, stockOut, currentStock,
+      getCurrentBalance, canIssueQuantity,
+      addStockIn, addStockOut, updateStockIn, updateStockOut, deleteStockIn, deleteStockOut,
+    }),
+    [
+      stockIn, stockOut, currentStock,
+      getCurrentBalance, canIssueQuantity,
+      addStockIn, addStockOut, updateStockIn, updateStockOut, deleteStockIn, deleteStockOut,
+    ],
+  );
+
+  const ordersValue = useMemo<OrdersContextType>(
+    () => ({ salesOrders, addSalesOrder, updateSalesOrder, deleteSalesOrder }),
+    [salesOrders, addSalesOrder, updateSalesOrder, deleteSalesOrder],
+  );
+
+  const purchasesValue = useMemo<PurchasesContextType>(
+    () => ({
+      purchaseInvoices,
+      addPurchaseInvoice, updatePurchaseInvoice, deletePurchaseInvoice, receivePurchaseInvoice,
+    }),
+    [purchaseInvoices, addPurchaseInvoice, updatePurchaseInvoice, deletePurchaseInvoice, receivePurchaseInvoice],
+  );
+
+  const metaValue = useMemo<StockMetaContextType>(
+    () => ({ loading, error, refresh: loadData }),
+    [loading, error, loadData],
+  );
+
+  // Legacy barrel — preserved for back-compat. Migrated consumers should
+  // switch to a narrow per-slice hook to dodge unrelated re-renders.
   const value = useMemo<StockContextType>(
     () => ({
-      items,
-      suppliers,
-      stockIn,
-      stockOut,
-      currentStock,
-      loading,
-      error,
-      getCurrentBalance,
-      canIssueQuantity,
-      addStockIn,
-      addStockOut,
-      updateStockIn,
-      updateStockOut,
-      deleteStockIn,
-      deleteStockOut,
-      addItem,
-      updateItem,
-      deleteItem,
-      addSupplier,
-      updateSupplier,
-      deleteSupplier,
-      purchaseInvoices,
-      addPurchaseInvoice,
-      updatePurchaseInvoice,
-      deletePurchaseInvoice,
-      receivePurchaseInvoice,
-      salesOrders,
-      addSalesOrder,
-      updateSalesOrder,
-      deleteSalesOrder,
+      items, suppliers, stockIn, stockOut, currentStock,
+      loading, error,
+      getCurrentBalance, canIssueQuantity,
+      addStockIn, addStockOut, updateStockIn, updateStockOut, deleteStockIn, deleteStockOut,
+      addItem, updateItem, deleteItem,
+      addSupplier, updateSupplier, deleteSupplier,
+      purchaseInvoices, addPurchaseInvoice, updatePurchaseInvoice, deletePurchaseInvoice, receivePurchaseInvoice,
+      salesOrders, addSalesOrder, updateSalesOrder, deleteSalesOrder,
       refresh: loadData,
     }),
     [
-      items,
-      suppliers,
-      stockIn,
-      stockOut,
-      currentStock,
-      loading,
-      error,
-      getCurrentBalance,
-      canIssueQuantity,
-      addStockIn,
-      addStockOut,
-      updateStockIn,
-      updateStockOut,
-      deleteStockIn,
-      deleteStockOut,
-      addItem,
-      updateItem,
-      deleteItem,
-      addSupplier,
-      updateSupplier,
-      deleteSupplier,
-      purchaseInvoices,
-      addPurchaseInvoice,
-      updatePurchaseInvoice,
-      deletePurchaseInvoice,
-      receivePurchaseInvoice,
-      salesOrders,
-      addSalesOrder,
-      updateSalesOrder,
-      deleteSalesOrder,
+      items, suppliers, stockIn, stockOut, currentStock,
+      loading, error,
+      getCurrentBalance, canIssueQuantity,
+      addStockIn, addStockOut, updateStockIn, updateStockOut, deleteStockIn, deleteStockOut,
+      addItem, updateItem, deleteItem,
+      addSupplier, updateSupplier, deleteSupplier,
+      purchaseInvoices, addPurchaseInvoice, updatePurchaseInvoice, deletePurchaseInvoice, receivePurchaseInvoice,
+      salesOrders, addSalesOrder, updateSalesOrder, deleteSalesOrder,
       loadData,
-    ]
+    ],
   );
 
-  return <StockContext.Provider value={value}>{children}</StockContext.Provider>;
+  return (
+    <ItemsContext.Provider value={itemsValue}>
+      <SuppliersContext.Provider value={suppliersValue}>
+        <MovementsContext.Provider value={movementsValue}>
+          <OrdersContext.Provider value={ordersValue}>
+            <PurchasesContext.Provider value={purchasesValue}>
+              <StockMetaContext.Provider value={metaValue}>
+                <StockContext.Provider value={value}>
+                  {children}
+                </StockContext.Provider>
+              </StockMetaContext.Provider>
+            </PurchasesContext.Provider>
+          </OrdersContext.Provider>
+        </MovementsContext.Provider>
+      </SuppliersContext.Provider>
+    </ItemsContext.Provider>
+  );
 }
 
+// ============================================
+// Per-slice hooks (preferred for new code — narrower re-render surface)
+// ============================================
+
+export function useItems(): ItemsContextType {
+  const ctx = useContext(ItemsContext);
+  if (!ctx) throw new Error('useItems must be used within StockProvider');
+  return ctx;
+}
+
+export function useSuppliers(): SuppliersContextType {
+  const ctx = useContext(SuppliersContext);
+  if (!ctx) throw new Error('useSuppliers must be used within StockProvider');
+  return ctx;
+}
+
+export function useMovements(): MovementsContextType {
+  const ctx = useContext(MovementsContext);
+  if (!ctx) throw new Error('useMovements must be used within StockProvider');
+  return ctx;
+}
+
+export function useOrders(): OrdersContextType {
+  const ctx = useContext(OrdersContext);
+  if (!ctx) throw new Error('useOrders must be used within StockProvider');
+  return ctx;
+}
+
+export function usePurchases(): PurchasesContextType {
+  const ctx = useContext(PurchasesContext);
+  if (!ctx) throw new Error('usePurchases must be used within StockProvider');
+  return ctx;
+}
+
+export function useStockMeta(): StockMetaContextType {
+  const ctx = useContext(StockMetaContext);
+  if (!ctx) throw new Error('useStockMeta must be used within StockProvider');
+  return ctx;
+}
+
+// Legacy barrel — still works, migrates at consumer's pace.
 export function useStock() {
   const ctx = useContext(StockContext);
   if (!ctx) throw new Error('useStock must be used within StockProvider');

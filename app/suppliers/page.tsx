@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { Plus, Trash2, Pencil, Phone, Mail, Star, Users, ExternalLink } from 'lucide-react';
-import { useStock } from '@/lib/StockContext';
+import { useSuppliers, useItems } from '@/lib/StockContext';
 import { Supplier } from '@/lib/types';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
@@ -19,7 +19,11 @@ import Pagination from '@/components/ui/Pagination';
 const PAGE_SIZE = 15;
 
 export default function SuppliersPage() {
-  const { suppliers, items, addSupplier, updateSupplier, deleteSupplier } = useStock();
+  // Narrow per-slice hooks — supplier page no longer re-renders on orders/
+  // movements/purchases changes. `items` is still consumed for the per-row
+  // "X صنف" badge so it must subscribe to ItemsContext too.
+  const { suppliers, addSupplier, updateSupplier, deleteSupplier } = useSuppliers();
+  const { items } = useItems();
 
   // Quick stats: how many items each supplier ships. Computed once per
   // render — cheap because both arrays are small.

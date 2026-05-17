@@ -19,7 +19,7 @@ import {
   Printer,
   X,
 } from 'lucide-react';
-import { useStock } from '@/lib/StockContext';
+import { useOrders } from '@/lib/StockContext';
 import { SalesOrder, OrderStatus } from '@/lib/types';
 import EmptyState from '@/components/ui/EmptyState';
 import Pagination from '@/components/ui/Pagination';
@@ -177,7 +177,9 @@ function TrackingSection({ order, onSave }: { order: SalesOrder; onSave: (id: st
 
 export default function OrdersPage() {
   const router = useRouter();
-  const { salesOrders, updateSalesOrder, deleteSalesOrder } = useStock();
+  // Narrow per-slice hook — this page now only re-renders on order changes,
+  // not on items / suppliers / stock-movements mutations from other tabs.
+  const { salesOrders, updateSalesOrder, deleteSalesOrder } = useOrders();
   const { confirm } = useConfirm();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'ALL'>('ALL');

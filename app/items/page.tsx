@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { Plus, Trash2, Pencil, Package, AlertTriangle, ExternalLink, Download, Upload } from 'lucide-react';
-import { useStock } from '@/lib/StockContext';
+import { useItems, useSuppliers, useMovements } from '@/lib/StockContext';
 import { Item } from '@/lib/types';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
@@ -21,7 +21,11 @@ import { AnimatedList, AnimatedRow } from '@/components/ui/AnimatedList';
 const PAGE_SIZE = 15;
 
 export default function ItemsPage() {
-  const { items, suppliers, currentStock, addItem, updateItem, deleteItem } = useStock();
+  // Use narrow per-slice hooks — this page no longer re-renders when sales
+  // orders, purchases, or other unrelated slices change.
+  const { items, addItem, updateItem, deleteItem } = useItems();
+  const { suppliers }    = useSuppliers();
+  const { currentStock } = useMovements();
   const toast = useToast();
   const { confirm } = useConfirm();
   const { can } = usePermissions();
