@@ -155,9 +155,16 @@ export default function Sidebar() {
       variant:      'danger',
     });
     if (!ok) return;
-    logout();
+    // Await server-side sign-out — if it fails we still cleared local state
+    // (Supabase cookie may persist briefly) but surface a warning so the
+    // user knows to retry on a stable connection.
+    const ok2 = await logout();
     resetSupabaseClient();
-    toast.success('تم تسجيل الخروج بنجاح');
+    if (ok2) {
+      toast.success('تم تسجيل الخروج بنجاح');
+    } else {
+      toast.error('تعذّر إنهاء الجلسة على الخادم — جرّب مرة أخرى');
+    }
     router.push('/login');
   };
 

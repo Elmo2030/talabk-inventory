@@ -8,6 +8,7 @@ import LoadingGate from '@/components/layout/LoadingGate';
 import TalabkLogo from '@/components/ui/TalabkLogo';
 import CommandPalette from '@/components/ui/CommandPalette';
 import SubscriptionBanner from '@/components/layout/SubscriptionBanner';
+import OfflineBanner from '@/components/ui/OfflineBanner';
 
 // Pages that don't require login — rendered fullscreen without sidebar
 const PUBLIC_PATHS  = ['/', '/register', '/pricing', '/about', '/contact', '/403'];
@@ -76,6 +77,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
     <div className="flex min-h-screen flex-col-reverse md:flex-row">
       <Sidebar />
       <div className="flex-1 md:mr-64 pt-14 md:pt-0 flex flex-col">
+        <OfflineBanner />
         <SubscriptionBanner />
         <main className="flex-1 p-4 md:p-8">
           <LoadingGate>{children}</LoadingGate>

@@ -9,7 +9,13 @@ interface AuthContextType {
   initialized: boolean;
   username: string | null;
   login: (email: string, password: string) => Promise<boolean>;
-  logout: () => void;
+  /**
+   * Resolves once Supabase has actually cleared the session.
+   * Returns `true` on success, `false` if the API call failed — the
+   * caller can surface a toast and choose whether to leave the local
+   * state cleared or roll back.
+   */
+  logout: () => Promise<boolean>;
   setup: (username: string, password: string) => Promise<void>;
   changePassword: (oldPassword: string, newPassword: string) => Promise<boolean>;
   changeUsername: (newUsername: string) => void;
@@ -46,10 +52,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return !error;
   };
 
-  const logout = () => {
-    supabase.auth.signOut();
+  const logout = async (): Promise<boolean> => {
+    // Clear local UI state first so the user perceives an instant logout,
+    // then await the server call. If the server fails (network down etc.)
+    // we already cleared the cookie locally on next reload — but we surface
+    // the error so the caller can show a toast and decide what to do next.
     setIsLoggedIn(false);
     setUsername(null);
+    try {
+      const { error } = await supabase.auth.signOut();
+      return !error;
+    } catch {
+      return false;
+    }
   };
 
   // No longer needed — users are created via Supabase Dashboard / Super Admin

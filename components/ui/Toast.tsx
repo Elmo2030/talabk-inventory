@@ -22,6 +22,20 @@ interface ToastContextType {
   error: (message: string) => void;
   warning: (message: string) => void;
   info: (message: string) => void;
+  /**
+   * Wrap a promise to surface loading / success / error toasts automatically.
+   * Use for long-running operations (> ~500ms) where a button spinner alone
+   * isn't a strong enough signal — e.g. receivePurchaseInvoice (multi-step),
+   * approval flows, exports.
+   */
+  promise: <T,>(
+    p: Promise<T>,
+    msgs: {
+      loading: string;
+      success: string | ((data: T) => string);
+      error:   string | ((err: Error) => string);
+    }
+  ) => Promise<T>;
 }
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
@@ -91,8 +105,40 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const warning = useCallback((msg: string) => showToast(msg, 'warning'), [showToast]);
   const info = useCallback((msg: string) => showToast(msg, 'info'), [showToast]);
 
+  // Promise-aware toast: shows a loading hint immediately, replaces it with
+  // success/error once the promise settles. Short ops (< 500ms) skip the
+  // loading hint entirely so we don't flash unnecessary chrome.
+  const promise = useCallback(
+    async <T,>(
+      p: Promise<T>,
+      msgs: {
+        loading: string;
+        success: string | ((data: T) => string);
+        error:   string | ((err: Error) => string);
+      },
+    ): Promise<T> => {
+      const loadingTimer = window.setTimeout(() => {
+        showToast(msgs.loading, 'info', 60_000);
+      }, 500);
+      try {
+        const data = await p;
+        window.clearTimeout(loadingTimer);
+        const msg = typeof msgs.success === 'function' ? msgs.success(data) : msgs.success;
+        showToast(msg, 'success');
+        return data;
+      } catch (err) {
+        window.clearTimeout(loadingTimer);
+        const e   = err instanceof Error ? err : new Error(String(err));
+        const msg = typeof msgs.error === 'function' ? msgs.error(e) : msgs.error;
+        showToast(msg, 'error', 6000);
+        throw err;
+      }
+    },
+    [showToast],
+  );
+
   return (
-    <ToastContext.Provider value={{ showToast, success, error, warning, info }}>
+    <ToastContext.Provider value={{ showToast, success, error, warning, info, promise }}>
       {children}
 
       {/* Toast Container */}
