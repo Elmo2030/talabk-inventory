@@ -1,9 +1,6 @@
 'use client';
 import { useMemo, useState } from 'react';
-import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, ComposedChart, Bar, Line, BarChart, Legend,
-} from 'recharts';
+import dynamic from 'next/dynamic';
 import {
   TrendingUp, ShoppingBag, Package, AlertTriangle, Truck,
   CheckCircle2,
@@ -15,6 +12,29 @@ import { useStock } from '@/lib/StockContext';
 import { useTheme } from '@/lib/ThemeContext';
 import { MONTHS } from '@/lib/constants';
 import OnboardingChecklist from '@/components/dashboard/OnboardingChecklist';
+
+// Defer the ~95 KB recharts bundle off the dashboard's critical paint
+// path. The KPI cards + onboarding checklist render immediately while
+// the chart island streams in. Two skeleton blocks reserve the layout
+// so there's no CLS when the charts arrive.
+const DashboardCharts = dynamic(
+  () => import('@/components/dashboard/DashboardCharts'),
+  {
+    ssr: false,
+    loading: () => (
+      <>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <div className="lg:col-span-2 bg-white dark:bg-[#18181B] border border-[#E5E5EA] dark:border-[#27272A] rounded-2xl p-5 h-[280px] animate-pulse" />
+          <div className="bg-white dark:bg-[#18181B] border border-[#E5E5EA] dark:border-[#27272A] rounded-2xl p-5 h-[280px] animate-pulse" />
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <div className="bg-white dark:bg-[#18181B] border border-[#E5E5EA] dark:border-[#27272A] rounded-2xl p-5 h-[280px] animate-pulse" />
+          <div className="bg-white dark:bg-[#18181B] border border-[#E5E5EA] dark:border-[#27272A] rounded-2xl p-5 h-[280px] animate-pulse" />
+        </div>
+      </>
+    ),
+  },
+);
 
 export default function DashboardPage() {
   const { items, currentStock, salesOrders, purchaseInvoices, stockIn, suppliers } = useStock();
@@ -391,170 +411,16 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* ── Charts Row ─────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        {/* Area Chart */}
-        <div className="lg:col-span-2 bg-white dark:bg-[#18181B] border border-[#E5E5EA] dark:border-[#27272A] rounded-2xl p-5">
-          <h3 className="text-sm font-semibold text-[#1C1C1E] dark:text-[#F4F4F5] mb-4">
-            المبيعات مقابل صافي الربح — آخر 30 يوماً
-          </h3>
-          {salesOrders.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-[220px] text-center gap-3">
-              <div className="w-14 h-14 rounded-2xl bg-[#F2F2F7] dark:bg-[#27272A] flex items-center justify-center">
-                <TrendingUp className="w-7 h-7 text-[#C7C7CC] dark:text-[#52525B]" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-[#1C1C1E] dark:text-[#F4F4F5]">لا توجد بيانات بعد</p>
-                <p className="text-xs text-[#6C6C70] dark:text-[#A1A1AA] mt-0.5">سجّل أول طلب بيع لرؤية رسمك البياني هنا</p>
-              </div>
-            </div>
-          ) : (
-          <ResponsiveContainer width="100%" height={220}>
-            <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-              <defs>
-                <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%"  stopColor="#E5302A" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#E5302A" stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="profitGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%"  stopColor="#22C55E" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#22C55E" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#27272A' : '#F0F0F0'} />
-              <XAxis
-                dataKey="date"
-                tick={{ fontSize: 10, fill: isDark ? '#71717A' : '#9CA3AF' }}
-                tickLine={false}
-                axisLine={false}
-                interval={4}
-              />
-              <YAxis
-                tick={{ fontSize: 10, fill: isDark ? '#71717A' : '#9CA3AF' }}
-                tickLine={false}
-                axisLine={false}
-              />
-              <Tooltip
-                contentStyle={{
-                  background: isDark ? '#18181B' : '#fff',
-                  border: `1px solid ${isDark ? '#27272A' : '#E5E5EA'}`,
-                  borderRadius: '12px',
-                  fontSize: '12px',
-                  color: isDark ? '#F4F4F5' : '#1C1C1E',
-                }}
-                formatter={(value: number, name: string) => [
-                  `${value.toLocaleString('en-US')} د.ل`,
-                  name === 'revenue' ? 'المبيعات' : 'صافي الربح',
-                ]}
-              />
-              <Area type="monotone" dataKey="revenue" stroke="#E5302A" strokeWidth={2} fill="url(#revenueGrad)" dot={false} />
-              <Area type="monotone" dataKey="profit"  stroke="#22C55E" strokeWidth={2} fill="url(#profitGrad)"  dot={false} />
-            </AreaChart>
-          </ResponsiveContainer>
-          )}
-          <div className="flex items-center gap-4 mt-3 text-xs text-[#6C6C70] dark:text-[#A1A1AA]">
-            <div className="flex items-center gap-1.5">
-              <div className="w-3 h-0.5 bg-[#E5302A] rounded" /> المبيعات
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-3 h-0.5 bg-green-500 rounded" /> صافي الربح
-            </div>
-          </div>
-        </div>
 
-        {/* Donut Chart */}
-        <div className="bg-white dark:bg-[#18181B] border border-[#E5E5EA] dark:border-[#27272A] rounded-2xl p-5">
-          <h3 className="text-sm font-semibold mb-4 text-[#1C1C1E] dark:text-[#F4F4F5]">توزيع حالات الطلبات</h3>
-          <ResponsiveContainer width="100%" height={180}>
-            <PieChart>
-              <Pie
-                data={orderStatusData}
-                cx="50%"
-                cy="50%"
-                innerRadius={50}
-                outerRadius={80}
-                dataKey="value"
-                paddingAngle={3}
-              >
-                {orderStatusData.map((entry, index) => (
-                  <Cell key={index} fill={entry.color} stroke="transparent" />
-                ))}
-              </Pie>
-              <Tooltip
-                contentStyle={{
-                  background: isDark ? '#18181B' : '#fff',
-                  border: `1px solid ${isDark ? '#27272A' : '#E5E5EA'}`,
-                  borderRadius: '12px',
-                  fontSize: '12px',
-                }}
-                formatter={(value: number, name: string) => [`${value} طلب`, name]}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="space-y-2 mt-2">
-            {orderStatusData.map((d, i) => (
-              <div key={i} className="flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: d.color }} />
-                  <span className="text-[#6C6C70] dark:text-[#A1A1AA]">{d.name}</span>
-                </div>
-                <span className="font-semibold text-[#1C1C1E] dark:text-[#F4F4F5]">{d.value}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      {/* ── Charts (lazy-loaded recharts island, ~95KB deferred) ─────────── */}
+      <DashboardCharts
+        chartData={chartData}
+        orderStatusData={orderStatusData}
+        monthlySalesData={monthlySalesData}
+        quarterlyData={quarterlyData}
+        isDark={isDark}
+      />
 
-      {/* ── Monthly & Quarterly Charts ─────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {/* Monthly ComposedChart */}
-        <div className="bg-white dark:bg-[#18181B] border border-[#E5E5EA] dark:border-[#27272A] rounded-2xl p-5">
-          <h3 className="text-sm font-semibold text-[#1C1C1E] dark:text-[#F4F4F5] mb-4">
-            المبيعات الشهرية — آخر 12 شهراً
-          </h3>
-          <ResponsiveContainer width="100%" height={220}>
-            <ComposedChart data={monthlySalesData} margin={{ top: 5, right: 5, left: -15, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#27272A' : '#F0F0F0'} />
-              <XAxis dataKey="month" tick={{ fontSize: 10, fill: isDark ? '#71717A' : '#9CA3AF' }} tickLine={false} axisLine={false} />
-              <YAxis tick={{ fontSize: 10, fill: isDark ? '#71717A' : '#9CA3AF' }} tickLine={false} axisLine={false} />
-              <Tooltip
-                contentStyle={{ background: isDark ? '#18181B' : '#fff', border: `1px solid ${isDark ? '#27272A' : '#E5E5EA'}`, borderRadius: '12px', fontSize: '12px', color: isDark ? '#F4F4F5' : '#1C1C1E' }}
-                formatter={(value: number, name: string) => [`${value.toLocaleString('en-US')} د.ل`, name === 'revenue' ? 'المبيعات' : 'صافي الربح']}
-              />
-              <Bar dataKey="revenue" fill="#E5302A" radius={[4,4,0,0]} name="revenue" opacity={0.85} />
-              <Line type="monotone" dataKey="netProfit" stroke="#22C55E" strokeWidth={2} dot={{ fill: '#22C55E', r: 3 }} name="netProfit" />
-            </ComposedChart>
-          </ResponsiveContainer>
-          <div className="flex items-center gap-4 mt-3 text-xs text-[#6C6C70] dark:text-[#A1A1AA]">
-            <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-[#E5302A]" /> المبيعات</div>
-            <div className="flex items-center gap-1.5"><div className="w-3 h-0.5 bg-green-500 rounded" /> صافي الربح</div>
-          </div>
-        </div>
-
-        {/* Quarterly BarChart */}
-        <div className="bg-white dark:bg-[#18181B] border border-[#E5E5EA] dark:border-[#27272A] rounded-2xl p-5">
-          <h3 className="text-sm font-semibold text-[#1C1C1E] dark:text-[#F4F4F5] mb-4">
-            الأداء الربعي — {new Date().getFullYear()}
-          </h3>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={quarterlyData} margin={{ top: 5, right: 5, left: -15, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#27272A' : '#F0F0F0'} />
-              <XAxis dataKey="name" tick={{ fontSize: 10, fill: isDark ? '#71717A' : '#9CA3AF' }} tickLine={false} axisLine={false} />
-              <YAxis tick={{ fontSize: 10, fill: isDark ? '#71717A' : '#9CA3AF' }} tickLine={false} axisLine={false} />
-              <Tooltip
-                contentStyle={{ background: isDark ? '#18181B' : '#fff', border: `1px solid ${isDark ? '#27272A' : '#E5E5EA'}`, borderRadius: '12px', fontSize: '12px', color: isDark ? '#F4F4F5' : '#1C1C1E' }}
-                formatter={(value: number, name: string) => [`${value.toLocaleString('en-US')} د.ل`, name === 'revenue' ? 'الإيرادات' : 'الربح']}
-              />
-              <Bar dataKey="revenue" fill="#E5302A" radius={[4,4,0,0]} name="revenue" opacity={0.85} />
-              <Bar dataKey="profit" fill="#22C55E" radius={[4,4,0,0]} name="profit" opacity={0.85} />
-            </BarChart>
-          </ResponsiveContainer>
-          <div className="flex items-center gap-4 mt-3 text-xs text-[#6C6C70] dark:text-[#A1A1AA]">
-            <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-[#E5302A]" /> الإيرادات</div>
-            <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-green-500" /> الربح</div>
-          </div>
-        </div>
-      </div>
 
       {/* ── Tables Row ─────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">

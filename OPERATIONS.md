@@ -197,3 +197,40 @@ mutations + O(1) balance Map already absorbed the worst pain points.
    `OrdersContext`, `PurchasesContext`.
 2. Or migrate to TanStack Query for per-resource cache invalidation.
 3. Audit each consumer to subscribe to the minimal slice it needs.
+
+### StockContext split — current state (after Phase 6)
+**Status:** Still deferred. Phase 6 successfully cleared the other 3 deferred
+items (orders row animations, dashboard recharts lazy, analytics recharts
+lazy via whole-page dynamic import), but `lib/StockContext.tsx` remains a
+single 800-line provider with 7 state arrays and a 30-dep value memo.
+
+**Current cost:** `useStock()` is consumed by 29 components. Any mutation
+that updates one slice (e.g. `addSalesOrder` → `setSalesOrders`) re-renders
+all 29 consumers regardless of which slice they actually read.
+
+**Recommended approach for a future session (4-6 hours, isolated branch):**
+
+1. Create 5 leaf contexts inside `StockContext.tsx`:
+   - `ItemsCtx` — items + addItem/updateItem/deleteItem
+   - `SuppliersCtx` — suppliers + addSupplier/updateSupplier/deleteSupplier
+   - `MovementsCtx` — stockIn, stockOut, currentStock + their mutations
+   - `OrdersCtx` — salesOrders + add/update/delete
+   - `PurchasesCtx` — purchaseInvoices + add/receive/delete
+
+2. Compose them under a single `StockProvider` (no change to root layout).
+
+3. Add per-slice hooks: `useItems()`, `useSuppliers()`, etc. Each returns
+   only its slice. Existing `useStock()` becomes a compatibility shim that
+   merges all 5 — keep it temporarily so the migration can be incremental.
+
+4. Audit each consumer (29 files) and switch to the narrowest hook. Most
+   consumers only need 1-2 slices.
+
+5. Once all consumers are migrated, optionally deprecate `useStock()`.
+
+**Why not done in Phase 6:** Touches 29 files; each consumer destructures
+2-7 slices on average; mutations involve cross-slice updates (e.g. a sale
+mutates 4 slices). Migrating safely requires per-file verification and is
+incompatible with the "ship 3 items + commit" cadence used in Phase 6.
+
+**Tracking:** Cut a `chore/stock-context-split` branch when ready.

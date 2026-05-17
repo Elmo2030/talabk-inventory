@@ -25,6 +25,7 @@ import EmptyState from '@/components/ui/EmptyState';
 import Pagination from '@/components/ui/Pagination';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import Modal from '@/components/ui/Modal';
+import { AnimatedList, AnimatedRow } from '@/components/ui/AnimatedList';
 import OrderReceipt from '@/components/ui/OrderReceipt';
 
 const PAGE_SIZE = 20;
@@ -409,8 +410,14 @@ export default function OrdersPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#F2F2F7]">
+                  <AnimatedList>
                   {paginated.map((order) => (
-                    <tr key={order.id} className="hover:bg-[#F2F2F7]/50 transition-colors">
+                    <AnimatedRow
+                      key={order.id}
+                      rowKey={order.id}
+                      as="tr"
+                      className="hover:bg-[#F2F2F7]/50 transition-colors"
+                    >
                       <td className="px-4 py-3 font-mono text-xs text-[#E5302A] font-semibold whitespace-nowrap">
                         {order.orderNumber}
                       </td>
@@ -512,8 +519,9 @@ export default function OrdersPage() {
                           )}
                         </div>
                       </td>
-                    </tr>
+                    </AnimatedRow>
                   ))}
+                  </AnimatedList>
                 </tbody>
               </table>
             </div>
