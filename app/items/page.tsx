@@ -246,24 +246,24 @@ export default function ItemsPage() {
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-[#F4F4F5] flex items-center gap-2">
             <Package className="w-6 h-6 text-brand-600" />
             الأصناف
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">السجل الرئيسي لجميع أصناف المخزون</p>
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-[#71717A] mt-1">السجل الرئيسي لجميع أصناف المخزون</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <button
             type="button"
             onClick={exportItemsCsv}
             disabled={items.length === 0}
-            className="inline-flex items-center gap-1.5 px-3 py-2 text-sm rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-[#27272A] bg-white dark:bg-[#18181B] text-slate-700 dark:text-[#E4E4E7] hover:bg-slate-50 dark:hover:bg-[#27272A]/40 disabled:opacity-40 disabled:cursor-not-allowed"
             title="تنزيل الأصناف كملف CSV"
           >
             <Download className="w-4 h-4" /> تصدير CSV
           </button>
           <label
-            className="inline-flex items-center gap-1.5 px-3 py-2 text-sm rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-[#27272A] bg-white dark:bg-[#18181B] text-slate-700 dark:text-[#E4E4E7] hover:bg-slate-50 dark:hover:bg-[#27272A]/40 cursor-pointer"
             title="استيراد أصناف من ملف CSV"
           >
             <Upload className="w-4 h-4" /> استيراد CSV
@@ -291,8 +291,8 @@ export default function ItemsPage() {
           placeholder="بحث بالاسم أو الكود أو التصنيف..."
           aria-label="بحث في الأصناف"
         />
-        <div className="text-sm text-slate-500">
-          إجمالي: <span className="font-bold text-slate-900">{filteredItems.length}</span>
+        <div className="text-sm text-slate-500 dark:text-[#71717A]">
+          إجمالي: <span className="font-bold text-slate-900 dark:text-[#F4F4F5]">{filteredItems.length}</span>
         </div>
       </div>
 
@@ -305,7 +305,7 @@ export default function ItemsPage() {
           <div className="flex items-center gap-2">
             <button
               onClick={clearSelection}
-              className="px-3 py-1.5 text-xs rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+              className="px-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-[#27272A] bg-white dark:bg-[#18181B] text-slate-600 dark:text-[#A1A1AA] hover:bg-slate-50 dark:hover:bg-[#27272A]/40"
             >
               إلغاء التحديد
             </button>
@@ -321,7 +321,7 @@ export default function ItemsPage() {
       )}
 
       <div
-        className="bg-white rounded-xl border border-slate-200 overflow-hidden card-hover"
+        className="bg-white dark:bg-[#18181B] rounded-xl border border-slate-200 dark:border-[#27272A] overflow-hidden card-hover"
         role="region"
         aria-label="قائمة الأصناف"
       >
@@ -342,7 +342,7 @@ export default function ItemsPage() {
         ) : (
           <>
             {/* Mobile cards — sm and below */}
-            <div className="sm:hidden divide-y divide-slate-100">
+            <div className="sm:hidden divide-y divide-slate-100 dark:divide-[#27272A]/50">
               {paginatedItems.map((item) => {
                 const balance = getBalance(item.id);
                 const isBelowMin = balance <= item.minStockLevel;
@@ -350,12 +350,12 @@ export default function ItemsPage() {
                 return (
                   <div
                     key={item.id}
-                    className={`bg-white border border-[#E5E5EA] rounded-xl p-4 space-y-2 m-3 ${isSuspended ? 'bg-red-50/60' : ''}`}
+                    className={`bg-white dark:bg-[#18181B] border border-[#E5E5EA] dark:border-[#27272A] rounded-xl p-4 space-y-2 m-3 ${isSuspended ? 'bg-red-50/60' : ''}`}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="text-[11px] text-slate-400 font-mono">{item.code}</p>
-                        <p className="text-sm font-bold text-slate-900 truncate">{item.name}</p>
+                        <p className="text-[11px] text-slate-400 dark:text-[#52525B] font-mono">{item.code}</p>
+                        <p className="text-sm font-bold text-slate-900 dark:text-[#F4F4F5] truncate">{item.name}</p>
                       </div>
                       {item.status === 'ACTIVE' ? (
                         <Badge variant="success">نشط</Badge>
@@ -364,32 +364,32 @@ export default function ItemsPage() {
                       )}
                     </div>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs font-medium">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-slate-100 dark:bg-[#27272A] text-slate-600 dark:text-[#A1A1AA] text-xs font-medium">
                         {item.category}
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <div>
-                        <p className="text-xs text-slate-400">الرصيد</p>
-                        <p className={`text-2xl font-bold ${isBelowMin ? 'text-amber-600' : 'text-slate-900'}`}>
+                        <p className="text-xs text-slate-400 dark:text-[#52525B]">الرصيد</p>
+                        <p className={`text-2xl font-bold ${isBelowMin ? 'text-amber-600' : 'text-slate-900 dark:text-[#F4F4F5]'}`}>
                           {balance}
                           {isBelowMin && <AlertTriangle className="inline w-4 h-4 text-amber-500 mr-1 mb-0.5" />}
                         </p>
                       </div>
                       <div className="text-left">
-                        <p className="text-xs text-slate-400">سعر البيع</p>
-                        <p className="text-sm font-semibold text-slate-700">{item.sellingPrice.toFixed(2)} د.ل</p>
+                        <p className="text-xs text-slate-400 dark:text-[#52525B]">سعر البيع</p>
+                        <p className="text-sm font-semibold text-slate-700 dark:text-[#E4E4E7]">{item.sellingPrice.toFixed(2)} د.ل</p>
                         {canSeePurchasePrices && (
-                          <p className="text-xs text-slate-400 mt-0.5">
+                          <p className="text-xs text-slate-400 dark:text-[#52525B] mt-0.5">
                             شراء: {item.purchasePrice.toFixed(2)} د.ل
                           </p>
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-1 pt-1 border-t border-slate-100">
+                    <div className="flex items-center gap-1 pt-1 border-t border-slate-100 dark:border-[#27272A]/50">
                       <Link
                         href={`/items/${item.id}`}
-                        className="p-1.5 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors"
+                        className="p-1.5 text-slate-500 dark:text-[#71717A] hover:bg-slate-100 dark:hover:bg-[#27272A] rounded-lg transition-colors"
                         title="عرض التفاصيل"
                       >
                         <ExternalLink className="w-4 h-4" />
@@ -417,7 +417,7 @@ export default function ItemsPage() {
             {/* Desktop table — md and above */}
             <div className="hidden sm:block overflow-x-auto">
               <table className="w-full text-sm min-w-[700px]">
-                <thead className="bg-slate-50 border-b border-slate-200">
+                <thead className="bg-slate-50 dark:bg-[#0F0F11] border-b border-slate-200 dark:border-[#27272A]">
                   <tr>
                     <th className="px-3 py-3 text-right w-10">
                       <input
@@ -428,21 +428,21 @@ export default function ItemsPage() {
                         aria-label="تحديد الكل"
                       />
                     </th>
-                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">الكود</th>
-                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">اسم الصنف</th>
-                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">التصنيف</th>
-                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">المورد</th>
+                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase">الكود</th>
+                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase">اسم الصنف</th>
+                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase">التصنيف</th>
+                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase">المورد</th>
                     {canSeePurchasePrices && (
-                      <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">سعر الشراء</th>
+                      <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase">سعر الشراء</th>
                     )}
-                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">سعر البيع</th>
-                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">الرصيد الحالي</th>
-                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">الحد الأدنى</th>
-                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">الحالة</th>
-                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">إجراءات</th>
+                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase">سعر البيع</th>
+                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase">الرصيد الحالي</th>
+                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase">الحد الأدنى</th>
+                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase">الحالة</th>
+                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase">إجراءات</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 dark:divide-[#27272A]/50">
                   {paginatedItems.map((item) => {
                     const balance = getBalance(item.id);
                     const isBelowMin = balance <= item.minStockLevel;
@@ -453,7 +453,7 @@ export default function ItemsPage() {
                         key={item.id}
                         className={`transition-colors ${
                           selectedIds.has(item.id) ? 'bg-[#E5302A]/5' :
-                          isSuspended ? 'bg-red-50/60 hover:bg-red-50' : 'hover:bg-slate-50'
+                          isSuspended ? 'bg-red-50/60 hover:bg-red-50' : 'hover:bg-slate-50 dark:hover:bg-[#27272A]/40'
                         }`}
                       >
                         <td className="px-3 py-3">
@@ -465,27 +465,27 @@ export default function ItemsPage() {
                             aria-label={`تحديد ${item.name}`}
                           />
                         </td>
-                        <td className="px-3 py-3 font-mono text-slate-700">{item.code}</td>
-                        <td className="px-3 py-3 font-medium text-slate-900">{item.name}</td>
-                        <td className="px-3 py-3 text-slate-600">{item.category}</td>
-                        <td className="px-3 py-3 text-slate-600 text-xs">{item.supplierName}</td>
+                        <td className="px-3 py-3 font-mono text-slate-700 dark:text-[#E4E4E7]">{item.code}</td>
+                        <td className="px-3 py-3 font-medium text-slate-900 dark:text-[#F4F4F5]">{item.name}</td>
+                        <td className="px-3 py-3 text-slate-600 dark:text-[#A1A1AA]">{item.category}</td>
+                        <td className="px-3 py-3 text-slate-600 dark:text-[#A1A1AA] text-xs">{item.supplierName}</td>
                         {canSeePurchasePrices && (
-                          <td className="px-3 py-3 font-mono text-slate-700">
+                          <td className="px-3 py-3 font-mono text-slate-700 dark:text-[#E4E4E7]">
                             {item.purchasePrice.toFixed(2)}
                           </td>
                         )}
-                        <td className="px-3 py-3 font-mono text-slate-700">
+                        <td className="px-3 py-3 font-mono text-slate-700 dark:text-[#E4E4E7]">
                           {item.sellingPrice.toFixed(2)}
                         </td>
                         <td className="px-3 py-3 font-mono font-bold">
-                          <span className={isBelowMin ? 'text-amber-600' : 'text-slate-900'}>
+                          <span className={isBelowMin ? 'text-amber-600' : 'text-slate-900 dark:text-[#F4F4F5]'}>
                             {balance}
                           </span>
                           {isBelowMin && (
                             <AlertTriangle className="inline w-3.5 h-3.5 text-amber-500 mr-1" />
                           )}
                         </td>
-                        <td className="px-3 py-3 font-mono text-slate-500">{item.minStockLevel}</td>
+                        <td className="px-3 py-3 font-mono text-slate-500 dark:text-[#71717A]">{item.minStockLevel}</td>
                         <td className="px-3 py-3">
                           {item.status === 'ACTIVE' ? (
                             <Badge variant="success">نشط</Badge>
@@ -497,7 +497,7 @@ export default function ItemsPage() {
                           <div className="flex items-center gap-1">
                             <Link
                               href={`/items/${item.id}`}
-                              className="p-1.5 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors"
+                              className="p-1.5 text-slate-500 dark:text-[#71717A] hover:bg-slate-100 dark:hover:bg-[#27272A] rounded-lg transition-colors"
                               title="عرض التفاصيل"
                             >
                               <ExternalLink className="w-4 h-4" />

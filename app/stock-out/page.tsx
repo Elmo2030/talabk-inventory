@@ -135,11 +135,11 @@ export default function StockOutPage() {
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-[#F4F4F5] flex items-center gap-2">
             <ArrowUpFromLine className="w-6 h-6 text-orange-600" />
             سجل الصادر
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-[#71717A] mt-1">
             تسجيل جميع عمليات صرف وإخراج المخزون
           </p>
         </div>
@@ -159,16 +159,16 @@ export default function StockOutPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="bg-white border border-slate-200 rounded-xl p-4">
-          <p className="text-sm text-slate-500">عدد الحركات</p>
-          <p className="text-2xl font-bold text-slate-900 mt-1">{stats.count}</p>
+        <div className="bg-white dark:bg-[#18181B] border border-slate-200 dark:border-[#27272A] rounded-xl p-4">
+          <p className="text-sm text-slate-500 dark:text-[#71717A]">عدد الحركات</p>
+          <p className="text-2xl font-bold text-slate-900 dark:text-[#F4F4F5] mt-1">{stats.count}</p>
         </div>
-        <div className="bg-white border border-slate-200 rounded-xl p-4">
-          <p className="text-sm text-slate-500">إجمالي الكميات المنصرفة</p>
+        <div className="bg-white dark:bg-[#18181B] border border-slate-200 dark:border-[#27272A] rounded-xl p-4">
+          <p className="text-sm text-slate-500 dark:text-[#71717A]">إجمالي الكميات المنصرفة</p>
           <p className="text-2xl font-bold text-orange-600 mt-1">{stats.totalQty}</p>
         </div>
-        <div className="bg-white border border-slate-200 rounded-xl p-4">
-          <p className="text-sm text-slate-500">إجمالي قيمة المبيعات/الصرف</p>
+        <div className="bg-white dark:bg-[#18181B] border border-slate-200 dark:border-[#27272A] rounded-xl p-4">
+          <p className="text-sm text-slate-500 dark:text-[#71717A]">إجمالي قيمة المبيعات/الصرف</p>
           <p className="text-2xl font-bold text-brand-600 mt-1 font-mono">
             {stats.totalValue.toLocaleString('en-US')}
           </p>
@@ -177,9 +177,9 @@ export default function StockOutPage() {
 
       {/* Advanced Filters Panel */}
       {showFilters && (
-        <div className="bg-white border border-orange-200 rounded-xl p-4 mb-4 space-y-4">
+        <div className="bg-white dark:bg-[#18181B] border border-orange-200 rounded-xl p-4 mb-4 space-y-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-semibold text-slate-700">فلاتر متقدمة</span>
+            <span className="text-sm font-semibold text-slate-700 dark:text-[#E4E4E7]">فلاتر متقدمة</span>
             {hasActiveFilters && (
               <button
                 onClick={clearFilters}
@@ -192,7 +192,7 @@ export default function StockOutPage() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">من تاريخ</label>
+              <label className="block text-xs font-medium text-slate-600 dark:text-[#A1A1AA] mb-1">من تاريخ</label>
               <input
                 type="date"
                 value={filters.fromDate}
@@ -201,7 +201,7 @@ export default function StockOutPage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">إلى تاريخ</label>
+              <label className="block text-xs font-medium text-slate-600 dark:text-[#A1A1AA] mb-1">إلى تاريخ</label>
               <input
                 type="date"
                 value={filters.toDate}
@@ -241,33 +241,33 @@ export default function StockOutPage() {
           onChange={setSearchQuery}
           placeholder="بحث برقم العملية أو الصنف أو الجهة المستفيدة..."
         />
-        <div className="text-sm text-slate-500">
+        <div className="text-sm text-slate-500 dark:text-[#71717A]">
           عرض:{' '}
-          <span className="font-bold text-slate-900">{filteredMovements.length}</span>{' '}
+          <span className="font-bold text-slate-900 dark:text-[#F4F4F5]">{filteredMovements.length}</span>{' '}
           من {stockOut.length}
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+      <div className="bg-white dark:bg-[#18181B] rounded-xl border border-slate-200 dark:border-[#27272A] overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm min-w-[700px]">
-            <thead className="bg-slate-50 border-b border-slate-200">
+            <thead className="bg-slate-50 dark:bg-[#0F0F11] border-b border-slate-200 dark:border-[#27272A]">
               <tr>
-                <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">رقم العملية</th>
-                <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">التاريخ</th>
-                <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">الصنف</th>
-                <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">الجهة المستفيدة</th>
-                <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">الكمية</th>
-                <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">القيمة</th>
-                <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">سبب الصرف</th>
-                <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">المسؤول</th>
-                <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">إجراءات</th>
+                <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase">رقم العملية</th>
+                <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase">التاريخ</th>
+                <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase">الصنف</th>
+                <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase">الجهة المستفيدة</th>
+                <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase">الكمية</th>
+                <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase">القيمة</th>
+                <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase">سبب الصرف</th>
+                <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase">المسؤول</th>
+                <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase">إجراءات</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 dark:divide-[#27272A]/50">
               {filteredMovements.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-4 py-12 text-center text-slate-500">
+                  <td colSpan={9} className="px-4 py-12 text-center text-slate-500 dark:text-[#71717A]">
                     {hasActiveFilters || searchQuery
                       ? 'لا توجد نتائج تطابق الفلاتر المحددة'
                       : 'لا توجد حركات صادر مسجلة'}
@@ -275,25 +275,25 @@ export default function StockOutPage() {
                 </tr>
               ) : (
                 filteredMovements.map((m) => (
-                  <tr key={m.id} className="hover:bg-slate-50 transition-colors">
+                  <tr key={m.id} className="hover:bg-slate-50 dark:hover:bg-[#27272A]/40 transition-colors">
                     <td className="px-3 py-3 font-mono font-semibold text-orange-700">
                       {m.operationCode}
                     </td>
-                    <td className="px-3 py-3 text-slate-600 font-mono text-xs">{m.date}</td>
-                    <td className="px-3 py-3 text-slate-900 font-medium max-w-[180px] truncate">
+                    <td className="px-3 py-3 text-slate-600 dark:text-[#A1A1AA] font-mono text-xs">{m.date}</td>
+                    <td className="px-3 py-3 text-slate-900 dark:text-[#F4F4F5] font-medium max-w-[180px] truncate">
                       {m.itemName}
                     </td>
-                    <td className="px-3 py-3 text-slate-600">{m.recipientDept}</td>
+                    <td className="px-3 py-3 text-slate-600 dark:text-[#A1A1AA]">{m.recipientDept}</td>
                     <td className="px-3 py-3 font-mono font-bold text-orange-600">
                       {m.quantity}
                     </td>
-                    <td className="px-3 py-3 font-mono font-bold text-slate-900">
+                    <td className="px-3 py-3 font-mono font-bold text-slate-900 dark:text-[#F4F4F5]">
                       {m.totalValue.toLocaleString('en-US')}
                     </td>
                     <td className="px-3 py-3">
                       <Badge variant={getReasonVariant(m.reason)}>{m.reason}</Badge>
                     </td>
-                    <td className="px-3 py-3 text-slate-700 text-xs">
+                    <td className="px-3 py-3 text-slate-700 dark:text-[#E4E4E7] text-xs">
                       {m.responsibleEmployee}
                     </td>
                     <td className="px-3 py-3">

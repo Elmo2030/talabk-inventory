@@ -100,7 +100,7 @@ function SectionTable({ rows, status }: { rows: BatchRow[]; status: BatchStatus 
   const Icon = config.icon;
 
   return (
-    <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+    <div className="bg-white dark:bg-[#18181B] border border-slate-200 dark:border-[#27272A] rounded-xl overflow-hidden">
       {/* Section header */}
       <div className={`flex items-center gap-2 px-4 py-3 border-b ${config.rowClass}`}>
         <Icon className="w-4 h-4" />
@@ -109,24 +109,24 @@ function SectionTable({ rows, status }: { rows: BatchRow[]; status: BatchStatus 
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm min-w-[600px]">
-          <thead className="bg-slate-50 border-b border-slate-200">
+          <thead className="bg-slate-50 dark:bg-[#0F0F11] border-b border-slate-200 dark:border-[#27272A]">
             <tr>
-              <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600">اسم الصنف</th>
-              <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600">رقم الدفعة</th>
-              <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600">الكمية</th>
-              <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600">تاريخ الانتهاء</th>
-              <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600">الأيام المتبقية</th>
+              <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA]">اسم الصنف</th>
+              <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA]">رقم الدفعة</th>
+              <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA]">الكمية</th>
+              <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA]">تاريخ الانتهاء</th>
+              <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA]">الأيام المتبقية</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-slate-100 dark:divide-[#27272A]/50">
             {rows.map((row) => (
-              <tr key={row.id} className="hover:bg-slate-50 transition-colors">
-                <td className="px-4 py-3 font-medium text-slate-900">{row.itemName}</td>
-                <td className="px-4 py-3 font-mono text-slate-600 text-xs">
-                  {row.batchNumber || <span className="text-slate-400 italic">—</span>}
+              <tr key={row.id} className="hover:bg-slate-50 dark:hover:bg-[#27272A]/40 transition-colors">
+                <td className="px-4 py-3 font-medium text-slate-900 dark:text-[#F4F4F5]">{row.itemName}</td>
+                <td className="px-4 py-3 font-mono text-slate-600 dark:text-[#A1A1AA] text-xs">
+                  {row.batchNumber || <span className="text-slate-400 dark:text-[#52525B] italic">—</span>}
                 </td>
-                <td className="px-4 py-3 font-mono font-bold text-slate-800">{row.quantity}</td>
-                <td className="px-4 py-3 font-mono text-xs text-slate-600">{row.expiryDate}</td>
+                <td className="px-4 py-3 font-mono font-bold text-slate-800 dark:text-[#F4F4F5]">{row.quantity}</td>
+                <td className="px-4 py-3 font-mono text-xs text-slate-600 dark:text-[#A1A1AA]">{row.expiryDate}</td>
                 <td className="px-4 py-3">
                   <DaysCell daysRemaining={row.daysRemaining} status={row.status} />
                 </td>
@@ -178,11 +178,11 @@ export default function BatchesPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-[#F4F4F5] flex items-center gap-2">
             <CalendarClock className="w-6 h-6 text-brand-600" />
             الدفعات والصلاحية
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-[#71717A] mt-1">
             متابعة تواريخ انتهاء صلاحية الدفعات المستلمة
           </p>
         </div>
@@ -213,10 +213,10 @@ export default function BatchesPage() {
       </div>
 
       {total === 0 ? (
-        <div className="bg-white border border-slate-200 rounded-xl p-12 text-center">
+        <div className="bg-white dark:bg-[#18181B] border border-slate-200 dark:border-[#27272A] rounded-xl p-12 text-center">
           <CalendarClock className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-          <p className="text-slate-500 text-sm font-medium">لا توجد دفعات بتاريخ صلاحية</p>
-          <p className="text-slate-400 text-xs mt-1">
+          <p className="text-slate-500 dark:text-[#71717A] text-sm font-medium">لا توجد دفعات بتاريخ صلاحية</p>
+          <p className="text-slate-400 dark:text-[#52525B] text-xs mt-1">
             عند تسجيل وارد جديد، فعّل خيار &quot;هذه الدفعة لها تاريخ صلاحية&quot; لتظهر هنا
           </p>
         </div>

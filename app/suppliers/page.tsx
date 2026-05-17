@@ -110,11 +110,11 @@ export default function SuppliersPage() {
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-[#F4F4F5] flex items-center gap-2">
             <Users className="w-6 h-6 text-brand-600" />
             الموردين
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">قاعدة بيانات الموردين والشركاء التجاريين</p>
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-[#71717A] mt-1">قاعدة بيانات الموردين والشركاء التجاريين</p>
         </div>
         <Button
           onClick={openAddModal}
@@ -132,13 +132,13 @@ export default function SuppliersPage() {
           placeholder="بحث بالاسم أو الكود أو نوع المنتجات..."
           aria-label="بحث في الموردين"
         />
-        <div className="text-sm text-slate-500">
-          إجمالي: <span className="font-bold text-slate-900">{filtered.length}</span>
+        <div className="text-sm text-slate-500 dark:text-[#71717A]">
+          إجمالي: <span className="font-bold text-slate-900 dark:text-[#F4F4F5]">{filtered.length}</span>
         </div>
       </div>
 
       <div
-        className="bg-white rounded-xl border border-slate-200 overflow-hidden card-hover"
+        className="bg-white dark:bg-[#18181B] rounded-xl border border-slate-200 dark:border-[#27272A] overflow-hidden card-hover"
         role="region"
         aria-label="قائمة الموردين"
       >
@@ -160,26 +160,26 @@ export default function SuppliersPage() {
           <>
             <div className="overflow-x-auto">
               <table className="w-full text-sm min-w-[600px]">
-                <thead className="bg-slate-50 border-b border-slate-200">
+                <thead className="bg-slate-50 dark:bg-[#0F0F11] border-b border-slate-200 dark:border-[#27272A]">
                   <tr>
-                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">الكود</th>
-                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">اسم المورد</th>
-                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">نوع المنتجات</th>
-                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">التواصل</th>
-                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">الشخص المسؤول</th>
-                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">شروط الدفع</th>
-                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">التقييم</th>
-                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">إجراءات</th>
+                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase">الكود</th>
+                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase">اسم المورد</th>
+                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase">نوع المنتجات</th>
+                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase">التواصل</th>
+                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase">الشخص المسؤول</th>
+                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase">شروط الدفع</th>
+                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase">التقييم</th>
+                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase">إجراءات</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 dark:divide-[#27272A]/50">
                   {paginated.map((s) => (
-                    <tr key={s.id} className="hover:bg-slate-50">
-                      <td className="px-3 py-3 font-mono text-slate-700">{s.code}</td>
-                      <td className="px-3 py-3 font-medium text-slate-900">
+                    <tr key={s.id} className="hover:bg-slate-50 dark:hover:bg-[#27272A]/40">
+                      <td className="px-3 py-3 font-mono text-slate-700 dark:text-[#E4E4E7]">{s.code}</td>
+                      <td className="px-3 py-3 font-medium text-slate-900 dark:text-[#F4F4F5]">
                         {s.name}
                         {itemCountBySupplier[s.id] > 0 && (
-                          <span className="block text-[10px] font-normal text-slate-400 mt-0.5">
+                          <span className="block text-[10px] font-normal text-slate-400 dark:text-[#52525B] mt-0.5">
                             {itemCountBySupplier[s.id]} صنف
                           </span>
                         )}
@@ -190,17 +190,17 @@ export default function SuppliersPage() {
                       <td className="px-3 py-3">
                         <div className="space-y-1">
                           <div className="flex items-center gap-1.5 text-xs" dir="ltr">
-                            <Phone className="w-3 h-3 text-slate-400" />
+                            <Phone className="w-3 h-3 text-slate-400 dark:text-[#52525B]" />
                             {s.phone}
                           </div>
                           <div className="flex items-center gap-1.5 text-xs" dir="ltr">
-                            <Mail className="w-3 h-3 text-slate-400" />
+                            <Mail className="w-3 h-3 text-slate-400 dark:text-[#52525B]" />
                             {s.email}
                           </div>
                         </div>
                       </td>
-                      <td className="px-3 py-3 text-slate-700">{s.contactPerson}</td>
-                      <td className="px-3 py-3 text-slate-600">
+                      <td className="px-3 py-3 text-slate-700 dark:text-[#E4E4E7]">{s.contactPerson}</td>
+                      <td className="px-3 py-3 text-slate-600 dark:text-[#A1A1AA]">
                         {s.paymentTerms === 0 ? 'فوري' : `${s.paymentTerms} يوم`}
                       </td>
                       <td className="px-3 py-3">
@@ -219,7 +219,7 @@ export default function SuppliersPage() {
                         <div className="flex items-center gap-1">
                           <Link
                             href={`/suppliers/${s.id}`}
-                            className="p-1.5 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors"
+                            className="p-1.5 text-slate-500 dark:text-[#71717A] hover:bg-slate-100 dark:hover:bg-[#27272A] rounded-lg transition-colors"
                             title="عرض التفاصيل"
                           >
                             <ExternalLink className="w-4 h-4" />

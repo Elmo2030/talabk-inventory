@@ -23,7 +23,7 @@ const TEMPLATES: Template[] = [
     id: '2',
     title: 'الطلب قيد التجهيز',
     category: 'PROCESSING',
-    categoryColor: 'bg-slate-100 text-slate-700',
+    categoryColor: 'bg-slate-100 dark:bg-[#27272A] text-slate-700 dark:text-[#E4E4E7]',
     text: 'مرحباً {name}، طلبك رقم {order} قيد التجهيز الآن. سنخبرك فور شحنه. شكراً لثقتك بنا! 🚀',
   },
   {
@@ -79,10 +79,10 @@ function TemplateCard({ template }: { template: Template }) {
   }
 
   return (
-    <div className="bg-white border border-[#E5E5EA] rounded-2xl p-4 space-y-3 hover:border-[#E5302A]/30 transition-colors">
+    <div className="bg-white dark:bg-[#18181B] border border-[#E5E5EA] dark:border-[#27272A] rounded-2xl p-4 space-y-3 hover:border-[#E5302A]/30 transition-colors">
       <div className="flex items-start justify-between gap-2">
         <div className="space-y-1.5">
-          <h3 className="font-semibold text-[#1C1C1E] text-sm">{template.title}</h3>
+          <h3 className="font-semibold text-[#1C1C1E] dark:text-[#F4F4F5] text-sm">{template.title}</h3>
           <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${template.categoryColor}`}>
             {template.category}
           </span>
@@ -101,7 +101,7 @@ function TemplateCard({ template }: { template: Template }) {
             className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
               copied
                 ? 'text-green-700 bg-green-50 border-green-200'
-                : 'text-[#1C1C1E] bg-[#F2F2F7] hover:bg-[#E5E5EA] border-[#E5E5EA]'
+                : 'text-[#1C1C1E] dark:text-[#F4F4F5] bg-[#F2F2F7] hover:bg-[#E5E5EA] border-[#E5E5EA] dark:border-[#27272A]'
             }`}
             title="نسخ النص"
           >
@@ -119,7 +119,7 @@ function TemplateCard({ template }: { template: Template }) {
           </button>
         </div>
       </div>
-      <div className="bg-[#F2F2F7] rounded-xl p-3 font-mono text-sm text-[#1C1C1E] leading-relaxed whitespace-pre-wrap break-words">
+      <div className="bg-[#F2F2F7] rounded-xl p-3 font-mono text-sm text-[#1C1C1E] dark:text-[#F4F4F5] leading-relaxed whitespace-pre-wrap break-words">
         {template.text}
       </div>
       <p className="text-xs text-[#AEAEB2]">
@@ -145,8 +145,8 @@ export default function MessagesPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-[#1C1C1E]">قوالب الرسائل</h1>
-          <p className="text-xs sm:text-sm text-[#6C6C70] mt-0.5">رسائل واتساب جاهزة للنسخ والإرسال للعملاء</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-[#1C1C1E] dark:text-[#F4F4F5]">قوالب الرسائل</h1>
+          <p className="text-xs sm:text-sm text-[#6C6C70] dark:text-[#A1A1AA] mt-0.5">رسائل واتساب جاهزة للنسخ والإرسال للعملاء</p>
         </div>
         <div className="flex items-center justify-center w-10 h-10 bg-green-50 rounded-xl border border-green-200">
           <MessageSquare className="w-5 h-5 text-green-600" />
@@ -155,14 +155,14 @@ export default function MessagesPage() {
 
       {/* Search */}
       <div className="relative">
-        <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6C6C70]" />
+        <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6C6C70] dark:text-[#A1A1AA]" />
         <input
           type="text"
           placeholder="بحث في القوالب..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           aria-label="بحث في قوالب الرسائل"
-          className="w-full pr-9 pl-3 py-2.5 rounded-xl border border-[#E5E5EA] text-sm text-[#1C1C1E] bg-white focus:outline-none focus:border-[#E5302A] focus:ring-2 focus:ring-[#E5302A]/20"
+          className="w-full pr-9 pl-3 py-2.5 rounded-xl border border-[#E5E5EA] dark:border-[#27272A] text-sm text-[#1C1C1E] dark:text-[#F4F4F5] bg-white dark:bg-[#18181B] focus:outline-none focus:border-[#E5302A] focus:ring-2 focus:ring-[#E5302A]/20"
           dir="rtl"
         />
       </div>
@@ -177,10 +177,10 @@ export default function MessagesPage() {
 
       {/* Templates grid */}
       {filtered.length === 0 ? (
-        <div className="bg-white border border-[#E5E5EA] rounded-2xl p-12 text-center">
+        <div className="bg-white dark:bg-[#18181B] border border-[#E5E5EA] dark:border-[#27272A] rounded-2xl p-12 text-center">
           <MessageSquare className="w-10 h-10 text-[#AEAEB2] mx-auto mb-3" />
-          <p className="text-sm font-medium text-[#1C1C1E]">لا توجد قوالب مطابقة</p>
-          <p className="text-xs text-[#6C6C70] mt-1">جرب كلمة بحث مختلفة</p>
+          <p className="text-sm font-medium text-[#1C1C1E] dark:text-[#F4F4F5]">لا توجد قوالب مطابقة</p>
+          <p className="text-xs text-[#6C6C70] dark:text-[#A1A1AA] mt-1">جرب كلمة بحث مختلفة</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

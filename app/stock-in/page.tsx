@@ -131,11 +131,11 @@ export default function StockInPage() {
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-[#F4F4F5] flex items-center gap-2">
             <ArrowDownToLine className="w-6 h-6 text-green-600" />
             سجل الوارد
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-[#71717A] mt-1">
             تسجيل جميع عمليات إدخال المخزون من الموردين
           </p>
         </div>
@@ -160,16 +160,16 @@ export default function StockInPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="bg-white border border-slate-200 rounded-xl p-4">
-          <p className="text-sm text-slate-500">عدد الحركات</p>
-          <p className="text-2xl font-bold text-slate-900 mt-1">{stats.count}</p>
+        <div className="bg-white dark:bg-[#18181B] border border-slate-200 dark:border-[#27272A] rounded-xl p-4">
+          <p className="text-sm text-slate-500 dark:text-[#71717A]">عدد الحركات</p>
+          <p className="text-2xl font-bold text-slate-900 dark:text-[#F4F4F5] mt-1">{stats.count}</p>
         </div>
-        <div className="bg-white border border-slate-200 rounded-xl p-4">
-          <p className="text-sm text-slate-500">إجمالي الكميات الواردة</p>
+        <div className="bg-white dark:bg-[#18181B] border border-slate-200 dark:border-[#27272A] rounded-xl p-4">
+          <p className="text-sm text-slate-500 dark:text-[#71717A]">إجمالي الكميات الواردة</p>
           <p className="text-2xl font-bold text-green-600 mt-1">{stats.totalQty}</p>
         </div>
-        <div className="bg-white border border-slate-200 rounded-xl p-4">
-          <p className="text-sm text-slate-500">إجمالي قيمة المشتريات</p>
+        <div className="bg-white dark:bg-[#18181B] border border-slate-200 dark:border-[#27272A] rounded-xl p-4">
+          <p className="text-sm text-slate-500 dark:text-[#71717A]">إجمالي قيمة المشتريات</p>
           <p className="text-2xl font-bold text-brand-600 mt-1 font-mono">
             {stats.totalValue.toLocaleString('en-US')}
           </p>
@@ -178,9 +178,9 @@ export default function StockInPage() {
 
       {/* Advanced Filters Panel */}
       {showFilters && (
-        <div className="bg-white border border-brand-200 rounded-xl p-4 mb-4 space-y-4">
+        <div className="bg-white dark:bg-[#18181B] border border-brand-200 rounded-xl p-4 mb-4 space-y-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-semibold text-slate-700">فلاتر متقدمة</span>
+            <span className="text-sm font-semibold text-slate-700 dark:text-[#E4E4E7]">فلاتر متقدمة</span>
             {hasActiveFilters && (
               <button
                 onClick={clearFilters}
@@ -193,7 +193,7 @@ export default function StockInPage() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">من تاريخ</label>
+              <label className="block text-xs font-medium text-slate-600 dark:text-[#A1A1AA] mb-1">من تاريخ</label>
               <input
                 type="date"
                 value={filters.fromDate}
@@ -202,7 +202,7 @@ export default function StockInPage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">إلى تاريخ</label>
+              <label className="block text-xs font-medium text-slate-600 dark:text-[#A1A1AA] mb-1">إلى تاريخ</label>
               <input
                 type="date"
                 value={filters.toDate}
@@ -237,15 +237,15 @@ export default function StockInPage() {
           placeholder="بحث برقم العملية أو الفاتورة أو الصنف..."
           aria-label="بحث في حركات الوارد"
         />
-        <div className="text-sm text-slate-500">
+        <div className="text-sm text-slate-500 dark:text-[#71717A]">
           عرض:{' '}
-          <span className="font-bold text-slate-900">{filteredMovements.length}</span>{' '}
+          <span className="font-bold text-slate-900 dark:text-[#F4F4F5]">{filteredMovements.length}</span>{' '}
           من {stockIn.length}
         </div>
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden card-hover">
+      <div className="bg-white dark:bg-[#18181B] rounded-xl border border-slate-200 dark:border-[#27272A] overflow-hidden card-hover">
         {filteredMovements.length === 0 ? (
           <EmptyState
             icon={ArrowDownToLine}
@@ -264,32 +264,32 @@ export default function StockInPage() {
           <>
             <div className="overflow-x-auto">
               <table className="w-full text-sm min-w-[700px]">
-                <thead className="bg-slate-50 border-b border-slate-200">
+                <thead className="bg-slate-50 dark:bg-[#0F0F11] border-b border-slate-200 dark:border-[#27272A]">
                   <tr>
-                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">رقم العملية</th>
-                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">التاريخ</th>
-                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">رقم الفاتورة</th>
-                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">الصنف</th>
-                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">المورد</th>
-                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">الكمية</th>
-                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">سعر الوحدة</th>
-                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">الإجمالي</th>
-                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">المسؤول</th>
-                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">إجراءات</th>
+                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase">رقم العملية</th>
+                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase">التاريخ</th>
+                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase">رقم الفاتورة</th>
+                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase">الصنف</th>
+                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase">المورد</th>
+                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase">الكمية</th>
+                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase">سعر الوحدة</th>
+                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase">الإجمالي</th>
+                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase">المسؤول</th>
+                    <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase">إجراءات</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 dark:divide-[#27272A]/50">
                   {paginatedMovements.map((m) => (
-                    <tr key={m.id} className="hover:bg-slate-50 transition-colors">
+                    <tr key={m.id} className="hover:bg-slate-50 dark:hover:bg-[#27272A]/40 transition-colors">
                       <td className="px-3 py-3 font-mono font-semibold text-green-700">{m.operationCode}</td>
-                      <td className="px-3 py-3 text-slate-600 font-mono text-xs">{m.date}</td>
-                      <td className="px-3 py-3 text-slate-600 font-mono text-xs">{m.invoiceNo}</td>
-                      <td className="px-3 py-3 text-slate-900 font-medium max-w-[180px] truncate">{m.itemName}</td>
-                      <td className="px-3 py-3 text-slate-600 max-w-[150px] truncate">{m.supplierName}</td>
+                      <td className="px-3 py-3 text-slate-600 dark:text-[#A1A1AA] font-mono text-xs">{m.date}</td>
+                      <td className="px-3 py-3 text-slate-600 dark:text-[#A1A1AA] font-mono text-xs">{m.invoiceNo}</td>
+                      <td className="px-3 py-3 text-slate-900 dark:text-[#F4F4F5] font-medium max-w-[180px] truncate">{m.itemName}</td>
+                      <td className="px-3 py-3 text-slate-600 dark:text-[#A1A1AA] max-w-[150px] truncate">{m.supplierName}</td>
                       <td className="px-3 py-3 font-mono font-bold text-green-600">{m.quantity}</td>
-                      <td className="px-3 py-3 font-mono text-slate-700">{m.unitPrice.toFixed(2)}</td>
-                      <td className="px-3 py-3 font-mono font-bold text-slate-900">{m.totalCost.toLocaleString('en-US')}</td>
-                      <td className="px-3 py-3 text-slate-700 text-xs">{m.responsibleEmployee}</td>
+                      <td className="px-3 py-3 font-mono text-slate-700 dark:text-[#E4E4E7]">{m.unitPrice.toFixed(2)}</td>
+                      <td className="px-3 py-3 font-mono font-bold text-slate-900 dark:text-[#F4F4F5]">{m.totalCost.toLocaleString('en-US')}</td>
+                      <td className="px-3 py-3 text-slate-700 dark:text-[#E4E4E7] text-xs">{m.responsibleEmployee}</td>
                       <td className="px-3 py-3">
                         <div className="flex items-center gap-1">
                           <button

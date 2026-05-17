@@ -18,8 +18,8 @@ interface WarehouseSummary {
 }
 
 const inputClass =
-  'w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-900 bg-white focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20';
-const labelClass = 'block text-xs font-medium text-slate-600 mb-1.5';
+  'w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-[#27272A] text-sm text-slate-900 dark:text-[#F4F4F5] bg-white dark:bg-[#18181B] focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20';
+const labelClass = 'block text-xs font-medium text-slate-600 dark:text-[#A1A1AA] mb-1.5';
 
 export default function WarehousesPage() {
   const { items, currentStock, addStockIn, addStockOut } = useStock();
@@ -146,11 +146,11 @@ export default function WarehousesPage() {
     <div dir="rtl">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-[#F4F4F5] flex items-center gap-2">
             <Warehouse className="w-6 h-6 text-brand-600" />
             المستودعات والمواقع
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-[#71717A] mt-1">
             متابعة المخزون حسب الموقع ونقل البضائع بين المستودعات
           </p>
         </div>
@@ -176,10 +176,10 @@ export default function WarehousesPage() {
             <button
               key={wh.name}
               onClick={() => setSelectedWarehouse(selectedWarehouse === wh.name ? null : wh.name)}
-              className={`text-right p-5 bg-white border rounded-xl transition-all hover:shadow-md ${
+              className={`text-right p-5 bg-white dark:bg-[#18181B] border rounded-xl transition-all hover:shadow-md ${
                 selectedWarehouse === wh.name
                   ? 'border-brand-500 ring-2 ring-brand-500/20'
-                  : 'border-slate-200'
+                  : 'border-slate-200 dark:border-[#27272A]'
               }`}
             >
               <div className="flex items-start justify-between mb-3">
@@ -193,14 +193,14 @@ export default function WarehousesPage() {
                   </span>
                 )}
               </div>
-              <h3 className="font-bold text-slate-900 text-base mb-1">{wh.name}</h3>
+              <h3 className="font-bold text-slate-900 dark:text-[#F4F4F5] text-base mb-1">{wh.name}</h3>
               <div className="grid grid-cols-2 gap-2 mt-3">
                 <div>
-                  <p className="text-xs text-slate-500">عدد الأصناف</p>
-                  <p className="text-lg font-bold text-slate-900">{wh.itemCount}</p>
+                  <p className="text-xs text-slate-500 dark:text-[#71717A]">عدد الأصناف</p>
+                  <p className="text-lg font-bold text-slate-900 dark:text-[#F4F4F5]">{wh.itemCount}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-slate-500">قيمة المخزون</p>
+                  <p className="text-xs text-slate-500 dark:text-[#71717A]">قيمة المخزون</p>
                   <p className="text-lg font-bold text-brand-700">{wh.stockValue.toFixed(0)} د.ل</p>
                 </div>
               </div>
@@ -211,31 +211,31 @@ export default function WarehousesPage() {
 
       {/* Selected warehouse items */}
       {selectedWarehouse && warehouseItems.length > 0 && (
-        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-          <div className="px-4 py-3 bg-slate-50 border-b border-slate-200">
-            <h2 className="font-semibold text-slate-900 flex items-center gap-2">
+        <div className="bg-white dark:bg-[#18181B] border border-slate-200 dark:border-[#27272A] rounded-xl overflow-hidden">
+          <div className="px-4 py-3 bg-slate-50 dark:bg-[#0F0F11] border-b border-slate-200 dark:border-[#27272A]">
+            <h2 className="font-semibold text-slate-900 dark:text-[#F4F4F5] flex items-center gap-2">
               <Package className="w-4 h-4 text-brand-600" />
               أصناف {selectedWarehouse}
             </h2>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-slate-50 border-b border-slate-200">
+              <thead className="bg-slate-50 dark:bg-[#0F0F11] border-b border-slate-200 dark:border-[#27272A]">
                 <tr>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600">الكود</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600">الصنف</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600">التصنيف</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600">الرصيد</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600">الحالة</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA]">الكود</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA]">الصنف</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA]">التصنيف</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA]">الرصيد</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA]">الحالة</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-100 dark:divide-[#27272A]/50">
                 {warehouseItems.map((item) => (
-                  <tr key={item.id} className="hover:bg-slate-50">
-                    <td className="px-4 py-3 font-mono text-xs text-slate-600">{item.code}</td>
-                    <td className="px-4 py-3 font-medium text-slate-900">{item.name}</td>
-                    <td className="px-4 py-3 text-slate-600 text-xs">{item.category}</td>
-                    <td className="px-4 py-3 font-bold text-slate-900">{item.balance}</td>
+                  <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-[#27272A]/40">
+                    <td className="px-4 py-3 font-mono text-xs text-slate-600 dark:text-[#A1A1AA]">{item.code}</td>
+                    <td className="px-4 py-3 font-medium text-slate-900 dark:text-[#F4F4F5]">{item.name}</td>
+                    <td className="px-4 py-3 text-slate-600 dark:text-[#A1A1AA] text-xs">{item.category}</td>
+                    <td className="px-4 py-3 font-bold text-slate-900 dark:text-[#F4F4F5]">{item.balance}</td>
                     <td className="px-4 py-3">
                       <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${
                         item.status === 'OUT_OF_STOCK' ? 'bg-red-100 text-red-700' :
@@ -328,7 +328,7 @@ export default function WarehousesPage() {
           <div className="flex gap-3 pt-2">
             <button
               onClick={() => setIsTransferOpen(false)}
-              className="flex-1 px-4 py-2 border border-slate-200 text-sm text-slate-600 rounded-xl hover:bg-slate-50"
+              className="flex-1 px-4 py-2 border border-slate-200 dark:border-[#27272A] text-sm text-slate-600 dark:text-[#A1A1AA] rounded-xl hover:bg-slate-50 dark:hover:bg-[#27272A]/40"
             >
               إلغاء
             </button>

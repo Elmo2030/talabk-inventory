@@ -41,7 +41,7 @@ function InputField({
 }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-[#6C6C70] mb-1.5">{label}</label>
+      <label className="block text-sm font-medium text-[#6C6C70] dark:text-[#A1A1AA] mb-1.5">{label}</label>
       <div className="relative">
         {icon && (
           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#AEAEB2]">{icon}</span>
@@ -51,7 +51,7 @@ function InputField({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className={`w-full py-2.5 rounded-xl border border-[#E5E5EA] text-[#1C1C1E] text-sm bg-white placeholder-[#AEAEB2] outline-none transition-all focus:border-[#E5302A] focus:ring-2 focus:ring-[#E5302A]/20 ${icon ? 'pr-9 pl-4' : 'px-4'}`}
+          className={`w-full py-2.5 rounded-xl border border-[#E5E5EA] dark:border-[#27272A] text-[#1C1C1E] dark:text-[#F4F4F5] text-sm bg-white dark:bg-[#18181B] placeholder-[#AEAEB2] outline-none transition-all focus:border-[#E5302A] focus:ring-2 focus:ring-[#E5302A]/20 ${icon ? 'pr-9 pl-4' : 'px-4'}`}
         />
       </div>
     </div>
@@ -146,10 +146,10 @@ export default function StorePage() {
       {/* Page header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-[#1C1C1E]">بيانات المتجر</h1>
-          <p className="text-xs sm:text-sm text-[#6C6C70] mt-0.5">إدارة معلومات متجرك وإعدادات الحساب</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-[#1C1C1E] dark:text-[#F4F4F5]">بيانات المتجر</h1>
+          <p className="text-xs sm:text-sm text-[#6C6C70] dark:text-[#A1A1AA] mt-0.5">إدارة معلومات متجرك وإعدادات الحساب</p>
         </div>
-        <span className="self-start sm:self-auto px-3 py-1.5 bg-white border border-[#E5E5EA] rounded-xl text-sm font-medium text-[#6C6C70]">
+        <span className="self-start sm:self-auto px-3 py-1.5 bg-white dark:bg-[#18181B] border border-[#E5E5EA] dark:border-[#27272A] rounded-xl text-sm font-medium text-[#6C6C70] dark:text-[#A1A1AA]">
           رقم المتجر: {profile.storeId}
         </span>
       </div>
@@ -158,10 +158,10 @@ export default function StorePage() {
       <StorePreviewCard profile={profile} />
 
       {/* Card 1 — Basic info */}
-      <div className="bg-white rounded-2xl border border-[#E5E5EA] p-6">
+      <div className="bg-white dark:bg-[#18181B] rounded-2xl border border-[#E5E5EA] dark:border-[#27272A] p-6">
         <div className="flex items-center gap-2 mb-5">
           <Store className="w-5 h-5 text-[#E5302A]" />
-          <h2 className="text-base font-semibold text-[#1C1C1E]">المعلومات الأساسية</h2>
+          <h2 className="text-base font-semibold text-[#1C1C1E] dark:text-[#F4F4F5]">المعلومات الأساسية</h2>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <InputField
@@ -203,10 +203,10 @@ export default function StorePage() {
       </div>
 
       {/* Card 2 — Social media */}
-      <div className="bg-white rounded-2xl border border-[#E5E5EA] p-6">
+      <div className="bg-white dark:bg-[#18181B] rounded-2xl border border-[#E5E5EA] dark:border-[#27272A] p-6">
         <div className="flex items-center gap-2 mb-5">
           <Globe className="w-5 h-5 text-[#E5302A]" />
-          <h2 className="text-base font-semibold text-[#1C1C1E]">روابط التواصل الاجتماعي</h2>
+          <h2 className="text-base font-semibold text-[#1C1C1E] dark:text-[#F4F4F5]">روابط التواصل الاجتماعي</h2>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <InputField
@@ -266,17 +266,17 @@ export default function StorePage() {
       </div>
 
       {/* Card 3 — Account security */}
-      <div className="bg-white rounded-2xl border border-[#E5E5EA] p-6">
+      <div className="bg-white dark:bg-[#18181B] rounded-2xl border border-[#E5E5EA] dark:border-[#27272A] p-6">
         <div className="flex items-center gap-2 mb-6">
           <ShieldCheck className="w-5 h-5 text-[#E5302A]" />
-          <h2 className="text-base font-semibold text-[#1C1C1E]">أمان الحساب</h2>
+          <h2 className="text-base font-semibold text-[#1C1C1E] dark:text-[#F4F4F5]">أمان الحساب</h2>
         </div>
 
         {/* Change username */}
         <div className="pb-6 border-b border-[#F2F2F7]">
-          <h3 className="text-sm font-semibold text-[#1C1C1E] mb-1">تغيير اسم المستخدم</h3>
+          <h3 className="text-sm font-semibold text-[#1C1C1E] dark:text-[#F4F4F5] mb-1">تغيير اسم المستخدم</h3>
           <p className="text-xs text-[#AEAEB2] mb-3">
-            اسم المستخدم الحالي: <span className="font-medium text-[#6C6C70]">{username ?? '—'}</span>
+            اسم المستخدم الحالي: <span className="font-medium text-[#6C6C70] dark:text-[#A1A1AA]">{username ?? '—'}</span>
           </p>
           <div className="flex gap-3">
             <input
@@ -284,7 +284,7 @@ export default function StorePage() {
               value={newUsername}
               onChange={(e) => setNewUsername(e.target.value)}
               placeholder="اسم المستخدم الجديد"
-              className="flex-1 px-4 py-2.5 rounded-xl border border-[#E5E5EA] text-[#1C1C1E] text-sm bg-white placeholder-[#AEAEB2] outline-none transition-all focus:border-[#E5302A] focus:ring-2 focus:ring-[#E5302A]/20"
+              className="flex-1 px-4 py-2.5 rounded-xl border border-[#E5E5EA] dark:border-[#27272A] text-[#1C1C1E] dark:text-[#F4F4F5] text-sm bg-white dark:bg-[#18181B] placeholder-[#AEAEB2] outline-none transition-all focus:border-[#E5302A] focus:ring-2 focus:ring-[#E5302A]/20"
             />
             <button
               onClick={handleChangeUsername}
@@ -298,10 +298,10 @@ export default function StorePage() {
 
         {/* Change password */}
         <div className="pt-6">
-          <h3 className="text-sm font-semibold text-[#1C1C1E] mb-3">تغيير كلمة المرور</h3>
+          <h3 className="text-sm font-semibold text-[#1C1C1E] dark:text-[#F4F4F5] mb-3">تغيير كلمة المرور</h3>
           <div className="space-y-3">
             <div>
-              <label className="block text-sm font-medium text-[#6C6C70] mb-1.5">كلمة المرور الحالية</label>
+              <label className="block text-sm font-medium text-[#6C6C70] dark:text-[#A1A1AA] mb-1.5">كلمة المرور الحالية</label>
               <div className="relative">
                 <input
                   type={showOld ? 'text' : 'password'}
@@ -309,7 +309,7 @@ export default function StorePage() {
                   onChange={(e) => setOldPassword(e.target.value)}
                   placeholder="أدخل كلمة المرور الحالية"
                   autoComplete="current-password"
-                  className="w-full px-4 py-2.5 rounded-xl border border-[#E5E5EA] text-[#1C1C1E] text-sm bg-white placeholder-[#AEAEB2] outline-none transition-all focus:border-[#E5302A] focus:ring-2 focus:ring-[#E5302A]/20 pl-10"
+                  className="w-full px-4 py-2.5 rounded-xl border border-[#E5E5EA] dark:border-[#27272A] text-[#1C1C1E] dark:text-[#F4F4F5] text-sm bg-white dark:bg-[#18181B] placeholder-[#AEAEB2] outline-none transition-all focus:border-[#E5302A] focus:ring-2 focus:ring-[#E5302A]/20 pl-10"
                 />
                 <button
                   type="button"
@@ -321,7 +321,7 @@ export default function StorePage() {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#6C6C70] mb-1.5">كلمة المرور الجديدة</label>
+              <label className="block text-sm font-medium text-[#6C6C70] dark:text-[#A1A1AA] mb-1.5">كلمة المرور الجديدة</label>
               <div className="relative">
                 <input
                   type={showNew ? 'text' : 'password'}
@@ -329,7 +329,7 @@ export default function StorePage() {
                   onChange={(e) => setNewPassword(e.target.value)}
                   placeholder="أدخل كلمة المرور الجديدة"
                   autoComplete="new-password"
-                  className="w-full px-4 py-2.5 rounded-xl border border-[#E5E5EA] text-[#1C1C1E] text-sm bg-white placeholder-[#AEAEB2] outline-none transition-all focus:border-[#E5302A] focus:ring-2 focus:ring-[#E5302A]/20 pl-10"
+                  className="w-full px-4 py-2.5 rounded-xl border border-[#E5E5EA] dark:border-[#27272A] text-[#1C1C1E] dark:text-[#F4F4F5] text-sm bg-white dark:bg-[#18181B] placeholder-[#AEAEB2] outline-none transition-all focus:border-[#E5302A] focus:ring-2 focus:ring-[#E5302A]/20 pl-10"
                 />
                 <button
                   type="button"
@@ -341,7 +341,7 @@ export default function StorePage() {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#6C6C70] mb-1.5">تأكيد كلمة المرور الجديدة</label>
+              <label className="block text-sm font-medium text-[#6C6C70] dark:text-[#A1A1AA] mb-1.5">تأكيد كلمة المرور الجديدة</label>
               <div className="relative">
                 <input
                   type={showConfirm ? 'text' : 'password'}
@@ -349,7 +349,7 @@ export default function StorePage() {
                   onChange={(e) => setConfirmNewPassword(e.target.value)}
                   placeholder="أعد إدخال كلمة المرور الجديدة"
                   autoComplete="new-password"
-                  className="w-full px-4 py-2.5 rounded-xl border border-[#E5E5EA] text-[#1C1C1E] text-sm bg-white placeholder-[#AEAEB2] outline-none transition-all focus:border-[#E5302A] focus:ring-2 focus:ring-[#E5302A]/20 pl-10"
+                  className="w-full px-4 py-2.5 rounded-xl border border-[#E5E5EA] dark:border-[#27272A] text-[#1C1C1E] dark:text-[#F4F4F5] text-sm bg-white dark:bg-[#18181B] placeholder-[#AEAEB2] outline-none transition-all focus:border-[#E5302A] focus:ring-2 focus:ring-[#E5302A]/20 pl-10"
                 />
                 <button
                   type="button"
@@ -390,45 +390,45 @@ function StorePreviewCard({ profile }: { profile: StoreProfile }) {
   if (profile.snapchat)  socials.push({ label: 'Snapchat',  value: profile.snapchat,  href: profile.snapchat,                                       icon: <SnapchatIcon className="w-3.5 h-3.5" /> });
 
   return (
-    <div className="bg-gradient-to-br from-slate-50 to-white rounded-2xl border-2 border-dashed border-[#E5E5EA] p-5">
+    <div className="bg-gradient-to-br from-slate-50 to-white rounded-2xl border-2 border-dashed border-[#E5E5EA] dark:border-[#27272A] p-5">
       <div className="flex items-center gap-2 mb-4">
-        <Eye className="w-4 h-4 text-slate-500" />
-        <p className="text-xs font-semibold text-slate-600 uppercase tracking-wider">
+        <Eye className="w-4 h-4 text-slate-500 dark:text-[#71717A]" />
+        <p className="text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase tracking-wider">
           معاينة — هكذا يرى عملاؤك متجرك
         </p>
       </div>
 
-      <div className="bg-white rounded-2xl border border-[#E5E5EA] shadow-sm p-6 max-w-md mx-auto">
+      <div className="bg-white dark:bg-[#18181B] rounded-2xl border border-[#E5E5EA] dark:border-[#27272A] shadow-sm p-6 max-w-md mx-auto">
         <div className="flex items-center gap-4 mb-5">
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#E5302A] to-[#C42B24] flex items-center justify-center text-white text-2xl font-bold flex-shrink-0">
             {initial}
           </div>
           <div className="min-w-0 flex-1">
-            <h3 className="text-lg font-bold text-[#1C1C1E] truncate">
+            <h3 className="text-lg font-bold text-[#1C1C1E] dark:text-[#F4F4F5] truncate">
               {profile.name || 'اسم المتجر'}
             </h3>
-            <p className="text-xs text-slate-400 mt-0.5">رقم #{profile.storeId}</p>
+            <p className="text-xs text-slate-400 dark:text-[#52525B] mt-0.5">رقم #{profile.storeId}</p>
           </div>
         </div>
 
         <div className="space-y-2 text-sm">
           {profile.phone && (
-            <a href={`tel:${profile.phone}`} className="flex items-center gap-2 text-slate-700 hover:text-[#E5302A] transition-colors">
+            <a href={`tel:${profile.phone}`} className="flex items-center gap-2 text-slate-700 dark:text-[#E4E4E7] hover:text-[#E5302A] transition-colors">
               📞 <span dir="ltr">{profile.phone}</span>
             </a>
           )}
           {profile.whatsapp && (
-            <a href={`https://wa.me/${profile.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-slate-700 hover:text-emerald-600 transition-colors">
+            <a href={`https://wa.me/${profile.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-slate-700 dark:text-[#E4E4E7] hover:text-emerald-600 transition-colors">
               💬 واتساب <span dir="ltr">{profile.whatsapp}</span>
             </a>
           )}
           {profile.email && (
-            <a href={`mailto:${profile.email}`} className="flex items-center gap-2 text-slate-700 hover:text-[#E5302A] transition-colors">
+            <a href={`mailto:${profile.email}`} className="flex items-center gap-2 text-slate-700 dark:text-[#E4E4E7] hover:text-[#E5302A] transition-colors">
               ✉️ <span dir="ltr">{profile.email}</span>
             </a>
           )}
           {profile.address && (
-            <p className="flex items-start gap-2 text-slate-700">
+            <p className="flex items-start gap-2 text-slate-700 dark:text-[#E4E4E7]">
               📍 <span>{profile.address}</span>
             </p>
           )}
@@ -441,7 +441,7 @@ function StorePreviewCard({ profile }: { profile: StoreProfile }) {
 
         {socials.length > 0 && (
           <>
-            <div className="my-4 h-px bg-slate-100" />
+            <div className="my-4 h-px bg-slate-100 dark:bg-[#27272A]" />
             <div className="flex flex-wrap items-center gap-2">
               {socials.map(s => (
                 <a
@@ -449,7 +449,7 @@ function StorePreviewCard({ profile }: { profile: StoreProfile }) {
                   href={s.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-50 dark:bg-[#0F0F11] hover:bg-slate-100 dark:hover:bg-[#27272A] text-slate-700 dark:text-[#E4E4E7] text-xs"
                   title={s.value}
                 >
                   {s.icon}
@@ -461,7 +461,7 @@ function StorePreviewCard({ profile }: { profile: StoreProfile }) {
         )}
 
         {(!profile.phone && !profile.whatsapp && !profile.email && !profile.address && socials.length === 0) && (
-          <p className="text-xs text-slate-400 text-center py-3">
+          <p className="text-xs text-slate-400 dark:text-[#52525B] text-center py-3">
             أضف معلومات الاتصال أدناه لتظهر هنا
           </p>
         )}

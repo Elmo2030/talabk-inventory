@@ -150,21 +150,21 @@ function ListEditor({
         </Button>
       </div>
 
-      <div className="border border-slate-200 rounded-lg divide-y divide-slate-100 max-h-72 overflow-y-auto">
+      <div className="border border-slate-200 dark:border-[#27272A] rounded-lg divide-y divide-slate-100 dark:divide-[#27272A]/50 max-h-72 overflow-y-auto">
         {localItems.length === 0 ? (
-          <div className="py-8 text-center text-slate-400 text-sm">
+          <div className="py-8 text-center text-slate-400 dark:text-[#52525B] text-sm">
             لا توجد عناصر في القائمة
           </div>
         ) : (
           localItems.map((item, index) => (
             <div
               key={index}
-              className="flex items-center justify-between px-4 py-3 hover:bg-slate-50"
+              className="flex items-center justify-between px-4 py-3 hover:bg-slate-50 dark:hover:bg-[#27272A]/40"
             >
-              <span className="text-sm text-slate-700">{item}</span>
+              <span className="text-sm text-slate-700 dark:text-[#E4E4E7]">{item}</span>
               <button
                 onClick={() => removeItem(index)}
-                className="p-1 text-slate-400 hover:text-red-500 rounded transition-colors"
+                className="p-1 text-slate-400 dark:text-[#52525B] hover:text-red-500 rounded transition-colors"
                 title="حذف"
               >
                 <Trash2 className="w-4 h-4" />
@@ -175,7 +175,7 @@ function ListEditor({
       </div>
 
       <div className="flex items-center justify-between">
-        <span className="text-xs text-slate-500">{localItems.length} عنصر</span>
+        <span className="text-xs text-slate-500 dark:text-[#71717A]">{localItems.length} عنصر</span>
         <div className="flex items-center gap-2">
           {saved && (
             <span className="flex items-center gap-1 text-xs text-green-600">
@@ -358,7 +358,7 @@ export default function SettingsPage() {
   if (!settings) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-slate-500">جارٍ التحميل...</div>
+        <div className="text-slate-500 dark:text-[#71717A]">جارٍ التحميل...</div>
       </div>
     );
   }
@@ -372,15 +372,15 @@ export default function SettingsPage() {
             <Settings className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-slate-900">إعدادات النظام</h1>
-            <p className="text-xs sm:text-sm text-slate-500">إدارة القوائم والبيانات المرجعية</p>
+            <h1 className="text-xl font-bold text-slate-900 dark:text-[#F4F4F5]">إعدادات النظام</h1>
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-[#71717A]">إدارة القوائم والبيانات المرجعية</p>
           </div>
         </div>
 
         {/* Cloud sync indicator */}
         <div className="flex items-center gap-1.5 text-xs">
           {loadingFromCloud ? (
-            <span className="flex items-center gap-1 text-slate-400">
+            <span className="flex items-center gap-1 text-slate-400 dark:text-[#52525B]">
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
               مزامنة...
             </span>
@@ -390,7 +390,7 @@ export default function SettingsPage() {
               متزامن مع السحابة
             </span>
           ) : (
-            <span className="flex items-center gap-1 text-slate-400">
+            <span className="flex items-center gap-1 text-slate-400 dark:text-[#52525B]">
               <CloudOff className="w-3.5 h-3.5" />
               محلي فقط
             </span>
@@ -401,9 +401,9 @@ export default function SettingsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* القائمة الجانبية للتبويبات */}
         <div className="lg:col-span-1">
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-            <div className="px-4 py-3 bg-slate-50 border-b border-slate-200">
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+          <div className="bg-white dark:bg-[#18181B] rounded-xl border border-slate-200 dark:border-[#27272A] overflow-hidden">
+            <div className="px-4 py-3 bg-slate-50 dark:bg-[#0F0F11] border-b border-slate-200 dark:border-[#27272A]">
+              <p className="text-xs font-semibold text-slate-500 dark:text-[#71717A] uppercase tracking-wide">
                 القوائم المرجعية
               </p>
             </div>
@@ -416,7 +416,7 @@ export default function SettingsPage() {
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-right transition-colors whitespace-nowrap lg:w-full ${
                     activeTab === tab.id
                       ? 'bg-brand-50 text-brand-700'
-                      : 'text-slate-700 hover:bg-slate-100'
+                      : 'text-slate-700 dark:text-[#E4E4E7] hover:bg-slate-100 dark:hover:bg-[#27272A]'
                   }`}
                 >
                   {tab.icon}
@@ -425,7 +425,7 @@ export default function SettingsPage() {
                     className={`mr-auto text-xs px-1.5 py-0.5 rounded-full ${
                       activeTab === tab.id
                         ? 'bg-brand-50 text-brand-600'
-                        : 'bg-slate-100 text-slate-500'
+                        : 'bg-slate-100 dark:bg-[#27272A] text-slate-500 dark:text-[#71717A]'
                     }`}
                   >
                     {settings[tab.id].length}
@@ -439,15 +439,15 @@ export default function SettingsPage() {
 
         {/* محتوى التبويب النشط */}
         <div className="lg:col-span-3 space-y-4">
-          <div className="bg-white rounded-xl border border-slate-200 p-6">
+          <div className="bg-white dark:bg-[#18181B] rounded-xl border border-slate-200 dark:border-[#27272A] p-6">
             <div className="mb-5">
               <div className="flex items-center gap-2 mb-1">
                 {activeTabInfo.icon}
-                <h2 className="text-base font-semibold text-slate-900">
+                <h2 className="text-base font-semibold text-slate-900 dark:text-[#F4F4F5]">
                   {activeTabInfo.label}
                 </h2>
               </div>
-              <p className="text-sm text-slate-500">{activeTabInfo.description}</p>
+              <p className="text-sm text-slate-500 dark:text-[#71717A]">{activeTabInfo.description}</p>
             </div>
 
             <ListEditor
@@ -460,18 +460,18 @@ export default function SettingsPage() {
           </div>
 
           {/* قسم النسخ الاحتياطي */}
-          <div className="bg-white rounded-xl border border-slate-200 p-6">
-            <h2 className="text-base font-semibold text-slate-900 mb-4">
+          <div className="bg-white dark:bg-[#18181B] rounded-xl border border-slate-200 dark:border-[#27272A] p-6">
+            <h2 className="text-base font-semibold text-slate-900 dark:text-[#F4F4F5] mb-4">
               النسخ الاحتياطي والاستعادة
             </h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="border border-slate-200 rounded-lg p-4">
+              <div className="border border-slate-200 dark:border-[#27272A] rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <Download className="w-5 h-5 text-brand-600" />
-                  <h3 className="text-sm font-medium text-slate-900">تصدير الإعدادات</h3>
+                  <h3 className="text-sm font-medium text-slate-900 dark:text-[#F4F4F5]">تصدير الإعدادات</h3>
                 </div>
-                <p className="text-xs text-slate-500 mb-3">
+                <p className="text-xs text-slate-500 dark:text-[#71717A] mb-3">
                   حفظ جميع القوائم المرجعية كملف JSON
                 </p>
                 <Button
@@ -484,12 +484,12 @@ export default function SettingsPage() {
                 </Button>
               </div>
 
-              <div className="border border-slate-200 rounded-lg p-4">
+              <div className="border border-slate-200 dark:border-[#27272A] rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <Upload className="w-5 h-5 text-green-600" />
-                  <h3 className="text-sm font-medium text-slate-900">استيراد الإعدادات</h3>
+                  <h3 className="text-sm font-medium text-slate-900 dark:text-[#F4F4F5]">استيراد الإعدادات</h3>
                 </div>
-                <p className="text-xs text-slate-500 mb-3">
+                <p className="text-xs text-slate-500 dark:text-[#71717A] mb-3">
                   استعادة القوائم من ملف JSON محفوظ
                 </p>
                 <input
@@ -512,12 +512,12 @@ export default function SettingsPage() {
           </div>
 
           {/* صلاحيات المستخدمين */}
-          <div className="bg-white rounded-xl border border-slate-200 p-6">
+          <div className="bg-white dark:bg-[#18181B] rounded-xl border border-slate-200 dark:border-[#27272A] p-6">
             <div className="flex items-center gap-2 mb-3">
               <ShieldCheck className="w-5 h-5 text-brand-600" />
-              <h2 className="text-base font-semibold text-slate-900">صلاحيات المستخدمين</h2>
+              <h2 className="text-base font-semibold text-slate-900 dark:text-[#F4F4F5]">صلاحيات المستخدمين</h2>
             </div>
-            <p className="text-sm text-slate-500 mb-4">
+            <p className="text-sm text-slate-500 dark:text-[#71717A] mb-4">
               يمكن ضبط صلاحيات المستخدمين بشكل تفصيلي من خلال لوحة إدارة المستخدمين في Supabase أو من صفحة المستخدمين.
             </p>
             <div className="space-y-3">
@@ -535,11 +535,11 @@ export default function SettingsPage() {
                   roles: ['super_admin', 'tenant_admin'],
                 },
               ].map(({ permission, label, description, roles }) => (
-                <div key={permission} className="flex items-start justify-between gap-4 p-4 border border-slate-100 rounded-xl bg-slate-50">
+                <div key={permission} className="flex items-start justify-between gap-4 p-4 border border-slate-100 dark:border-[#27272A]/50 rounded-xl bg-slate-50 dark:bg-[#0F0F11]">
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-slate-800">{label}</p>
-                    <p className="text-xs text-slate-500 mt-0.5">{description}</p>
-                    <p className="text-xs font-mono text-slate-400 mt-1 ltr:text-left">{permission}</p>
+                    <p className="text-sm font-semibold text-slate-800 dark:text-[#F4F4F5]">{label}</p>
+                    <p className="text-xs text-slate-500 dark:text-[#71717A] mt-0.5">{description}</p>
+                    <p className="text-xs font-mono text-slate-400 dark:text-[#52525B] mt-1 ltr:text-left">{permission}</p>
                   </div>
                   <div className="flex-shrink-0 flex flex-col gap-1 items-end">
                     {roles.map((r) => (
@@ -547,36 +547,36 @@ export default function SettingsPage() {
                         {r}
                       </span>
                     ))}
-                    <span className="text-[10px] text-slate-400 mt-0.5">مفعّل افتراضياً</span>
+                    <span className="text-[10px] text-slate-400 dark:text-[#52525B] mt-0.5">مفعّل افتراضياً</span>
                   </div>
                 </div>
               ))}
             </div>
-            <p className="text-xs text-slate-400 mt-3">
+            <p className="text-xs text-slate-400 dark:text-[#52525B] mt-3">
               * لتعديل هذه الصلاحيات لمستخدم بعينه، عدّل حقل <span className="font-mono">permissions</span> في جدول <span className="font-mono">user_profiles</span> في Supabase.
             </p>
           </div>
 
           {/* قسم الضريبة (VAT) */}
-          <div className="bg-white rounded-xl border border-slate-200 p-6">
+          <div className="bg-white dark:bg-[#18181B] rounded-xl border border-slate-200 dark:border-[#27272A] p-6">
             <div className="flex items-center gap-2 mb-4">
               <Percent className="w-5 h-5 text-indigo-600" />
-              <h2 className="text-base font-semibold text-slate-900">الضريبة (VAT)</h2>
+              <h2 className="text-base font-semibold text-slate-900 dark:text-[#F4F4F5]">الضريبة (VAT)</h2>
             </div>
 
             <div className="space-y-4">
               {/* Toggle */}
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-800">تفعيل حساب الضريبة</p>
-                  <p className="text-xs text-slate-500 mt-0.5">إضافة ضريبة القيمة المضافة على الفواتير والطلبات</p>
+                  <p className="text-sm font-medium text-slate-800 dark:text-[#F4F4F5]">تفعيل حساب الضريبة</p>
+                  <p className="text-xs text-slate-500 dark:text-[#71717A] mt-0.5">إضافة ضريبة القيمة المضافة على الفواتير والطلبات</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setVatEnabled(!vatEnabled)}
                   className={`w-12 h-6 rounded-full transition-colors ${vatEnabled ? 'bg-indigo-600' : 'bg-slate-300'} relative flex-shrink-0`}
                 >
-                  <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${vatEnabled ? 'translate-x-7' : 'translate-x-1'}`} />
+                  <span className={`absolute top-1 w-4 h-4 bg-white dark:bg-[#18181B] rounded-full shadow transition-transform ${vatEnabled ? 'translate-x-7' : 'translate-x-1'}`} />
                 </button>
               </div>
 
@@ -584,7 +584,7 @@ export default function SettingsPage() {
                 <>
                   {/* VAT Rate */}
                   <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1">نسبة الضريبة %</label>
+                    <label className="block text-xs font-medium text-slate-600 dark:text-[#A1A1AA] mb-1">نسبة الضريبة %</label>
                     <input
                       type="number"
                       min={0}
@@ -599,7 +599,7 @@ export default function SettingsPage() {
 
                   {/* VAT Number */}
                   <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1">الرقم الضريبي (اختياري)</label>
+                    <label className="block text-xs font-medium text-slate-600 dark:text-[#A1A1AA] mb-1">الرقم الضريبي (اختياري)</label>
                     <input
                       type="text"
                       value={vatNumber}
@@ -627,18 +627,18 @@ export default function SettingsPage() {
           </div>
 
           {/* منطقة الخطر */}
-          <div className="bg-white rounded-xl border border-red-200 p-6">
+          <div className="bg-white dark:bg-[#18181B] rounded-xl border border-red-200 p-6">
             <h2 className="text-base font-semibold text-red-700 mb-1">منطقة الخطر</h2>
-            <p className="text-sm text-slate-500 mb-4">
+            <p className="text-sm text-slate-500 dark:text-[#71717A] mb-4">
               هذه الإجراءات لا يمكن التراجع عنها. تأكد قبل المتابعة.
             </p>
 
             <div className="flex items-center justify-between p-4 border border-red-200 rounded-lg bg-red-50">
               <div>
-                <p className="text-sm font-medium text-slate-900">
+                <p className="text-sm font-medium text-slate-900 dark:text-[#F4F4F5]">
                   إعادة تعيين القوائم للافتراضي
                 </p>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-xs text-slate-500 dark:text-[#71717A] mt-0.5">
                   سيتم حذف جميع التخصيصات والعودة للإعدادات الأصلية
                 </p>
               </div>

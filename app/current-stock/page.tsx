@@ -76,7 +76,7 @@ export default function CurrentStockPage() {
       case 'AVAILABLE':
         return {
           label: 'متوفر',
-          rowClass: 'hover:bg-slate-50',
+          rowClass: 'hover:bg-slate-50 dark:hover:bg-[#27272A]/40',
           badgeVariant: 'success' as const,
           icon: <CheckCircle2 className="w-4 h-4 text-green-600" />,
         };
@@ -112,17 +112,17 @@ export default function CurrentStockPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-[#F4F4F5] flex items-center gap-2">
             <BarChart3 className="w-6 h-6 text-brand-600" />
             الرصيد الحالي
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-[#71717A] mt-1">
             حساب آلي للرصيد اللحظي لكل صنف — يتحدث فوراً مع كل حركة
           </p>
         </div>
         <button
           onClick={handleExport}
-          className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors min-h-[44px]"
+          className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium bg-slate-100 dark:bg-[#27272A] hover:bg-slate-200 text-slate-700 dark:text-[#E4E4E7] rounded-lg transition-colors min-h-[44px]"
         >
           <Download className="w-4 h-4" />
           تصدير CSV
@@ -131,8 +131,8 @@ export default function CurrentStockPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mb-6 flex-wrap">
-        <div className="bg-white border border-slate-200 rounded-xl p-4">
-          <p className="text-xs text-slate-500">قيمة المخزون</p>
+        <div className="bg-white dark:bg-[#18181B] border border-slate-200 dark:border-[#27272A] rounded-xl p-4">
+          <p className="text-xs text-slate-500 dark:text-[#71717A]">قيمة المخزون</p>
           <p className="text-xl font-bold text-brand-600 mt-1 font-mono">
             {stats.totalValue.toLocaleString('en-US')}
           </p>
@@ -202,27 +202,27 @@ export default function CurrentStockPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+      <div className="bg-white dark:bg-[#18181B] rounded-xl border border-slate-200 dark:border-[#27272A] overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm min-w-[700px]">
-            <thead className="bg-slate-50 border-b border-slate-200">
+            <thead className="bg-slate-50 dark:bg-[#0F0F11] border-b border-slate-200 dark:border-[#27272A]">
               <tr>
-                <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">كود الصنف</th>
-                <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">اسم الصنف</th>
-                <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">التصنيف</th>
-                <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">الافتتاحي</th>
-                <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">الوارد</th>
-                <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">الصادر</th>
-                <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">الرصيد الحالي</th>
-                <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">الحد الأدنى</th>
-                <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">حالة المخزون</th>
-                <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">قيمة المخزون</th>
+                <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase">كود الصنف</th>
+                <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase">اسم الصنف</th>
+                <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase">التصنيف</th>
+                <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase">الافتتاحي</th>
+                <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase">الوارد</th>
+                <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase">الصادر</th>
+                <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase">الرصيد الحالي</th>
+                <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase">الحد الأدنى</th>
+                <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase">حالة المخزون</th>
+                <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase">قيمة المخزون</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 dark:divide-[#27272A]/50">
               {filteredStock.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="px-4 py-12 text-center text-slate-500">
+                  <td colSpan={10} className="px-4 py-12 text-center text-slate-500 dark:text-[#71717A]">
                     لا توجد بيانات
                   </td>
                 </tr>
@@ -231,14 +231,14 @@ export default function CurrentStockPage() {
                   const info = getStatusInfo(s.status);
                   return (
                     <tr key={s.itemId} className={`transition-colors ${info.rowClass}`}>
-                      <td className="px-3 py-3 font-mono font-semibold text-slate-700">
+                      <td className="px-3 py-3 font-mono font-semibold text-slate-700 dark:text-[#E4E4E7]">
                         {s.itemCode}
                       </td>
-                      <td className="px-3 py-3 font-medium text-slate-900 max-w-[200px] truncate">
+                      <td className="px-3 py-3 font-medium text-slate-900 dark:text-[#F4F4F5] max-w-[200px] truncate">
                         {s.itemName}
                       </td>
-                      <td className="px-3 py-3 text-slate-600 text-xs">{s.category}</td>
-                      <td className="px-3 py-3 font-mono text-slate-600">{s.openingQty}</td>
+                      <td className="px-3 py-3 text-slate-600 dark:text-[#A1A1AA] text-xs">{s.category}</td>
+                      <td className="px-3 py-3 font-mono text-slate-600 dark:text-[#A1A1AA]">{s.openingQty}</td>
                       <td className="px-3 py-3 font-mono text-green-600">+{s.totalIn}</td>
                       <td className="px-3 py-3 font-mono text-orange-600">-{s.totalOut}</td>
                       <td className="px-3 py-3">
@@ -250,21 +250,21 @@ export default function CurrentStockPage() {
                               ? 'text-yellow-700'
                               : s.status === 'LOW'
                               ? 'text-orange-700'
-                              : 'text-slate-900'
+                              : 'text-slate-900 dark:text-[#F4F4F5]'
                           }`}
                         >
                           {s.currentBalance}
                         </span>
-                        <span className="text-xs text-slate-500 mr-1">{s.unit}</span>
+                        <span className="text-xs text-slate-500 dark:text-[#71717A] mr-1">{s.unit}</span>
                       </td>
-                      <td className="px-3 py-3 font-mono text-slate-500">{s.minStockLevel}</td>
+                      <td className="px-3 py-3 font-mono text-slate-500 dark:text-[#71717A]">{s.minStockLevel}</td>
                       <td className="px-3 py-3">
                         <div className="flex items-center gap-1.5">
                           {info.icon}
                           <Badge variant={info.badgeVariant}>{info.label}</Badge>
                         </div>
                       </td>
-                      <td className="px-3 py-3 font-mono font-semibold text-slate-900">
+                      <td className="px-3 py-3 font-mono font-semibold text-slate-900 dark:text-[#F4F4F5]">
                         {s.stockValue.toLocaleString('en-US')}
                       </td>
                     </tr>

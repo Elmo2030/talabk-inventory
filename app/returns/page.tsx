@@ -14,8 +14,8 @@ import EmptyState from '@/components/ui/EmptyState';
 import SearchBar from '@/components/ui/SearchBar';
 
 const inputClass =
-  'w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-900 bg-white focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20';
-const labelClass = 'block text-xs font-medium text-slate-600 mb-1.5';
+  'w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-[#27272A] text-sm text-slate-900 dark:text-[#F4F4F5] bg-white dark:bg-[#18181B] focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20';
+const labelClass = 'block text-xs font-medium text-slate-600 dark:text-[#A1A1AA] mb-1.5';
 
 function NewReturnForm({
   salesOrders,
@@ -108,30 +108,30 @@ function NewReturnForm({
       </div>
 
       {selectedOrder && (
-        <div className="border border-slate-200 rounded-xl overflow-hidden">
-          <div className="bg-slate-50 px-4 py-2 border-b border-slate-200">
-            <p className="text-xs font-semibold text-slate-600">اختر المنتجات المرتجعة والكمية</p>
+        <div className="border border-slate-200 dark:border-[#27272A] rounded-xl overflow-hidden">
+          <div className="bg-slate-50 dark:bg-[#0F0F11] px-4 py-2 border-b border-slate-200 dark:border-[#27272A]">
+            <p className="text-xs font-semibold text-slate-600 dark:text-[#A1A1AA]">اختر المنتجات المرتجعة والكمية</p>
           </div>
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-slate-100 dark:divide-[#27272A]/50">
             {selectedOrder.items.map((item) => {
               const sel = selectedItems.find((s) => s.id === item.id);
               return (
                 <div key={item.id} className="flex items-center justify-between px-4 py-3 gap-4">
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-slate-900 truncate">{item.itemName}</p>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-sm font-medium text-slate-900 dark:text-[#F4F4F5] truncate">{item.itemName}</p>
+                    <p className="text-xs text-slate-500 dark:text-[#71717A]">
                       {item.sellingPrice.toFixed(2)} د.ل × {item.quantity}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-slate-500">كمية الإرجاع:</span>
+                    <span className="text-xs text-slate-500 dark:text-[#71717A]">كمية الإرجاع:</span>
                     <input
                       type="number"
                       min={0}
                       max={item.quantity}
                       value={sel?.qty ?? 0}
                       onChange={(e) => handleQtyChange(item.id, Number(e.target.value))}
-                      className="w-16 px-2 py-1 text-sm text-center rounded-lg border border-slate-200 focus:outline-none focus:border-brand-500"
+                      className="w-16 px-2 py-1 text-sm text-center rounded-lg border border-slate-200 dark:border-[#27272A] focus:outline-none focus:border-brand-500"
                     />
                   </div>
                 </div>
@@ -162,7 +162,7 @@ function NewReturnForm({
         />
       </div>
 
-      <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
+      <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-[#0F0F11] rounded-xl">
         <input
           type="checkbox"
           id="restock"
@@ -170,7 +170,7 @@ function NewReturnForm({
           onChange={(e) => setRestockItems(e.target.checked)}
           className="w-4 h-4 text-brand-600 rounded"
         />
-        <label htmlFor="restock" className="text-sm text-slate-700 cursor-pointer">
+        <label htmlFor="restock" className="text-sm text-slate-700 dark:text-[#E4E4E7] cursor-pointer">
           إعادة المنتجات إلى المخزون عند الموافقة
         </label>
       </div>
@@ -191,7 +191,7 @@ function NewReturnForm({
         </div>
       )}
 
-      <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+      <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-[#27272A]/50">
         <Button type="button" variant="secondary" onClick={onCancel}>إلغاء</Button>
         <Button type="submit" disabled={!orderId || !reason || !selectedItems.some((s) => s.qty > 0)}>
           تسجيل المرتجع
@@ -291,11 +291,11 @@ export default function ReturnsPage() {
     <div dir="rtl">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-[#F4F4F5] flex items-center gap-2">
             <RotateCcw className="w-6 h-6 text-brand-600" />
             المرتجعات
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">إدارة مرتجعات طلبات البيع</p>
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-[#71717A] mt-1">إدارة مرتجعات طلبات البيع</p>
         </div>
         <Button onClick={() => setIsModalOpen(true)} icon={<Plus className="w-4 h-4" />}>
           تسجيل مرتجع
@@ -309,9 +309,9 @@ export default function ReturnsPage() {
           { label: 'تمت الموافقة', value: stats.approved, color: 'text-green-600' },
           { label: 'إجمالي المبالغ المستردة', value: `${stats.totalRefund.toFixed(2)} د.ل`, color: 'text-brand-600' },
         ].map((s) => (
-          <div key={s.label} className="bg-white border border-slate-200 rounded-xl p-4 text-center">
+          <div key={s.label} className="bg-white dark:bg-[#18181B] border border-slate-200 dark:border-[#27272A] rounded-xl p-4 text-center">
             <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
-            <p className="text-xs text-slate-500 mt-1">{s.label}</p>
+            <p className="text-xs text-slate-500 dark:text-[#71717A] mt-1">{s.label}</p>
           </div>
         ))}
       </div>
@@ -324,7 +324,7 @@ export default function ReturnsPage() {
         />
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+      <div className="bg-white dark:bg-[#18181B] rounded-xl border border-slate-200 dark:border-[#27272A] overflow-hidden">
         {filtered.length === 0 ? (
           <EmptyState
             icon={RotateCcw}
@@ -342,27 +342,27 @@ export default function ReturnsPage() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-slate-50 border-b border-slate-200">
+              <thead className="bg-slate-50 dark:bg-[#0F0F11] border-b border-slate-200 dark:border-[#27272A]">
                 <tr>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">رقم المرتجع</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">الطلب الأصلي</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">العميل</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">السبب</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">مبلغ الاسترداد</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">الحالة</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">إجراءات</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase">رقم المرتجع</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase">الطلب الأصلي</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase">العميل</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase">السبب</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase">مبلغ الاسترداد</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase">الحالة</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 dark:text-[#A1A1AA] uppercase">إجراءات</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-100 dark:divide-[#27272A]/50">
                 {filtered.map((ret) => {
                   const cfg = STATUS_CONFIG[ret.status];
                   return (
-                    <tr key={ret.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="px-4 py-3 font-mono text-sm font-bold text-slate-900">{ret.returnNumber}</td>
+                    <tr key={ret.id} className="hover:bg-slate-50 dark:hover:bg-[#27272A]/40 transition-colors">
+                      <td className="px-4 py-3 font-mono text-sm font-bold text-slate-900 dark:text-[#F4F4F5]">{ret.returnNumber}</td>
                       <td className="px-4 py-3 font-mono text-xs text-brand-700">{ret.originalOrderNumber}</td>
-                      <td className="px-4 py-3 text-slate-700">{ret.customerName}</td>
-                      <td className="px-4 py-3 text-slate-600 text-xs">{ret.reason}</td>
-                      <td className="px-4 py-3 font-semibold text-slate-900">{ret.refundAmount.toFixed(2)} د.ل</td>
+                      <td className="px-4 py-3 text-slate-700 dark:text-[#E4E4E7]">{ret.customerName}</td>
+                      <td className="px-4 py-3 text-slate-600 dark:text-[#A1A1AA] text-xs">{ret.reason}</td>
+                      <td className="px-4 py-3 font-semibold text-slate-900 dark:text-[#F4F4F5]">{ret.refundAmount.toFixed(2)} د.ل</td>
                       <td className="px-4 py-3">
                         <Badge variant={cfg.variant}>{cfg.label}</Badge>
                       </td>
@@ -388,7 +388,7 @@ export default function ReturnsPage() {
                           )}
                           <button
                             onClick={() => handleDelete(ret)}
-                            className="p-1.5 text-slate-400 hover:bg-slate-100 rounded-lg transition-colors"
+                            className="p-1.5 text-slate-400 dark:text-[#52525B] hover:bg-slate-100 dark:hover:bg-[#27272A] rounded-lg transition-colors"
                             title="حذف"
                           >
                             <Trash2 className="w-4 h-4" />

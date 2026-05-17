@@ -151,16 +151,16 @@ export default function CustomersPage() {
     return (
       <div className="space-y-5 pb-8" dir="rtl">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-[#1C1C1E]">العملاء</h1>
-          <p className="text-sm text-[#6C6C70] mt-1">قاعدة بيانات عملائك وتاريخ مشترياتهم</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#1C1C1E] dark:text-[#F4F4F5]">العملاء</h1>
+          <p className="text-sm text-[#6C6C70] dark:text-[#A1A1AA] mt-1">قاعدة بيانات عملائك وتاريخ مشترياتهم</p>
         </div>
-        <div className="bg-white border border-[#E5E5EA] rounded-2xl p-16 flex flex-col items-center justify-center text-center gap-4">
+        <div className="bg-white dark:bg-[#18181B] border border-[#E5E5EA] dark:border-[#27272A] rounded-2xl p-16 flex flex-col items-center justify-center text-center gap-4">
           <div className="w-16 h-16 rounded-2xl bg-[#F2F2F7] flex items-center justify-center">
             <Users className="w-8 h-8 text-[#C7C7CC]" />
           </div>
           <div>
-            <p className="text-base font-semibold text-[#1C1C1E]">لا يوجد عملاء بعد</p>
-            <p className="text-sm text-[#6C6C70] mt-1">سجّل أول طلب بيع لتظهر بيانات عملائك هنا</p>
+            <p className="text-base font-semibold text-[#1C1C1E] dark:text-[#F4F4F5]">لا يوجد عملاء بعد</p>
+            <p className="text-sm text-[#6C6C70] dark:text-[#A1A1AA] mt-1">سجّل أول طلب بيع لتظهر بيانات عملائك هنا</p>
           </div>
         </div>
       </div>
@@ -171,51 +171,51 @@ export default function CustomersPage() {
     <div className="space-y-5 pb-8" dir="rtl">
       {/* ── Header ──────────────────────────────────────────────────────────── */}
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-[#1C1C1E]">العملاء</h1>
-        <p className="text-sm text-[#6C6C70] mt-1">قاعدة بيانات عملائك وتاريخ مشترياتهم</p>
+        <h1 className="text-2xl sm:text-3xl font-bold text-[#1C1C1E] dark:text-[#F4F4F5]">العملاء</h1>
+        <p className="text-sm text-[#6C6C70] dark:text-[#A1A1AA] mt-1">قاعدة بيانات عملائك وتاريخ مشترياتهم</p>
       </div>
 
       {/* ── KPI Cards ───────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total customers */}
-        <div className="bg-white border border-[#E5E5EA] rounded-2xl p-5">
+        <div className="bg-white dark:bg-[#18181B] border border-[#E5E5EA] dark:border-[#27272A] rounded-2xl p-5">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-[#FEF2F1] mb-3">
             <Users className="w-5 h-5 text-[#E5302A]" />
           </div>
-          <p className="text-xs text-[#6C6C70]">إجمالي العملاء</p>
-          <p className="text-2xl font-bold mt-1 text-[#1C1C1E]">{kpis.total}</p>
+          <p className="text-xs text-[#6C6C70] dark:text-[#A1A1AA]">إجمالي العملاء</p>
+          <p className="text-2xl font-bold mt-1 text-[#1C1C1E] dark:text-[#F4F4F5]">{kpis.total}</p>
           <p className="text-xs text-[#AEAEB2] mt-1">عميل مسجّل</p>
         </div>
 
         {/* This month */}
-        <div className="bg-white border border-[#E5E5EA] rounded-2xl p-5">
+        <div className="bg-white dark:bg-[#18181B] border border-[#E5E5EA] dark:border-[#27272A] rounded-2xl p-5">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-blue-50 mb-3">
             <Calendar className="w-5 h-5 text-blue-600" />
           </div>
-          <p className="text-xs text-[#6C6C70]">عملاء هذا الشهر</p>
+          <p className="text-xs text-[#6C6C70] dark:text-[#A1A1AA]">عملاء هذا الشهر</p>
           <p className="text-2xl font-bold mt-1 text-blue-600">{kpis.thisMonth}</p>
           <p className="text-xs text-[#AEAEB2] mt-1">عميل جديد</p>
         </div>
 
         {/* AOV */}
-        <div className="bg-white border border-[#E5E5EA] rounded-2xl p-5">
+        <div className="bg-white dark:bg-[#18181B] border border-[#E5E5EA] dark:border-[#27272A] rounded-2xl p-5">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-green-50 mb-3">
             <TrendingUp className="w-5 h-5 text-green-600" />
           </div>
-          <p className="text-xs text-[#6C6C70]">متوسط قيمة الطلب</p>
-          <p className="text-2xl font-bold mt-1 text-[#1C1C1E]">
+          <p className="text-xs text-[#6C6C70] dark:text-[#A1A1AA]">متوسط قيمة الطلب</p>
+          <p className="text-2xl font-bold mt-1 text-[#1C1C1E] dark:text-[#F4F4F5]">
             {kpis.avgOrderValue.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
           </p>
           <p className="text-xs text-[#AEAEB2] mt-1">د.ل / طلب</p>
         </div>
 
         {/* Top customer */}
-        <div className="bg-white border border-[#E5E5EA] rounded-2xl p-5">
+        <div className="bg-white dark:bg-[#18181B] border border-[#E5E5EA] dark:border-[#27272A] rounded-2xl p-5">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-amber-50 mb-3">
             <Star className="w-5 h-5 text-amber-500" />
           </div>
-          <p className="text-xs text-[#6C6C70]">أعلى عميل إنفاقاً</p>
-          <p className="text-base font-bold mt-1 text-[#1C1C1E] truncate">{kpis.topCustomerName}</p>
+          <p className="text-xs text-[#6C6C70] dark:text-[#A1A1AA]">أعلى عميل إنفاقاً</p>
+          <p className="text-base font-bold mt-1 text-[#1C1C1E] dark:text-[#F4F4F5] truncate">{kpis.topCustomerName}</p>
           <p className="text-xs text-[#AEAEB2] mt-1">
             {kpis.topCustomerSpent.toLocaleString('en-US', { minimumFractionDigits: 0 })} د.ل
           </p>
@@ -232,7 +232,7 @@ export default function CustomersPage() {
             placeholder="ابحث بالاسم أو رقم الهاتف..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full pr-9 pl-4 py-2.5 text-sm bg-white border border-[#E5E5EA] rounded-xl text-[#1C1C1E] placeholder-[#AEAEB2] focus:outline-none focus:ring-2 focus:ring-[#E5302A]/20 focus:border-[#E5302A]"
+            className="w-full pr-9 pl-4 py-2.5 text-sm bg-white dark:bg-[#18181B] border border-[#E5E5EA] dark:border-[#27272A] rounded-xl text-[#1C1C1E] dark:text-[#F4F4F5] placeholder-[#AEAEB2] focus:outline-none focus:ring-2 focus:ring-[#E5302A]/20 focus:border-[#E5302A]"
             dir="rtl"
           />
         </div>
@@ -250,7 +250,7 @@ export default function CustomersPage() {
               className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium border transition-all ${
                 sortBy === field
                   ? 'border-[#E5302A] bg-[#FEF2F1] text-[#E5302A]'
-                  : 'border-[#E5E5EA] bg-white text-[#6C6C70] hover:bg-[#F2F2F7]'
+                  : 'border-[#E5E5EA] dark:border-[#27272A] bg-white dark:bg-[#18181B] text-[#6C6C70] dark:text-[#A1A1AA] hover:bg-[#F2F2F7] dark:hover:bg-[#27272A]'
               }`}
             >
               {label}
@@ -262,7 +262,7 @@ export default function CustomersPage() {
 
       {/* ── Customer List ────────────────────────────────────────────────────── */}
       {filteredCustomers.length === 0 ? (
-        <div className="bg-white border border-[#E5E5EA] rounded-2xl p-10 text-center text-[#6C6C70] text-sm">
+        <div className="bg-white dark:bg-[#18181B] border border-[#E5E5EA] dark:border-[#27272A] rounded-2xl p-10 text-center text-[#6C6C70] dark:text-[#A1A1AA] text-sm">
           لا توجد نتائج للبحث
         </div>
       ) : (
@@ -275,7 +275,7 @@ export default function CustomersPage() {
             return (
               <div
                 key={key}
-                className="bg-white border border-[#E5E5EA] rounded-2xl overflow-hidden"
+                className="bg-white dark:bg-[#18181B] border border-[#E5E5EA] dark:border-[#27272A] rounded-2xl overflow-hidden"
               >
                 {/* Customer row */}
                 <button
@@ -291,27 +291,27 @@ export default function CustomersPage() {
                     {/* Name + phone */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className="text-sm font-semibold text-[#1C1C1E] truncate">{customer.name}</p>
+                        <p className="text-sm font-semibold text-[#1C1C1E] dark:text-[#F4F4F5] truncate">{customer.name}</p>
                         {isVip && (
                           <span className="px-2 py-0.5 text-[10px] font-bold bg-amber-100 text-amber-700 rounded-full flex-shrink-0">
                             VIP
                           </span>
                         )}
                         {!isVip && (
-                          <span className="px-2 py-0.5 text-[10px] font-medium bg-[#F2F2F7] text-[#6C6C70] rounded-full flex-shrink-0">
+                          <span className="px-2 py-0.5 text-[10px] font-medium bg-[#F2F2F7] text-[#6C6C70] dark:text-[#A1A1AA] rounded-full flex-shrink-0">
                             عادي
                           </span>
                         )}
                       </div>
                       <div className="flex items-center gap-3 mt-0.5 flex-wrap">
                         {customer.phone && (
-                          <span className="flex items-center gap-1 text-xs text-[#6C6C70]">
+                          <span className="flex items-center gap-1 text-xs text-[#6C6C70] dark:text-[#A1A1AA]">
                             <Phone className="w-3 h-3" />
                             {customer.phone}
                           </span>
                         )}
                         {customer.lastCity && (
-                          <span className="flex items-center gap-1 text-xs text-[#6C6C70]">
+                          <span className="flex items-center gap-1 text-xs text-[#6C6C70] dark:text-[#A1A1AA]">
                             <MapPin className="w-3 h-3" />
                             {customer.lastCity}
                           </span>
@@ -322,7 +322,7 @@ export default function CustomersPage() {
                     {/* Stats */}
                     <div className="hidden sm:flex items-center gap-6">
                       <div className="text-center">
-                        <p className="text-sm font-bold text-[#1C1C1E]">{customer.orderCount}</p>
+                        <p className="text-sm font-bold text-[#1C1C1E] dark:text-[#F4F4F5]">{customer.orderCount}</p>
                         <p className="text-xs text-[#AEAEB2]">طلب</p>
                       </div>
                       <div className="text-center">
@@ -332,7 +332,7 @@ export default function CustomersPage() {
                         <p className="text-xs text-[#AEAEB2]">د.ل</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-xs font-medium text-[#1C1C1E]">{formatDate(customer.lastOrderDate)}</p>
+                        <p className="text-xs font-medium text-[#1C1C1E] dark:text-[#F4F4F5]">{formatDate(customer.lastOrderDate)}</p>
                         <p className="text-xs text-[#AEAEB2]">آخر طلب</p>
                       </div>
                     </div>
@@ -358,7 +358,7 @@ export default function CustomersPage() {
                 {/* Expanded order history */}
                 {isExpanded && (
                   <div className="border-t border-[#F2F2F7] px-5 pb-4">
-                    <p className="text-xs font-semibold text-[#6C6C70] pt-3 pb-2">
+                    <p className="text-xs font-semibold text-[#6C6C70] dark:text-[#A1A1AA] pt-3 pb-2">
                       سجل الطلبات ({customer.orders.length})
                     </p>
                     <div className="space-y-2">
@@ -374,13 +374,13 @@ export default function CustomersPage() {
                               <div className="flex items-center gap-3">
                                 <ShoppingBag className="w-4 h-4 text-[#AEAEB2] flex-shrink-0" />
                                 <div>
-                                  <p className="text-sm font-medium text-[#1C1C1E]">{order.orderNumber}</p>
+                                  <p className="text-sm font-medium text-[#1C1C1E] dark:text-[#F4F4F5]">{order.orderNumber}</p>
                                   <p className="text-xs text-[#AEAEB2]">{formatDate(order.createdAt)}</p>
                                 </div>
                               </div>
                               <div className="flex items-center gap-3">
                                 <div className="text-left">
-                                  <p className="text-sm font-bold text-[#1C1C1E]">
+                                  <p className="text-sm font-bold text-[#1C1C1E] dark:text-[#F4F4F5]">
                                     {order.customerTotal.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} د.ل
                                   </p>
                                   <p className="text-xs text-green-600">
