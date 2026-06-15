@@ -11,6 +11,7 @@ import {
   ArrowUpFromLine,
   BarChart3,
   BarChart2,
+  Sparkles,
   FileText,
   Settings,
   BookOpen,
@@ -77,6 +78,7 @@ const navGroups: NavGroup[] = [
   {
     label: 'التقارير والأدوات',
     items: [
+      { href: '/insights',             label: 'ذكاء البيانات',    icon: Sparkles },
       { href: '/analytics',            label: 'التحليلات',        icon: BarChart2 },
       { href: '/reports',              label: 'التقارير',         icon: FileText },
       { href: '/appointments',         label: 'المواعيد',         icon: CalendarClock },
