@@ -15,7 +15,8 @@
  */
 
 import { useMemo, useState } from 'react';
-import { Sparkles, RefreshCw } from 'lucide-react';
+import Link from 'next/link';
+import { Sparkles, RefreshCw, UploadCloud } from 'lucide-react';
 import { useItems, useOrders, useCustomers, useMovements, useSalesReps } from '@/lib/StockContext';
 import { buildInsights } from '@/lib/insights/talabkInsights';
 import { InsightsDashboard } from '@/components/insights/InsightsCards';
@@ -61,7 +62,7 @@ export default function InsightsPage() {
             تحليل ذكي يتجدّد لحظياً من بيانات متجرك — KPIs، تنبيهات، تصنيف الأصناف، وتقسيم العملاء.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {RANGES.map((r) => (
             <button
               key={r.id}
@@ -75,6 +76,16 @@ export default function InsightsPage() {
               {r.label}
             </button>
           ))}
+          {/* Upload-mode entry point. The CSV/XLSX flow runs in a separate
+              route to keep the live-data hook tree clean and to give the
+              file picker its own URL the user can bookmark. */}
+          <Link
+            href="/insights/upload"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl border bg-white dark:bg-[#18181B] text-slate-700 dark:text-[#E4E4E7] border-slate-200 dark:border-[#27272A] hover:bg-slate-50 dark:hover:bg-[#27272A] transition-colors"
+          >
+            <UploadCloud className="w-3.5 h-3.5" />
+            رفع ملف خارجي
+          </Link>
         </div>
       </div>
 
