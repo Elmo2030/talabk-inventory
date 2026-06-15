@@ -18,6 +18,7 @@ import {
   PieChart, Pie, Cell, ComposedChart, Bar, Line, BarChart,
 } from 'recharts';
 import { TrendingUp } from 'lucide-react';
+import { formatMoney } from '@/lib/format';
 
 interface DailyPoint { date: string; revenue: number; profit: number }
 interface OrderStatusSlice { name: string; value: number; color: string }
@@ -85,7 +86,7 @@ export default function DashboardCharts({
                 <Tooltip
                   contentStyle={tooltipStyle}
                   formatter={(value: number, name: string) => [
-                    `${value.toLocaleString('en-US')} د.ل`,
+                    `${formatMoney(value)}`,
                     name === 'revenue' ? 'المبيعات' : 'صافي الربح',
                   ]}
                 />
@@ -149,7 +150,7 @@ export default function DashboardCharts({
               <YAxis tick={{ fontSize: 10, fill: tick }} tickLine={false} axisLine={false} />
               <Tooltip
                 contentStyle={tooltipStyle}
-                formatter={(value: number, name: string) => [`${value.toLocaleString('en-US')} د.ل`, name === 'revenue' ? 'المبيعات' : 'صافي الربح']}
+                formatter={(value: number, name: string) => [`${formatMoney(value)}`, name === 'revenue' ? 'المبيعات' : 'صافي الربح']}
               />
               <Bar dataKey="revenue" fill="#E5302A" radius={[4,4,0,0]} name="revenue" opacity={0.85} />
               <Line type="monotone" dataKey="netProfit" stroke="#22C55E" strokeWidth={2} dot={{ fill: '#22C55E', r: 3 }} name="netProfit" />
@@ -172,7 +173,7 @@ export default function DashboardCharts({
               <YAxis tick={{ fontSize: 10, fill: tick }} tickLine={false} axisLine={false} />
               <Tooltip
                 contentStyle={tooltipStyle}
-                formatter={(value: number, name: string) => [`${value.toLocaleString('en-US')} د.ل`, name === 'revenue' ? 'الإيرادات' : 'الربح']}
+                formatter={(value: number, name: string) => [`${formatMoney(value)}`, name === 'revenue' ? 'الإيرادات' : 'الربح']}
               />
               <Bar dataKey="revenue" fill="#E5302A" radius={[4,4,0,0]} name="revenue" opacity={0.85} />
               <Bar dataKey="profit"  fill="#22C55E" radius={[4,4,0,0]} name="profit"  opacity={0.85} />

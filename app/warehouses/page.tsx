@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { Warehouse, ArrowLeftRight, Plus, Package, AlertTriangle } from 'lucide-react';
-import { useStock } from '@/lib/StockContext';
+import { useItems, useMovements } from '@/lib/StockContext';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import Modal from '@/components/ui/Modal';
@@ -22,7 +22,8 @@ const inputClass =
 const labelClass = 'block text-xs font-medium text-slate-600 dark:text-[#A1A1AA] mb-1.5';
 
 export default function WarehousesPage() {
-  const { items, currentStock, addStockIn, addStockOut } = useStock();
+  const { items } = useItems();
+  const { currentStock, addStockIn, addStockOut } = useMovements();
   const toast = useToast();
   const { confirm } = useConfirm();
 

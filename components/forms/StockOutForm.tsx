@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, FormEvent } from 'react';
-import { useStock } from '@/lib/StockContext';
+import { useItems, useMovements } from '@/lib/StockContext';
 import { StockOutMovement } from '@/lib/types';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
@@ -25,7 +25,8 @@ export default function StockOutForm({
   editId,
   initialData,
 }: StockOutFormProps) {
-  const { items, addStockOut, updateStockOut, getCurrentBalance } = useStock();
+  const { items } = useItems();
+  const { addStockOut, updateStockOut, getCurrentBalance } = useMovements();
   const toast = useToast();
   const isEditMode = !!editId;
   const today = new Date().toISOString().split('T')[0];

@@ -77,7 +77,8 @@ export const suppliersService = {
   },
 
   async update(id: string, updates: Partial<Supplier>): Promise<Supplier> {
-    const dbUpdates: any = {};
+    // Generated `Update` type catches misspelled columns at compile time.
+    const dbUpdates: Database['public']['Tables']['suppliers']['Update'] = {};
     if (updates.code) dbUpdates.code = updates.code;
     if (updates.name) dbUpdates.name = updates.name;
     if (updates.productType !== undefined) dbUpdates.product_type = updates.productType;

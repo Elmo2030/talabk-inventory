@@ -16,13 +16,16 @@ import {
   Calendar,
   Hash,
 } from 'lucide-react';
-import { useStock } from '@/lib/StockContext';
+import { useSuppliers, useItems, useMovements } from '@/lib/StockContext';
 import Badge from '@/components/ui/Badge';
+import { formatNumber } from '@/lib/format';
 
 export default function SupplierDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { suppliers, items, stockIn } = useStock();
+  const { suppliers } = useSuppliers();
+  const { items } = useItems();
+  const { stockIn } = useMovements();
 
   const supplierId = params.id as string;
   const supplier = suppliers.find((s) => s.id === supplierId);
@@ -88,7 +91,7 @@ export default function SupplierDetailPage() {
             إجمالي المشتريات
           </p>
           <p className="text-xl font-bold text-brand-700 mt-1 font-mono">
-            {stats.totalPurchases.toLocaleString('en-US')}
+            {formatNumber(stats.totalPurchases)}
           </p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4">
@@ -265,7 +268,7 @@ export default function SupplierDetailPage() {
                     <td className="px-3 py-3 font-mono font-bold text-green-600">{m.quantity}</td>
                     <td className="px-3 py-3 font-mono text-slate-700">{m.unitPrice.toFixed(2)}</td>
                     <td className="px-3 py-3 font-mono font-bold text-slate-900">
-                      {m.totalCost.toLocaleString('en-US')}
+                      {formatNumber(m.totalCost)}
                     </td>
                     <td className="px-3 py-3 text-xs text-slate-600">{m.responsibleEmployee}</td>
                   </tr>

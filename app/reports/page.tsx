@@ -10,27 +10,47 @@ import {
   Printer,
   Download,
 } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import InventoryReport from '@/components/reports/InventoryReport';
-import PurchasesSummaryReport from '@/components/reports/PurchasesSummaryReport';
 import ItemMovementReport from '@/components/reports/ItemMovementReport';
 import LowStockReport from '@/components/reports/LowStockReport';
-import AnalyticsReport from '@/components/reports/AnalyticsReport';
-import { useStock } from '@/lib/StockContext';
+import RepsPerformanceReport from '@/components/reports/RepsPerformanceReport';
+import CustomerAgingReport from '@/components/reports/CustomerAgingReport';
+
+// Code-split the two heavy report tabs — they each pull in the full
+// `recharts` bundle (~95 KB gz). Only loaded when the user actually
+// opens that tab, so the initial /reports paint stays light.
+const chartFallback = (
+  <div className="bg-white dark:bg-[#18181B] rounded-2xl border border-[#E5E5EA] dark:border-[#27272A] p-6 h-[400px] animate-pulse" />
+);
+const PurchasesSummaryReport = dynamic(
+  () => import('@/components/reports/PurchasesSummaryReport'),
+  { ssr: false, loading: () => chartFallback }
+);
+const AnalyticsReport = dynamic(
+  () => import('@/components/reports/AnalyticsReport'),
+  { ssr: false, loading: () => chartFallback }
+);
+import { useMovements, useOrders, usePurchases } from '@/lib/StockContext';
 import { exportToCSV } from '@/lib/exportUtils';
 
-type TabId = 'inventory' | 'purchases' | 'movement' | 'lowstock' | 'analytics';
+type TabId = 'inventory' | 'purchases' | 'movement' | 'lowstock' | 'reps' | 'aging' | 'analytics';
 
 const tabs: { id: TabId; label: string; icon: typeof FileText; color: string }[] = [
   { id: 'inventory', label: 'الجرد الفعلي', icon: FileText, color: 'brand' },
   { id: 'purchases', label: 'ملخص المشتريات', icon: Users, color: 'green' },
   { id: 'movement', label: 'كشف حركة صنف', icon: Activity, color: 'brand' },
   { id: 'lowstock', label: 'الأصناف النافذة', icon: AlertOctagon, color: 'red' },
+  { id: 'reps',      label: 'أداء المندوبين', icon: Users, color: 'brand' },
+  { id: 'aging',     label: 'أعمار الديون', icon: AlertOctagon, color: 'red' },
   { id: 'analytics', label: 'التحليلات', icon: BarChart3, color: 'brand' },
 ];
 
 export default function ReportsPage() {
   const [activeTab, setActiveTab] = useState<TabId>('inventory');
-  const { currentStock, salesOrders, purchaseInvoices } = useStock();
+  const { currentStock } = useMovements();
+  const { salesOrders } = useOrders();
+  const { purchaseInvoices } = usePurchases();
 
   const handleExport = () => {
     if (activeTab === 'inventory') {
@@ -145,6 +165,8 @@ export default function ReportsPage() {
         {activeTab === 'purchases' && <PurchasesSummaryReport />}
         {activeTab === 'movement' && <ItemMovementReport />}
         {activeTab === 'lowstock' && <LowStockReport />}
+        {activeTab === 'reps'      && <RepsPerformanceReport />}
+        {activeTab === 'aging'     && <CustomerAgingReport />}
         {activeTab === 'analytics' && <AnalyticsReport />}
       </div>
     </div>

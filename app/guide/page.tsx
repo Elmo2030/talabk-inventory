@@ -8,6 +8,7 @@
  */
 
 import Link from 'next/link';
+import { whatsappLink } from '@/lib/brand';
 import {
   BookOpen, Rocket, Sparkles, Package, Users, ShoppingCart, ShoppingBag,
   ArrowDownToLine, ArrowUpFromLine, BarChart3, Warehouse, CalendarClock,
@@ -438,7 +439,7 @@ export default function GuidePage() {
           محتاج مساعدة أكثر؟
         </p>
         <a
-          href="https://wa.me/218910000000"
+          href={whatsappLink()}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#25D366] hover:bg-[#1da851] text-white text-sm font-semibold rounded-xl transition-colors"

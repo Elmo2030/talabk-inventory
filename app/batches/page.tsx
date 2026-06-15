@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import { CalendarClock, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
-import { useStock } from '@/lib/StockContext';
+import { useItems, useMovements } from '@/lib/StockContext';
 
 type BatchStatus = 'expired' | 'critical' | 'warning' | 'watch' | 'ok';
 
@@ -140,7 +140,8 @@ function SectionTable({ rows, status }: { rows: BatchRow[]; status: BatchStatus 
 }
 
 export default function BatchesPage() {
-  const { stockIn, items } = useStock();
+  const { items } = useItems();
+  const { stockIn } = useMovements();
 
   const { expired, critical, warning, watch, ok } = useMemo(() => {
     const batches: BatchRow[] = stockIn

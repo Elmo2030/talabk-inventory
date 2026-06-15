@@ -2,8 +2,9 @@
 import { use } from 'react';
 import Link from 'next/link';
 import { ArrowRight, User, MapPin, Package, TrendingUp, Printer } from 'lucide-react';
-import { useStock } from '@/lib/StockContext';
+import { useOrders } from '@/lib/StockContext';
 import { OrderStatus, SalesOrder } from '@/lib/types';
+import { formatMoney } from '@/lib/format';
 
 const STATUS_CONFIG: Record<
   OrderStatus,
@@ -25,7 +26,7 @@ const DELIVERY_TYPE_LABELS: Record<string, string> = {
 };
 
 function fmt(n: number) {
-  return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return formatMoney(n, { withSuffix: false });
 }
 
 function StatusBadge({ status }: { status: OrderStatus }) {
@@ -41,7 +42,7 @@ function StatusBadge({ status }: { status: OrderStatus }) {
 
 export default function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { salesOrders, updateSalesOrder } = useStock();
+  const { salesOrders, updateSalesOrder } = useOrders();
   const order: SalesOrder | undefined = salesOrders.find((o) => o.id === id);
 
   if (!order) {

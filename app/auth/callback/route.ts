@@ -20,6 +20,21 @@ import { cookies } from 'next/headers';
 import type { Database } from '@/lib/supabase/database.types';
 import type { EmailOtpType } from '@supabase/supabase-js';
 
+// ── Safe-redirect helper ─────────────────────────────────────────────────────
+// Prevents open-redirect via `?next=https://evil.example.com`. We only
+// allow same-origin paths that start with `/` and reject protocol-relative
+// (`//host`) or absolute URLs. Falls back to `/` when the input is unsafe.
+function safeRedirectPath(next: string | null | undefined): string {
+  if (!next) return '/';
+  // Reject protocol-relative and absolute URLs outright.
+  if (next.startsWith('//') || /^[a-z][a-z0-9+.-]*:/i.test(next)) return '/';
+  // Must start with a single slash.
+  if (!next.startsWith('/')) return '/';
+  // Reject backslashes (some browsers normalize \ to / in URLs).
+  if (next.includes('\\')) return '/';
+  return next;
+}
+
 // ── Supabase SSR client ───────────────────────────────────────────────────────
 function buildSupabase() {
   const cookieStore = cookies();
@@ -82,7 +97,9 @@ export async function GET(request: NextRequest) {
   const code       = searchParams.get('code');
   const token_hash = searchParams.get('token_hash');
   const type       = searchParams.get('type') as EmailOtpType | null;
-  const next       = searchParams.get('next') ?? '/';
+  // Validate `next` to prevent open-redirect attacks. Any off-origin or
+  // protocol-bearing value is silently coerced to '/'.
+  const next       = safeRedirectPath(searchParams.get('next'));
 
   const supabase = buildSupabase();
 

@@ -134,12 +134,16 @@ vercel --prod
 
 ## DB migrations
 
-Migration files live in `supabase/part1.sql`, `part2.sql`, `part3.sql`.
+Migration files live in `supabase/migrations/*.sql`, applied in
+filename order. The older bundled files (`ALL_MIGRATIONS.sql`,
+`part1/2/3.sql`, `migration.sql`) have been moved to
+`supabase/archive/` and must not be re-applied.
 
-Apply via Supabase Management API (works for any size):
+Apply a single migration via Supabase Management API (works for any size):
 
 ```bash
-QUERY=$(jq -Rs . < supabase/part1.sql)
+FILE=supabase/migrations/20260522_public_storefront.sql
+QUERY=$(jq -Rs . < "$FILE")
 curl -X POST "https://api.supabase.com/v1/projects/bleezrdtmthhvsrsvfmp/database/query" \
   -H "Authorization: Bearer $SUPABASE_PAT" \
   -H "Content-Type: application/json" \
@@ -147,6 +151,134 @@ curl -X POST "https://api.supabase.com/v1/projects/bleezrdtmthhvsrsvfmp/database
 ```
 
 Use `IF NOT EXISTS` / `OR REPLACE` everywhere to keep migrations idempotent.
+
+### After a migration that adds tables or columns
+
+Regenerate the typed schema and commit the diff:
+
+```bash
+npm run supabase:types
+git diff lib/supabase/database.types.ts
+```
+
+This keeps RPC signatures, table Row/Insert/Update types, and view rows
+in sync with what Postgres actually has. Stale types are the reason a
+few call sites still use `as any` casts (e.g. `app/s/[slug]/page.tsx`
+filtering by `items.tenant_id`). Once regenerated, search for `as any`
+in the codebase and drop the ones the new types make redundant.
+
+### Wave F deploy checklist (DB hardening, 5 migrations)
+
+After Wave F (the SQL pass that closed the DBA-audit findings), apply
+the migrations IN ORDER — they have inter-dependencies (the audit_log
+table is referenced by all the others' self-audit inserts):
+
+```bash
+for f in supabase/migrations/20260523_audit_log.sql \
+         supabase/migrations/20260524_rpc_locks.sql \
+         supabase/migrations/20260525_rls_perf.sql \
+         supabase/migrations/20260526_storefront_view.sql \
+         supabase/migrations/20260527_tenant_id_not_null.sql; do
+  QUERY=$(jq -Rs . < "$f")
+  echo "Applying $f …"
+  curl -fsSL -X POST \
+    "https://api.supabase.com/v1/projects/bleezrdtmthhvsrsvfmp/database/query" \
+    -H "Authorization: Bearer $SUPABASE_PAT" \
+    -H "Content-Type: application/json" \
+    -d "{\"query\": $QUERY}" || break
+done
+```
+
+**If `20260527_tenant_id_not_null.sql` aborts** with "orphan rows
+present", the migration has surfaced an existing data bug. Find them:
+
+```sql
+SELECT 'items' AS t, count(*) FROM items WHERE tenant_id IS NULL
+UNION ALL SELECT 'suppliers',  count(*) FROM suppliers  WHERE tenant_id IS NULL
+UNION ALL SELECT 'sales_orders', count(*) FROM sales_orders WHERE tenant_id IS NULL
+-- … etc
+;
+```
+
+Either backfill them (preferred) or DELETE them after confirming with
+the data owner. Then re-run the migration.
+
+**Post-apply smoke tests:**
+
+```sql
+-- 1. audit_log writers work
+SELECT count(*) FROM audit_log WHERE action LIKE 'migration.%';   -- ≥ 5
+
+-- 2. Storefront view only exposes safe columns
+SET ROLE anon;
+SELECT column_name FROM information_schema.columns
+ WHERE table_name = 'vw_public_storefront_tenants';
+-- expect: id, slug, store_name, logo_url, owner_phone (only)
+RESET ROLE;
+
+-- 3. RPC locks: no oversell (manual concurrency test in a staging tenant)
+--    Run two psql sessions, BEGIN, both call place_sales_order for the
+--    same last-unit item. Second one should RAISE EXCEPTION on stock check.
+```
+
+After Wave F applies cleanly, regenerate types:
+
+```bash
+npm run supabase:types
+git diff lib/supabase/database.types.ts
+git commit -am "chore: regenerate Supabase types after Wave F"
+```
+
+Then drop the remaining `as any` casts in `app/s/[slug]/page.tsx`
+(the new views will be in the types).
+
+### Wave A–E deploy checklist (post-refactor)
+
+After pulling the Wave-E branch into production:
+
+1. **Apply the storefront RLS migration:**
+   ```bash
+   FILE=supabase/migrations/20260522_public_storefront.sql
+   QUERY=$(jq -Rs . < "$FILE")
+   curl -X POST \
+     "https://api.supabase.com/v1/projects/bleezrdtmthhvsrsvfmp/database/query" \
+     -H "Authorization: Bearer $SUPABASE_PAT" \
+     -H "Content-Type: application/json" \
+     -d "{\"query\": $QUERY}"
+   ```
+   Verify anon read scope:
+   ```sql
+   SET ROLE anon;
+   SELECT COUNT(*) FROM tenants;                 -- only active rows
+   SELECT COUNT(*) FROM items;                   -- only ACTIVE of active tenants
+   SELECT COUNT(*) FROM subscription_payments;   -- expect 0 / error
+   RESET ROLE;
+   ```
+
+2. **Regenerate types:**
+   ```bash
+   npm run supabase:types
+   git diff lib/supabase/database.types.ts
+   git commit -am "chore: regenerate Supabase types after storefront RLS"
+   ```
+
+3. **Set the new env vars in Vercel** (see `.env.example` for the full list):
+   - `NEXT_PUBLIC_PUBLIC_WHATSAPP` — real merchant-facing WhatsApp number
+   - `NEXT_PUBLIC_PUBLIC_WHATSAPP_DISPLAY` — display form
+   - `NEXT_PUBLIC_DEMO_URL` — point to your real demo tenant (not the
+     Vercel preview URL)
+   - `NEXT_PUBLIC_FOUNDER_NAME` + `NEXT_PUBLIC_FOUNDER_PHOTO` once the
+     PM-audit "trust pack" content lands
+
+4. **Smoke-test the new endpoints:**
+   - `GET /api/health` — both `gateway` and `db` probes should be `ok`
+   - `GET /api/account/export` (as a real tenant user) — should
+     download a JSON snapshot
+   - `POST /api/account/delete` with `{ "confirm": "DELETE" }` should
+     400 without the body, then succeed with it (use a throwaway test
+     account)
+   - Visit `/s/<your-test-tenant-slug>` and confirm the public catalog
+     renders and the WhatsApp links open the right number
 
 ## Plan limits (in `tenants` row)
 

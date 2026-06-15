@@ -60,13 +60,16 @@ export function printReport(elementId: string, title: string) {
   printWindow.document.close();
 }
 
-export function formatNumber(num: number): string {
-  return num.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
-}
+// Re-export the canonical helpers from lib/format.ts so legacy callers
+// keep working while new code imports from the source of truth.
+// NOTE: `formatCurrency` here intentionally returns the number-only
+// representation (no د.ل suffix) to preserve the prior contract used
+// by export columns. Use `formatMoney` from `@/lib/format` for displays
+// that should include the currency suffix.
+export { formatNumber } from './format';
 
 export function formatCurrency(num: number): string {
-  return num.toLocaleString('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { formatMoney } = require('./format') as typeof import('./format');
+  return formatMoney(num, { withSuffix: false });
 }

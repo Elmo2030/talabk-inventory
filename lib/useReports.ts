@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { useStock } from './StockContext';
+import { useItems, useSuppliers, useMovements } from './StockContext';
 
 // ============================================
 // Reports Logic Hook
@@ -9,7 +9,9 @@ import { useStock } from './StockContext';
 // ============================================
 
 export function useReports() {
-  const { items, suppliers, stockIn, stockOut, currentStock } = useStock();
+  const { items } = useItems();
+  const { suppliers } = useSuppliers();
+  const { stockIn, stockOut, currentStock } = useMovements();
 
   // ============================================
   // 1. تقرير الجرد الفعلي

@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { Plus, Trash2, Pencil, ArrowDownToLine, SlidersHorizontal, X } from 'lucide-react';
-import { useStock } from '@/lib/StockContext';
+import { useItems, useMovements } from '@/lib/StockContext';
 import { StockInMovement } from '@/lib/types';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
@@ -15,6 +15,7 @@ import { useKeyboardShortcuts } from '@/lib/useKeyboardShortcuts';
 import { employees } from '@/data/mock-data';
 import EmptyState from '@/components/ui/EmptyState';
 import Pagination from '@/components/ui/Pagination';
+import { formatNumber } from '@/lib/format';
 
 const PAGE_SIZE = 20;
 
@@ -28,7 +29,8 @@ interface Filters {
 const emptyFilters: Filters = { fromDate: '', toDate: '', itemId: '', employee: '' };
 
 export default function StockInPage() {
-  const { stockIn, deleteStockIn, items } = useStock();
+  const { items } = useItems();
+  const { stockIn, deleteStockIn } = useMovements();
   const toast = useToast();
   const { confirm } = useConfirm();
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -171,7 +173,7 @@ export default function StockInPage() {
         <div className="bg-white dark:bg-[#18181B] border border-slate-200 dark:border-[#27272A] rounded-xl p-4">
           <p className="text-sm text-slate-500 dark:text-[#71717A]">إجمالي قيمة المشتريات</p>
           <p className="text-2xl font-bold text-brand-600 mt-1 font-mono">
-            {stats.totalValue.toLocaleString('en-US')}
+            {formatNumber(stats.totalValue)}
           </p>
         </div>
       </div>
@@ -288,7 +290,7 @@ export default function StockInPage() {
                       <td className="px-3 py-3 text-slate-600 dark:text-[#A1A1AA] max-w-[150px] truncate">{m.supplierName}</td>
                       <td className="px-3 py-3 font-mono font-bold text-green-600">{m.quantity}</td>
                       <td className="px-3 py-3 font-mono text-slate-700 dark:text-[#E4E4E7]">{m.unitPrice.toFixed(2)}</td>
-                      <td className="px-3 py-3 font-mono font-bold text-slate-900 dark:text-[#F4F4F5]">{m.totalCost.toLocaleString('en-US')}</td>
+                      <td className="px-3 py-3 font-mono font-bold text-slate-900 dark:text-[#F4F4F5]">{formatNumber(m.totalCost)}</td>
                       <td className="px-3 py-3 text-slate-700 dark:text-[#E4E4E7] text-xs">{m.responsibleEmployee}</td>
                       <td className="px-3 py-3">
                         <div className="flex items-center gap-1">

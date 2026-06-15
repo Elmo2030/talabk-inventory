@@ -4,6 +4,7 @@ import { useEffect, ReactNode } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/AuthContext';
 import Sidebar from '@/components/layout/Sidebar';
+import BottomNav from '@/components/layout/BottomNav';
 import LoadingGate from '@/components/layout/LoadingGate';
 import TalabkLogo from '@/components/ui/TalabkLogo';
 import CommandPalette from '@/components/ui/CommandPalette';
@@ -18,7 +19,7 @@ const AUTH_PATHS    = ['/login', '/setup', '/superadmin/login', '/reset-password
 const NO_AUTH_PATHS = [...PUBLIC_PATHS, ...AUTH_PATHS];
 
 // Paths that have their OWN shell/layout — AppShell must not add a sidebar
-const SELF_MANAGED_PREFIXES = ['/superadmin', '/app/', '/auth/'];
+const SELF_MANAGED_PREFIXES = ['/superadmin', '/app/', '/auth/', '/s/'];
 
 function isNoAuthPath(pathname: string) {
   return NO_AUTH_PATHS.some(p => pathname === p) ||
@@ -84,6 +85,10 @@ export default function AppShell({ children }: { children: ReactNode }) {
         </main>
       </div>
       <CommandPalette />
+      {/* Mobile bottom navigation — hidden on md+ */}
+      <BottomNav
+        onOpenMore={() => window.dispatchEvent(new Event('talabk:open-sidebar'))}
+      />
     </div>
   );
 }

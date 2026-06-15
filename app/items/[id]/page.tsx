@@ -18,8 +18,9 @@ import {
   TrendingUp,
   TrendingDown,
 } from 'lucide-react';
-import { useStock } from '@/lib/StockContext';
+import { useItems, useMovements } from '@/lib/StockContext';
 import Badge from '@/components/ui/Badge';
+import { formatNumber } from '@/lib/format';
 
 function MiniBarChart({
   data,
@@ -63,7 +64,8 @@ function MiniBarChart({
 export default function ItemDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { items, currentStock, stockIn, stockOut } = useStock();
+  const { items } = useItems();
+  const { currentStock, stockIn, stockOut } = useMovements();
 
   const itemId = params.id as string;
   const item = items.find((i) => i.id === itemId);
@@ -274,7 +276,7 @@ export default function ItemDetailPage() {
             <div className="bg-brand-50 rounded-xl border border-brand-200 p-4">
               <p className="text-xs text-brand-700">قيمة المخزون</p>
               <p className="text-xl font-bold text-brand-700 mt-1 font-mono">
-                {(stock?.stockValue ?? 0).toLocaleString('en-US')}
+                {formatNumber((stock?.stockValue ?? 0))}
               </p>
             </div>
           </div>

@@ -9,9 +9,10 @@ import {
   TrendingUp, ShoppingBag, DollarSign, Package, ChevronDown, ChevronUp,
   Edit2, Check, X, Target, BarChart2, Users, MapPin, Truck, Home, Briefcase,
 } from 'lucide-react';
-import { useStock } from '@/lib/StockContext';
+import { useItems, useMovements, useOrders, usePurchases } from '@/lib/StockContext';
 import { useTheme } from '@/lib/ThemeContext';
 import { MONTHS } from '@/lib/constants';
+import { formatNumber , formatMoney} from '@/lib/format';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 const PALETTE = ['#E5302A','#3B82F6','#22C55E','#F59E0B','#8B5CF6','#EC4899','#14B8A6','#F97316'];
@@ -47,8 +48,8 @@ const defaultTargets: Targets = {
 };
 
 // ─── Small helpers ────────────────────────────────────────────────────────────
-function fmt(n: number) { return n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }); }
-function fmtD(n: number, d = 1) { return n.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d }); }
+function fmt(n: number) { return formatNumber(n, { decimals: 0 }); }
+function fmtD(n: number, d = 1) { return formatNumber(n, { decimals: d }); }
 
 function KpiCard({
   label, value, sub, color, icon: Icon, isDark,
@@ -110,7 +111,10 @@ function ProgressBar({ label, actual, target, color, formatFn }: {
 
 // ─── Main client island (lazy-loaded from app/analytics/page.tsx) ──────────
 export default function AnalyticsClient() {
-  const { items, currentStock, salesOrders, purchaseInvoices } = useStock();
+  const { items } = useItems();
+  const { currentStock } = useMovements();
+  const { salesOrders } = useOrders();
+  const { purchaseInvoices } = usePurchases();
   const { isDark } = useTheme();
 
   const now = new Date();
@@ -535,7 +539,7 @@ export default function AnalyticsClient() {
                   <YAxis tick={{ fontSize: 10, fill: tickColor }} tickLine={false} axisLine={false} tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(0)}k` : String(v)} />
                   <Tooltip {...tooltipStyle} formatter={(value: number, name: string) => {
                     const labels: Record<string,string> = { revenue: 'المبيعات', cogs: 'التكلفة', netProfit: 'صافي الربح' };
-                    return [`${value.toLocaleString('en-US')} د.ل`, labels[name] ?? name];
+                    return [`${formatMoney(value)}`, labels[name] ?? name];
                   }} />
                   <Bar dataKey="revenue"   fill="#E5302A" radius={[4,4,0,0]} opacity={0.85} name="revenue" />
                   <Bar dataKey="cogs"      fill="#6C6C70" radius={[4,4,0,0]} opacity={0.7}  name="cogs" />
@@ -561,7 +565,7 @@ export default function AnalyticsClient() {
                 <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
                 <XAxis dataKey="name" tick={{ fontSize: 11, fill: tickColor }} tickLine={false} axisLine={false} />
                 <YAxis tick={{ fontSize: 10, fill: tickColor }} tickLine={false} axisLine={false} tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(0)}k` : String(v)} />
-                <Tooltip {...tooltipStyle} formatter={(value: number, name: string) => [`${value.toLocaleString('en-US')} د.ل`, name === 'revenue' ? 'الإيرادات' : 'الربح']} />
+                <Tooltip {...tooltipStyle} formatter={(value: number, name: string) => [`${formatMoney(value)}`, name === 'revenue' ? 'الإيرادات' : 'الربح']} />
                 <Bar dataKey="revenue" fill="#E5302A" radius={[4,4,0,0]} opacity={0.85} name="revenue" />
                 <Bar dataKey="profit"  fill="#22C55E" radius={[4,4,0,0]} opacity={0.85} name="profit" />
               </BarChart>
@@ -618,7 +622,7 @@ export default function AnalyticsClient() {
                   <CartesianGrid strokeDasharray="3 3" stroke={gridColor} horizontal={false} />
                   <XAxis type="number" tick={{ fontSize: 10, fill: tickColor }} tickLine={false} axisLine={false} tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(0)}k` : String(v)} />
                   <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: tickColor }} tickLine={false} axisLine={false} width={80} />
-                  <Tooltip {...tooltipStyle} formatter={(value: number) => [`${value.toLocaleString('en-US')} د.ل`, 'الإيرادات']} />
+                  <Tooltip {...tooltipStyle} formatter={(value: number) => [`${formatMoney(value)}`, 'الإيرادات']} />
                   <Bar dataKey="revenue" fill="#E5302A" radius={[0,4,4,0]} opacity={0.85} />
                 </BarChart>
               </ResponsiveContainer>
@@ -636,7 +640,7 @@ export default function AnalyticsClient() {
                   <CartesianGrid strokeDasharray="3 3" stroke={gridColor} horizontal={false} />
                   <XAxis type="number" tick={{ fontSize: 10, fill: tickColor }} tickLine={false} axisLine={false} tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(0)}k` : String(v)} />
                   <YAxis type="category" dataKey="city" tick={{ fontSize: 10, fill: tickColor }} tickLine={false} axisLine={false} width={70} />
-                  <Tooltip {...tooltipStyle} formatter={(value: number) => [`${value.toLocaleString('en-US')} د.ل`, 'المبيعات']} />
+                  <Tooltip {...tooltipStyle} formatter={(value: number) => [`${formatMoney(value)}`, 'المبيعات']} />
                   <Bar dataKey="revenue" fill="#3B82F6" radius={[0,4,4,0]} opacity={0.85} />
                 </BarChart>
               </ResponsiveContainer>
@@ -660,7 +664,7 @@ export default function AnalyticsClient() {
                         <Cell key={index} fill={entry.color} stroke="transparent" />
                       ))}
                     </Pie>
-                    <Tooltip {...tooltipStyle} formatter={(value: number, name: string) => [`${value.toLocaleString('en-US')} د.ل`, name]} />
+                    <Tooltip {...tooltipStyle} formatter={(value: number, name: string) => [`${formatMoney(value)}`, name]} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
@@ -743,7 +747,7 @@ export default function AnalyticsClient() {
               <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
               <XAxis dataKey="month" tick={{ fontSize: 11, fill: tickColor }} tickLine={false} axisLine={false} />
               <YAxis tick={{ fontSize: 10, fill: tickColor }} tickLine={false} axisLine={false} tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(0)}k` : String(v)} />
-              <Tooltip {...tooltipStyle} formatter={(value: number, name: string) => [`${value.toLocaleString('en-US')} د.ل`, name === 'purchases' ? 'المشتريات' : 'المبيعات']} />
+              <Tooltip {...tooltipStyle} formatter={(value: number, name: string) => [`${formatMoney(value)}`, name === 'purchases' ? 'المشتريات' : 'المبيعات']} />
               <Bar dataKey="purchases" fill="#6C6C70" radius={[4,4,0,0]} opacity={0.75} name="purchases" />
               <Line type="monotone" dataKey="sales" stroke="#E5302A" strokeWidth={2.5} dot={{ fill: '#E5302A', r: 3 }} name="sales" />
             </ComposedChart>

@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Type-check · Lint · Test · Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      # Dummy values let `next build` succeed without real secrets.
+      # Production env vars are injected by Vercel at deploy time.
+      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: dummy-anon-key-for-ci
+      SUPABASE_SERVICE_ROLE_KEY: dummy-service-role-key-for-ci
+      NEXT_PUBLIC_ROOT_DOMAIN: localhost
+      CRON_SECRET: dummy-cron-secret
+      SKIP_ENV_VALIDATION: '1'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build
+        run: npm run build

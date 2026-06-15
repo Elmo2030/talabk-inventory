@@ -1,0 +1,32 @@
+name: Nightly DB Backup
+
+on:
+  schedule:
+    # 02:00 UTC daily — runs after the sweep-expired cron at 03:00 so the
+    # backup captures the post-sweep state.
+    - cron: '0 2 * * *'
+  workflow_dispatch: {}
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install postgresql-client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Run backup script
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: ./scripts/backup-db.sh
+
+      - name: Upload backup artifact (90-day retention)
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-backup-${{ github.run_id }}
+          path: backups/*.sql.gz
+          retention-days: 90
+          if-no-files-found: error

@@ -17,6 +17,62 @@ export type Supplier = {
   createdAt: string;
 };
 
+// ── Customers (عملاء) ─ Wave G #2 ────────────────────────────────────────────
+// A `Customer` is a registered B2B / repeat customer with credit terms.
+// Walk-in / one-time customers stay as denormalized name/phone on
+// `SalesOrder` — they don't need a record here.
+export type CustomerType = 'retail' | 'wholesale' | 'vip';
+
+export type Customer = {
+  id: string;
+  code: string;
+  name: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  city?: string;
+  customerType: CustomerType;
+  /** Maximum allowed outstanding balance. 0 = cash-only. */
+  creditLimit: number;
+  /** Pre-existing A/R brought over when the customer was onboarded. */
+  openingBalance: number;
+  status: 'ACTIVE' | 'INACTIVE';
+  notes?: string;
+  createdAt: string;
+};
+
+/** Running A/R snapshot per customer — populated from `vw_customer_balance`. */
+export type CustomerBalance = {
+  customerId: string;
+  code: string;
+  name: string;
+  creditLimit: number;
+  openingBalance: number;
+  totalInvoiced: number;
+  totalPaid: number;
+  outstanding: number;
+  lastOrderAt?: string;
+};
+
+// ── Sales Reps (مندوبين) ─────────────────────────────────────────────────────
+// Field sales reps that close customer orders. Attribution from
+// `sales_orders.rep_id` drives the per-rep performance report and the
+// monthly commission calculation (commissionPct * net_profit).
+export type SalesRep = {
+  id: string;
+  code: string;
+  name: string;
+  phone?: string;
+  email?: string;
+  /** Commission as a percentage of net profit. 0 = no commission. */
+  commissionPct: number;
+  /** Free-text territory tag (e.g. "طرابلس", "بنغازي"). Optional. */
+  territory?: string;
+  status: 'ACTIVE' | 'INACTIVE';
+  notes?: string;
+  createdAt: string;
+};
+
 // ── Item Variants (ألوان / مقاسات) ───────────────────────────────────────────
 export type ItemVariant = {
   id: string;
@@ -30,6 +86,10 @@ export type ItemVariant = {
 export type Item = {
   id: string;
   code: string;
+  /** Optional scan barcode (EAN-13/UPC/QR/etc). Separate from `code` so
+   *  merchants can keep a human-friendly SKU while scanners read a
+   *  numeric ID. Unique per tenant when present (Wave G #4). */
+  barcode?: string;
   name: string;
   category: string;
   unit: string;
@@ -47,11 +107,18 @@ export type Item = {
   hasVariants?: boolean;
   variants?: ItemVariant[];
   imageUrl?: string;
-  // Wholesale pricing tiers (شرائح سعرية)
+  // Wholesale pricing tiers (شرائح سعرية).
+  // Two flavors share the same array:
+  //   • Quantity tier — `customerType` undefined; applies to anyone when
+  //     `qty >= minQty`. (Legacy behavior, unchanged.)
+  //   • Customer-type tier — `customerType` set; auto-applies when the
+  //     order's registered customer has that type, regardless of quantity
+  //     (Wave G #3). `minQty` may still gate further wholesale steps.
   priceTiers?: Array<{
-    minQty: number;   // minimum quantity to qualify for this tier
-    price: number;    // price per unit at this tier
-    label?: string;   // e.g. "جملة", "نصف جملة"
+    minQty: number;
+    price: number;
+    label?: string;
+    customerType?: CustomerType;
   }>;
   // Bill of Materials — التصنيع
   isManufactured?: boolean;               // منتج مصنّع (يُجمَّع من أصناف أخرى)
@@ -324,6 +391,14 @@ export type SalesOrder = {
     method: 'cash' | 'bank_transfer' | 'check';
     notes?: string;
   }>;
+  // Sales rep attribution — nullable so legacy orders + walk-in sales
+  // without an assigned rep keep working.
+  repId?: string;
+  /** Cached display name from the join — used by lists/reports without an extra lookup. */
+  repName?: string;
+  // Registered-customer attribution (Wave G #2). Null = walk-in sale;
+  // customer fields above are the only source of truth in that case.
+  customerId?: string;
 };
 
 // ── Appointments ─────────────────────────────────────────────────────────────

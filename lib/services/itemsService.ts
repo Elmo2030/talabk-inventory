@@ -11,10 +11,36 @@ type ItemInsert = Database['public']['Tables']['items']['Insert'];
 
 const supabase = () => getSupabaseClient();
 
+// Slim type for the fields we stash in items.metadata jsonb. The column
+// exists on the schema (DEFAULT '{}'::jsonb) and the previous mappers
+// never read from it, so the field has been dormant. Wave G #3 starts
+// using it for priceTiers (so wholesale/vip pricing can land without a
+// new column migration).
+interface ItemMetadata {
+  priceTiers?: Item['priceTiers'];
+  imageUrl?: string;
+  hasVariants?: boolean;
+  variants?: Item['variants'];
+  isManufactured?: boolean;
+  bom?: Item['bom'];
+  isPerishable?: boolean;
+  isSerialTracked?: boolean;
+}
+
+function readMeta(row: ItemRow): ItemMetadata {
+  const raw = row.metadata as unknown;
+  if (!raw || typeof raw !== 'object') return {};
+  return raw as ItemMetadata;
+}
+
 function mapItem(row: ItemRow & { suppliers?: { name?: string } | null }): Item {
+  const meta = readMeta(row);
   return {
     id: row.id,
     code: row.code,
+    // Stale generated types don't carry `barcode` yet (migration 20260530).
+    // Read it defensively until the next `npm run supabase:types`.
+    barcode: ((row as unknown as { barcode?: string | null }).barcode) ?? undefined,
     name: row.name,
     category: row.category,
     unit: row.unit,
@@ -28,7 +54,32 @@ function mapItem(row: ItemRow & { suppliers?: { name?: string } | null }): Item 
     location: row.location ?? '',
     status: row.status,
     movingAverageCost: row.moving_average_cost ?? undefined,
+    // Pull the metadata-backed fields out so consumers (forms, picker,
+    // tier logic) see a flat domain shape.
+    priceTiers:      meta.priceTiers,
+    imageUrl:        meta.imageUrl,
+    hasVariants:     meta.hasVariants,
+    variants:        meta.variants,
+    isManufactured:  meta.isManufactured,
+    bom:             meta.bom,
+    isPerishable:    meta.isPerishable,
+    isSerialTracked: meta.isSerialTracked,
   };
+}
+
+// Build a metadata jsonb object from the domain fields. Anything left
+// undefined is stripped so the stored JSON stays tidy.
+function buildMeta(item: Partial<Item>): ItemMetadata {
+  const m: ItemMetadata = {};
+  if (item.priceTiers !== undefined)      m.priceTiers = item.priceTiers;
+  if (item.imageUrl !== undefined)        m.imageUrl = item.imageUrl;
+  if (item.hasVariants !== undefined)     m.hasVariants = item.hasVariants;
+  if (item.variants !== undefined)        m.variants = item.variants;
+  if (item.isManufactured !== undefined)  m.isManufactured = item.isManufactured;
+  if (item.bom !== undefined)             m.bom = item.bom;
+  if (item.isPerishable !== undefined)    m.isPerishable = item.isPerishable;
+  if (item.isSerialTracked !== undefined) m.isSerialTracked = item.isSerialTracked;
+  return m;
 }
 
 export const itemsService = {
@@ -54,8 +105,11 @@ export const itemsService = {
   },
 
   async create(item: Omit<Item, 'id' | 'supplierName'>): Promise<Item> {
-    const insertData: ItemInsert = {
+    const insertData: ItemInsert & { barcode?: string | null } = {
       code: item.code,
+      // Barcode is a real column added by migration 20260530. We cast the
+      // Insert type so it compiles before the next types regen.
+      barcode: item.barcode?.trim() ? item.barcode.trim() : null,
       name: item.name,
       category: item.category,
       unit: item.unit,
@@ -67,11 +121,15 @@ export const itemsService = {
       reorder_level: item.reorderLevel,
       location: item.location,
       status: item.status,
-      metadata: {},
+      // Persist priceTiers + variants + flags here so create() actually
+      // saves them (previously the form data was dropped on write).
+      metadata: buildMeta(item) as ItemInsert['metadata'],
     };
 
-    const { data, error } = await supabase()
-      .from('items')
+    // Cast to any for the insert: generated types don't carry `barcode`
+    // yet (migration 20260530). Drop the cast after the next types regen.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase().from('items') as any)
       .insert(insertData)
       .select('*, suppliers(name)')
       .single();
@@ -87,8 +145,16 @@ export const itemsService = {
   },
 
   async update(id: string, updates: Partial<Item>): Promise<Item> {
-    const dbUpdates: any = {};
+    // Build a partial DB payload from the camelCase domain updates.
+    // We use the table's generated `Update` type so misspelled columns
+    // or wrong nullability fail at compile time.
+    const dbUpdates: Database['public']['Tables']['items']['Update'] = {};
     if (updates.code) dbUpdates.code = updates.code;
+    // Barcode: empty string → null (clears scanner ID); undefined → leave alone.
+    if (updates.barcode !== undefined) {
+      (dbUpdates as { barcode?: string | null }).barcode =
+        updates.barcode.trim() ? updates.barcode.trim() : null;
+    }
     if (updates.name) dbUpdates.name = updates.name;
     if (updates.category) dbUpdates.category = updates.category;
     if (updates.unit) dbUpdates.unit = updates.unit;
@@ -101,6 +167,26 @@ export const itemsService = {
     if (updates.location !== undefined) dbUpdates.location = updates.location;
     if (updates.status) dbUpdates.status = updates.status;
     if (updates.movingAverageCost !== undefined) dbUpdates.moving_average_cost = updates.movingAverageCost ?? null;
+
+    // Metadata update: read current metadata first then merge with the
+    // partial domain updates. A blind overwrite would wipe sibling keys
+    // (e.g. variants when the caller only touches priceTiers).
+    const touchesMeta = (['priceTiers', 'imageUrl', 'hasVariants', 'variants',
+      'isManufactured', 'bom', 'isPerishable', 'isSerialTracked'] as const)
+      .some((k) => k in updates);
+
+    if (touchesMeta) {
+      const { data: current } = await supabase()
+        .from('items')
+        .select('metadata')
+        .eq('id', id)
+        .single();
+      const merged = {
+        ...(readMeta(current as ItemRow)),
+        ...buildMeta(updates),
+      };
+      dbUpdates.metadata = merged as Database['public']['Tables']['items']['Update']['metadata'];
+    }
 
     const { data, error } = await supabase()
       .from('items')

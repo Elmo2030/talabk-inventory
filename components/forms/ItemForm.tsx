@@ -7,7 +7,7 @@ import Select from '@/components/ui/Select';
 import Button from '@/components/ui/Button';
 import { Save, Plus, Trash2, Layers, BadgeDollarSign, Hammer } from 'lucide-react';
 import { itemCategories, storageLocations, measurementUnits } from '@/data/mock-data';
-import { useStock } from '@/lib/StockContext';
+import { useItems } from '@/lib/StockContext';
 
 interface ItemFormProps {
   initialData?: Partial<Item>;
@@ -25,7 +25,18 @@ type PriceTier = {
   minQty: number;
   price: number;
   label: string;
+  // Wave G #3 — when set, this tier auto-applies for that customer type
+  // regardless of quantity. Empty string = "all customers (legacy
+  // quantity-based)" so the existing tier UX keeps working.
+  customerType: '' | 'retail' | 'wholesale' | 'vip';
 };
+
+const TIER_CUSTOMER_TYPE_OPTIONS: { value: PriceTier['customerType']; label: string }[] = [
+  { value: '',          label: 'كل العملاء (حسب الكمية)' },
+  { value: 'retail',    label: 'تجزئة فقط' },
+  { value: 'wholesale', label: 'جملة فقط' },
+  { value: 'vip',       label: 'VIP فقط' },
+];
 
 const COLORS = ['أحمر', 'أزرق', 'أخضر', 'أسود', 'أبيض', 'رمادي', 'أصفر', 'بنفسجي', 'بني', 'وردي', 'برتقالي', 'بيج'];
 const SIZES  = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', '36', '37', '38', '39', '40', '41', '42', '43', '44', '45'];
@@ -37,10 +48,11 @@ type BomRow = {
 };
 
 export default function ItemForm({ initialData, suppliers, onSubmit, onCancel }: ItemFormProps) {
-  const { items: allItems } = useStock();
+  const { items: allItems } = useItems();
 
   const [formData, setFormData] = useState({
     code: initialData?.code || '',
+    barcode: initialData?.barcode || '',
     name: initialData?.name || '',
     category: initialData?.category || itemCategories[0],
     unit: initialData?.unit || measurementUnits[0],
@@ -78,12 +90,14 @@ export default function ItemForm({ initialData, suppliers, onSubmit, onCancel }:
       minQty: t.minQty,
       price: t.price,
       label: t.label ?? '',
+      customerType: (t.customerType ?? '') as PriceTier['customerType'],
     }))
   );
-  const [newTier, setNewTier] = useState<{ minQty: number; price: number; label: string }>({
-    minQty: 5,
+  const [newTier, setNewTier] = useState<{ minQty: number; price: number; label: string; customerType: PriceTier['customerType'] }>({
+    minQty: 1,
     price: 0,
     label: '',
+    customerType: '',
   });
 
   // ── BOM (قائمة مواد التصنيع) ──────────────────────────────────────────────────────
@@ -117,7 +131,7 @@ export default function ItemForm({ initialData, suppliers, onSubmit, onCancel }:
       ...prev,
       { id: `tier-${Date.now()}`, ...newTier },
     ]);
-    setNewTier({ minQty: 5, price: 0, label: '' });
+    setNewTier({ minQty: 1, price: 0, label: '', customerType: '' });
   };
 
   const removeTier = (id: string) => {
@@ -160,7 +174,12 @@ export default function ItemForm({ initialData, suppliers, onSubmit, onCancel }:
       hasVariants,
       variants: hasVariants ? variants : [],
       priceTiers: hasPriceTiers
-        ? priceTiers.map(({ minQty, price, label }) => ({ minQty, price, label: label || undefined }))
+        ? priceTiers.map(({ minQty, price, label, customerType }) => ({
+            minQty,
+            price,
+            label: label || undefined,
+            customerType: customerType || undefined,
+          }))
         : [],
       isManufactured,
       bom: isManufactured ? validBom : [],
@@ -190,6 +209,18 @@ export default function ItemForm({ initialData, suppliers, onSubmit, onCancel }:
           placeholder="اسم المنتج التجاري"
           value={formData.name}
           onChange={(e) => handleChange('name', e.target.value)}
+        />
+        {/* Barcode field — LTR + numeric inputMode for HID/Bluetooth
+            scanners which "type" the read into the focused input then
+            send Enter. Empty = no scanner attached. */}
+        <Input
+          label="الباركود"
+          placeholder="6298010001234"
+          value={formData.barcode}
+          onChange={(e) => handleChange('barcode', e.target.value)}
+          dir="ltr"
+          inputMode="numeric"
+          autoComplete="off"
         />
         <Select
           label="التصنيف"
@@ -459,6 +490,7 @@ export default function ItemForm({ initialData, suppliers, onSubmit, onCancel }:
                     <tr>
                       <th className="px-3 py-2 text-right font-semibold text-slate-600">من كمية</th>
                       <th className="px-3 py-2 text-right font-semibold text-slate-600">السعر</th>
+                      <th className="px-3 py-2 text-right font-semibold text-slate-600">نوع العميل</th>
                       <th className="px-3 py-2 text-right font-semibold text-slate-600">التصنيف</th>
                       <th className="px-3 py-2" />
                     </tr>
@@ -471,6 +503,9 @@ export default function ItemForm({ initialData, suppliers, onSubmit, onCancel }:
                         <tr key={tier.id} className="hover:bg-slate-50">
                           <td className="px-3 py-2 text-slate-700 font-mono">{tier.minQty}</td>
                           <td className="px-3 py-2 text-slate-700 font-mono">{tier.price.toFixed(2)}</td>
+                          <td className="px-3 py-2 text-slate-600">
+                            {TIER_CUSTOMER_TYPE_OPTIONS.find((o) => o.value === tier.customerType)?.label ?? '—'}
+                          </td>
                           <td className="px-3 py-2 text-slate-500">{tier.label || '—'}</td>
                           <td className="px-3 py-2">
                             <button
@@ -491,7 +526,7 @@ export default function ItemForm({ initialData, suppliers, onSubmit, onCancel }:
             {/* Add new tier */}
             <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3">
               <p className="text-xs font-semibold text-emerald-800 mb-3">إضافة شريحة جديدة</p>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div>
                   <label className="block text-xs text-slate-600 mb-1">من كمية</label>
                   <input
@@ -500,7 +535,7 @@ export default function ItemForm({ initialData, suppliers, onSubmit, onCancel }:
                     className={inputClass}
                     value={newTier.minQty}
                     onChange={(e) => setNewTier((p) => ({ ...p, minQty: Number(e.target.value) }))}
-                    placeholder="5"
+                    placeholder="1"
                   />
                 </div>
                 <div>
@@ -514,6 +549,18 @@ export default function ItemForm({ initialData, suppliers, onSubmit, onCancel }:
                     onChange={(e) => setNewTier((p) => ({ ...p, price: Number(e.target.value) }))}
                     placeholder="0.00"
                   />
+                </div>
+                <div>
+                  <label className="block text-xs text-slate-600 mb-1">نوع العميل</label>
+                  <select
+                    className={inputClass}
+                    value={newTier.customerType}
+                    onChange={(e) => setNewTier((p) => ({ ...p, customerType: e.target.value as PriceTier['customerType'] }))}
+                  >
+                    {TIER_CUSTOMER_TYPE_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className="block text-xs text-slate-600 mb-1">التصنيف (اختياري)</label>

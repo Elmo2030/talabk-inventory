@@ -1,0 +1,22 @@
+{
+  "extends": ["next/core-web-vitals"],
+  "plugins": ["@typescript-eslint"],
+  "parser": "@typescript-eslint/parser",
+  "rules": {
+    "react-hooks/exhaustive-deps": "warn",
+    "@next/next/no-img-element": "warn",
+    "@next/next/no-html-link-for-pages": "warn",
+    "react/no-unescaped-entities": "off",
+    "@typescript-eslint/no-explicit-any": "warn",
+    "@typescript-eslint/no-require-imports": "warn",
+    "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }]
+  },
+  "ignorePatterns": [
+    ".next/",
+    "node_modules/",
+    "supabase/",
+    "scripts/",
+    "*.config.js",
+    "next-env.d.ts"
+  ]
+}

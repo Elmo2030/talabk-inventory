@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { useOrders } from '@/lib/StockContext';
 import { SalesOrder, OrderStatus } from '@/lib/types';
+import { formatMoney } from '@/lib/format';
 import EmptyState from '@/components/ui/EmptyState';
 import Pagination from '@/components/ui/Pagination';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
@@ -63,8 +64,10 @@ function StatusBadge({ status }: { status: OrderStatus }) {
   );
 }
 
+// Delegates to the canonical formatter so currency display stays
+// consistent across every page (see lib/format.ts).
 function fmt(n: number) {
-  return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return formatMoney(n, { withSuffix: false });
 }
 
 // ── Tracking Number inline section ───────────────────────────────────────────
@@ -572,29 +575,29 @@ export default function OrdersPage() {
               <div className="border-t border-[#E5E5EA] dark:border-[#27272A] pt-2 mt-2 space-y-1">
                 <div className="flex justify-between">
                   <span className="text-[#6C6C70] dark:text-[#A1A1AA]">المجموع الفرعي</span>
-                  <span>{receiptOrder.subtotalProducts.toLocaleString('en-US', { minimumFractionDigits: 2 })} د.ل</span>
+                  <span>{formatMoney(receiptOrder.subtotalProducts, { withSuffix: false })} د.ل</span>
                 </div>
                 {receiptOrder.shippingCost > 0 && (
                   <div className="flex justify-between">
                     <span className="text-[#6C6C70] dark:text-[#A1A1AA]">الشحن</span>
-                    <span>{receiptOrder.shippingCost.toLocaleString('en-US', { minimumFractionDigits: 2 })} د.ل</span>
+                    <span>{formatMoney(receiptOrder.shippingCost, { withSuffix: false })} د.ل</span>
                   </div>
                 )}
                 {receiptOrder.discountAmount && receiptOrder.discountAmount > 0 && (
                   <div className="flex justify-between text-red-600">
                     <span>الخصم{receiptOrder.couponCode ? ` (${receiptOrder.couponCode})` : ''}</span>
-                    <span>-{receiptOrder.discountAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })} د.ل</span>
+                    <span>-{formatMoney(receiptOrder.discountAmount, { withSuffix: false })} د.ل</span>
                   </div>
                 )}
                 {receiptOrder.vatAmount && receiptOrder.vatAmount > 0 && (
                   <div className="flex justify-between">
                     <span className="text-[#6C6C70] dark:text-[#A1A1AA]">ضريبة VAT{receiptOrder.vatRate ? ` (${receiptOrder.vatRate}%)` : ''}</span>
-                    <span>{receiptOrder.vatAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })} د.ل</span>
+                    <span>{formatMoney(receiptOrder.vatAmount, { withSuffix: false })} د.ل</span>
                   </div>
                 )}
                 <div className="flex justify-between font-bold border-t border-[#E5E5EA] dark:border-[#27272A] pt-2 text-base">
                   <span>الإجمالي</span>
-                  <span>{receiptOrder.customerTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })} د.ل</span>
+                  <span>{formatMoney(receiptOrder.customerTotal, { withSuffix: false })} د.ل</span>
                 </div>
               </div>
             </div>

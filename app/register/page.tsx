@@ -9,7 +9,6 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { CheckCircle2, ChevronDown } from 'lucide-react';
-import { getSupabaseClient } from '@/lib/supabase/client';
 import type { SubscriptionPlan } from '@/lib/types';
 
 const PLANS: { plan: SubscriptionPlan; label: string; price: string; features: string[] }[] = [
@@ -53,9 +52,8 @@ function TalabkLogo({ size = 48 }: { size?: number }) {
 }
 
 export default function RegisterPage() {
-  const supabase = getSupabaseClient();
-
   const [step,          setStep]          = useState<'form' | 'success'>('form');
+  const [successMode,   setSuccessMode]   = useState<'pending_review' | 'auto_provisioned'>('pending_review');
   const [selectedPlan,  setSelectedPlan]  = useState<SubscriptionPlan>('starter');
   const [isLoading,     setIsLoading]     = useState(false);
   const [errorMsg,      setErrorMsg]      = useState('');
@@ -96,60 +94,87 @@ export default function RegisterPage() {
     setIsLoading(true);
     setErrorMsg('');
 
-    const { error } = await supabase.from('registration_requests').insert({
-      store_name:     form.store_name.trim(),
-      owner_name:     form.owner_name.trim(),
-      email:          form.email.trim().toLowerCase(),
-      phone:          form.phone.trim() || null,
-      requested_plan: selectedPlan,
-    });
+    // POST to /api/register — server-side validation, rate limit, and
+    // single chokepoint for future auto-provisioning.
+    try {
+      const res = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          store_name:     form.store_name.trim(),
+          owner_name:     form.owner_name.trim(),
+          email:          form.email.trim().toLowerCase(),
+          phone:          form.phone.trim() || null,
+          requested_plan: selectedPlan,
+        }),
+      });
 
-    setIsLoading(false);
+      const data = await res.json().catch(() => ({}));
 
-    if (error) {
-      if (error.code === '23505') {
-        setErrorMsg('هذا البريد الإلكتروني مسجل مسبقاً. تواصل مع الدعم إذا واجهتك مشكلة.');
+      if (!res.ok) {
+        if (res.status === 429) {
+          setErrorMsg('تم تجاوز الحد المسموح من المحاولات. حاول بعد قليل.');
+        } else if (data?.code === 'duplicate' || res.status === 409) {
+          setErrorMsg(data?.error ?? 'هذا البريد الإلكتروني مسجل مسبقاً.');
+        } else {
+          setErrorMsg(data?.error ?? 'حدث خطأ أثناء الإرسال. حاول مجدداً أو تواصل معنا.');
+        }
       } else {
-        setErrorMsg('حدث خطأ أثناء الإرسال. حاول مجدداً أو تواصل معنا.');
+        setSubmittedEmail(form.email.trim().toLowerCase());
+        setSuccessMode(data?.mode === 'auto_provisioned' ? 'auto_provisioned' : 'pending_review');
+        setStep('success');
       }
-    } else {
-      setSubmittedEmail(form.email.trim().toLowerCase());
-      setStep('success');
+    } catch {
+      setErrorMsg('تعذر الاتصال بالخادم. تحقق من الإنترنت وحاول مجدداً.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   // ── Success screen ────────────────────────────────────────────────────────
   if (step === 'success') {
+    const isAuto = successMode === 'auto_provisioned';
     return (
       <div className="min-h-screen bg-[#F2F2F7] flex items-center justify-center p-6">
         <div className="w-full max-w-md text-center">
           <CheckCircle2 className="w-20 h-20 text-green-500 mx-auto mb-5" />
-          <h1 className="text-2xl font-bold text-[#1C1C1E] mb-3">تم استلام طلبك بنجاح! 🎉</h1>
+          <h1 className="text-2xl font-bold text-[#1C1C1E] mb-3">
+            {isAuto ? 'متجرك جاهز! 🎉' : 'تم استلام طلبك بنجاح! 🎉'}
+          </h1>
           <p className="text-sm text-[#6C6C70] leading-relaxed mb-4">
-            سنراجع طلبك <strong>خلال ساعات قليلة</strong> وسنرسل لك رابط تفعيل الحساب على:{' '}
-            <strong>{submittedEmail}</strong>
+            {isAuto ? (
+              <>
+                أرسلنا لك رابط التفعيل على: <strong>{submittedEmail}</strong>
+                <br />
+                افتح الرابط لتعيين كلمة المرور والدخول مباشرة.
+              </>
+            ) : (
+              <>
+                سنراجع طلبك <strong>خلال ساعات قليلة</strong> وسنرسل لك رابط تفعيل الحساب على:{' '}
+                <strong>{submittedEmail}</strong>
+              </>
+            )}
           </p>
-
-          {/* Trial mode hint */}
-          <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-sm text-green-800 text-right mb-4">
-            <p className="font-semibold mb-2">💡 في انتظار الموافقة، يمكنك استعراض النظام التجريبي مباشرة</p>
-            <a
-              href="https://inventory-app-nine-lilac.vercel.app/app/demo/dashboard"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 mt-1 px-4 py-2 rounded-xl bg-green-600 hover:bg-green-700 text-white text-xs font-semibold transition-colors"
-            >
-              استعراض النسخة التجريبية
-            </a>
-          </div>
 
           {/* Info box */}
           <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 mb-6 text-right">
-            <p className="text-sm font-semibold text-indigo-700 mb-3">ماذا يحدث بعد ذلك؟</p>
+            <p className="text-sm font-semibold text-indigo-700 mb-3">
+              {isAuto ? 'الخطوات التالية:' : 'ماذا يحدث بعد ذلك؟'}
+            </p>
             <ul className="space-y-2">
-              <li className="text-sm text-indigo-600">✉️ ستصلك رسالة إيميل بعد الموافقة</li>
-              <li className="text-sm text-indigo-600">🔐 ستضبط كلمة مرورك عبر الرابط</li>
-              <li className="text-sm text-indigo-600">🚀 تبدأ الاستخدام فوراً</li>
+              {isAuto ? (
+                <>
+                  <li className="text-sm text-indigo-600">✉️ افتح بريدك الإلكتروني وابحث عن رسالة من طلبك</li>
+                  <li className="text-sm text-indigo-600">🔐 اضغط الرابط وعيّن كلمة المرور</li>
+                  <li className="text-sm text-indigo-600">🚀 ابدأ استخدام النظام فوراً — 14 يوم تجريبي</li>
+                </>
+              ) : (
+                <>
+                  <li className="text-sm text-indigo-600">💳 سنتواصل معك لاستلام الدفع</li>
+                  <li className="text-sm text-indigo-600">✉️ بعد التأكيد ستصلك رسالة إيميل بالتفعيل</li>
+                  <li className="text-sm text-indigo-600">🚀 تبدأ الاستخدام فوراً</li>
+                </>
+              )}
             </ul>
           </div>
 

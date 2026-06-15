@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, FormEvent } from 'react';
-import { useStock } from '@/lib/StockContext';
+import { useItems, useSuppliers, useMovements } from '@/lib/StockContext';
 import { StockInMovement } from '@/lib/types';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
@@ -24,7 +24,9 @@ export default function StockInForm({
   editId,
   initialData,
 }: StockInFormProps) {
-  const { items, suppliers, stockIn, addStockIn, updateStockIn } = useStock();
+  const { items } = useItems();
+  const { suppliers } = useSuppliers();
+  const { stockIn, addStockIn, updateStockIn } = useMovements();
   const toast = useToast();
   const isEditMode = !!editId;
 

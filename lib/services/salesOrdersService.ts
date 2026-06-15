@@ -66,6 +66,11 @@ function mapRow(row: SORow): SalesOrder {
     customerPayments: (row.customer_payments as unknown as SalesOrder['customerPayments']) ?? [],
     createdAt: row.created_at,
     shippedAt: row.shipped_at ?? undefined,
+    // Sales rep attribution (Wave G #1). Stale generated types don't list
+    // rep_id yet; we read it defensively until the next types regen.
+    repId: ((row as unknown as { rep_id?: string }).rep_id) ?? undefined,
+    // Registered-customer attribution (Wave G #2). Same defensive read.
+    customerId: ((row as unknown as { customer_id?: string }).customer_id) ?? undefined,
     // Extended fields stored in ext (graceful fallback for existing rows)
     shippingLength: (ext as SalesOrder).shippingLength ?? 0,
     shippingWidth:  (ext as SalesOrder).shippingWidth  ?? 0,

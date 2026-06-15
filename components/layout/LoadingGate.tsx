@@ -1,12 +1,12 @@
 'use client';
 
 import { ReactNode } from 'react';
-import { useStock } from '@/lib/StockContext';
+import { useStockMeta } from '@/lib/StockContext';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 import { Skeleton, SkeletonKPICard } from '@/components/ui/Skeleton';
 
 export default function LoadingGate({ children }: { children: ReactNode }) {
-  const { loading, error, refresh } = useStock();
+  const { loading, error, refresh } = useStockMeta();
 
   if (loading) {
     return (

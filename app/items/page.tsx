@@ -48,7 +48,10 @@ export default function ItemsPage() {
       (item) =>
         item.name.toLowerCase().includes(q) ||
         item.code.toLowerCase().includes(q) ||
-        item.category.toLowerCase().includes(q)
+        item.category.toLowerCase().includes(q) ||
+        // Barcode search: scan from this page → exact prefix match. Match
+        // is case-insensitive though barcodes are usually digits anyway.
+        (item.barcode ?? '').toLowerCase().includes(q)
     );
   }, [items, searchQuery]);
 
@@ -308,7 +311,7 @@ export default function ItemsPage() {
         <SearchBar
           value={searchQuery}
           onChange={setSearchQuery}
-          placeholder="بحث بالاسم أو الكود أو التصنيف..."
+          placeholder="بحث بالاسم أو الكود أو الباركود أو التصنيف..."
           aria-label="بحث في الأصناف"
         />
         <div className="text-sm text-slate-500 dark:text-[#71717A]">
@@ -489,7 +492,14 @@ export default function ItemsPage() {
                             aria-label={`تحديد ${item.name}`}
                           />
                         </td>
-                        <td className="px-3 py-3 font-mono text-slate-700 dark:text-[#E4E4E7]">{item.code}</td>
+                        <td className="px-3 py-3 font-mono text-slate-700 dark:text-[#E4E4E7]">
+                          {item.code}
+                          {item.barcode && (
+                            <span className="block text-[10px] text-slate-400 dark:text-[#52525B] mt-0.5" dir="ltr">
+                              {item.barcode}
+                            </span>
+                          )}
+                        </td>
                         <td className="px-3 py-3 font-medium text-slate-900 dark:text-[#F4F4F5]">{item.name}</td>
                         <td className="px-3 py-3 text-slate-600 dark:text-[#A1A1AA]">{item.category}</td>
                         <td className="px-3 py-3 text-slate-600 dark:text-[#A1A1AA] text-xs">{item.supplierName}</td>

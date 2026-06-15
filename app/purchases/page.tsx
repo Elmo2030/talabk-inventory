@@ -7,12 +7,13 @@ import {
   Plus, Trash2, Eye, CheckCircle, ShoppingCart,
   FileText, Clock, PackageCheck, Search, CreditCard, X,
 } from 'lucide-react';
-import { useStock } from '@/lib/StockContext';
+import { usePurchases } from '@/lib/StockContext';
 import { PurchaseInvoice, SupplierPayment } from '@/lib/types';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import EmptyState from '@/components/ui/EmptyState';
 import Pagination from '@/components/ui/Pagination';
+import { formatMoney, formatNumber } from '@/lib/format';
 
 const PAGE_SIZE = 15;
 
@@ -23,7 +24,7 @@ const STATUS_MAP: Record<PurchaseInvoice['status'], { label: string; color: stri
 };
 
 export default function PurchasesPage() {
-  const { purchaseInvoices, deletePurchaseInvoice, receivePurchaseInvoice, updatePurchaseInvoice } = useStock();
+  const { purchaseInvoices, deletePurchaseInvoice, receivePurchaseInvoice, updatePurchaseInvoice } = usePurchases();
   const router = useRouter();
   const toast = useToast();
   const { confirm } = useConfirm();
@@ -163,7 +164,7 @@ export default function PurchasesPage() {
           { label: 'إجمالي الفواتير', value: stats.total, color: 'text-[#1C1C1E]', bg: 'bg-white' },
           { label: 'مسودة', value: stats.draft, color: 'text-slate-600', bg: 'bg-white' },
           { label: 'مؤكدة', value: stats.confirmed, color: 'text-amber-700', bg: 'bg-white' },
-          { label: 'قيمة المستلمة', value: `${stats.totalValue.toLocaleString('en-US')} ر.س`, color: 'text-green-700', bg: 'bg-white' },
+          { label: 'قيمة المستلمة', value: `${formatNumber(stats.totalValue)} ر.س`, color: 'text-green-700', bg: 'bg-white' },
         ].map((s, i) => (
           <div key={i} className={`${s.bg} border border-[#E5E5EA] rounded-xl p-3 sm:p-4`}>
             <p className="text-xs text-[#6C6C70] mb-1">{s.label}</p>
@@ -244,7 +245,7 @@ export default function PurchasesPage() {
                         <td className="px-4 py-3 text-[#6C6C70]">{inv.invoiceDate}</td>
                         <td className="px-4 py-3 text-[#6C6C70]">{inv.items.length} صنف</td>
                         <td className="px-4 py-3 font-mono font-semibold text-[#1C1C1E]">
-                          {inv.grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                          {formatMoney(inv.grandTotal, { withSuffix: false })}
                         </td>
                         <td className="px-4 py-3">
                           <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${status.color}`}>

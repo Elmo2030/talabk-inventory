@@ -22,9 +22,49 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextRequest, NextResponse } from 'next/server';
 
+// ── CSP nonce helper ─────────────────────────────────────────────────────────
+// Per-request nonce lets us drop `'unsafe-inline'` and `'unsafe-eval'` from
+// the script-src directive while still allowing the explicit inline scripts
+// we ship (currently: the theme boot script in app/layout.tsx). Using
+// `'strict-dynamic'` means a nonced script can load further scripts at
+// runtime — necessary for Next.js's chunk loader to work.
+function generateNonce(): string {
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  return Buffer.from(bytes).toString('base64');
+}
+
+function buildCspHeader(nonce: string, isDev: boolean): string {
+  // Dev mode keeps `'unsafe-eval'` because React Refresh / Next dev tools
+  // require it. Production strips it entirely.
+  const scriptSrc = [
+    "'self'",
+    `'nonce-${nonce}'`,
+    "'strict-dynamic'",
+    isDev ? "'unsafe-eval'" : '',
+  ].filter(Boolean).join(' ');
+
+  return [
+    "default-src 'self'",
+    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.sentry.io https://o*.ingest.sentry.io",
+    `script-src ${scriptSrc}`,
+    // Tailwind + inline style attributes (e.g. dynamic chart fills) still
+    // need 'unsafe-inline' until Tailwind's nonce support lands.
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob:",
+    "font-src 'self'",
+    "frame-ancestors 'none'",
+    "form-action 'self'",
+    'upgrade-insecure-requests',
+  ].join('; ');
+}
+
 // ── Constants ─────────────────────────────────────────────────────────────────
 const ROOT_DOMAIN   = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'localhost:3000';
 const PUBLIC_PATHS  = ['/', '/pricing', '/about', '/contact'];
+// Public storefront prefix — `/s/<slug>` is the read-only public catalog
+// shareable on WhatsApp. No auth required, anyone with the link can view.
+const PUBLIC_PREFIXES = ['/s/'];
 const AUTH_PATHS    = ['/login', '/register', '/setup', '/superadmin/login', '/auth/callback', '/reset-password'];
 const SUPERADMIN_PREFIX = '/superadmin';
 const TENANT_APP_PREFIX = '/app';
@@ -61,7 +101,20 @@ function redirectTo(req: NextRequest, pathname: string, params?: Record<string, 
 
 // ── Main middleware ───────────────────────────────────────────────────────────
 export async function middleware(req: NextRequest) {
-  const res      = NextResponse.next();
+  // Generate a per-request CSP nonce. Passed to the request headers so server
+  // components can read it via `headers()`, and used in the CSP header below.
+  const nonce = generateNonce();
+  const isDev = process.env.NODE_ENV !== 'production';
+  const cspHeader = buildCspHeader(nonce, isDev);
+
+  // Attach nonce to forwarded request headers so layouts can read it.
+  const fwdHeaders = new Headers(req.headers);
+  fwdHeaders.set('x-nonce', nonce);
+
+  const res = NextResponse.next({ request: { headers: fwdHeaders } });
+  res.headers.set('content-security-policy', cspHeader);
+  res.headers.set('x-nonce', nonce);
+
   const supabase = buildSupabaseClient(req, res);
 
   const pathname = req.nextUrl.pathname;
@@ -177,6 +230,7 @@ export async function middleware(req: NextRequest) {
   // ── 7. Protected pages (not public, not auth, not tenant app) ────────────
   const isPublic = PUBLIC_PATHS.includes(pathname) ||
     AUTH_PATHS.some(p => pathname.startsWith(p)) ||
+    PUBLIC_PREFIXES.some(p => pathname.startsWith(p)) ||
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api');
 

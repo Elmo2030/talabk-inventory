@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import type { TablesInsert } from '@/lib/supabase/database.types';
+import { billingLimiter, getClientIp } from '@/lib/rateLimit';
 
 // ── Plan pricing (LYD — must match /billing/page.tsx PLANS) ───────────────────
 const PLAN_PRICES: Record<string, number> = {
@@ -30,6 +31,18 @@ function calcAmount(plan: string, months: number): number {
 
 export async function POST(req: NextRequest) {
   try {
+    // ── Rate limit ─────────────────────────────────────────────────────────
+    // Applied before auth check so the limiter also bounds anonymous
+    // probes against this route.
+    const ip = getClientIp(req.headers);
+    const limit = billingLimiter.check(`billing:${ip}`);
+    if (!limit.ok) {
+      return NextResponse.json(
+        { error: 'تم تجاوز عدد المحاولات المسموح. حاول بعد قليل.' },
+        { status: 429, headers: { 'Retry-After': String(limit.retryAfter) } }
+      );
+    }
+
     const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
 

@@ -10,6 +10,7 @@ import {
   ShippingCalcResult,
   getBasePrice,
 } from '@/lib/data/talabkCities';
+import { formatMoney } from '@/lib/format';
 
 interface Props {
   compact?: boolean;
@@ -82,8 +83,7 @@ export default function TalabkCalculator({ compact = false, initialCityName, onC
     onChange?.(r);
   }, [selectedCity, deliveryType, length, width, height, actualWeight, needsPackaging, onChange]);
 
-  const fmt = (n: number) =>
-    n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const fmt = (n: number) => formatMoney(n, { withSuffix: false });
 
   // ── Full mode price table data ────────────────────────────────────────────
   const priceGroups = [

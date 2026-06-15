@@ -14,9 +14,10 @@ import {
   Phone,
   User,
 } from 'lucide-react';
-import { useStock } from '@/lib/StockContext';
+import { useOrders } from '@/lib/StockContext';
 import { SalesOrder } from '@/lib/types';
 import { AnimatedList, AnimatedRow } from '@/components/ui/AnimatedList';
+import { formatNumber } from '@/lib/format';
 
 // ── Customer aggregate type ───────────────────────────────────────────────────
 interface CustomerData {
@@ -46,7 +47,7 @@ function formatDate(iso: string) {
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function CustomersPage() {
-  const { salesOrders } = useStock();
+  const { salesOrders } = useOrders();
 
   const [search, setSearch]           = useState('');
   const [sortBy, setSortBy]           = useState<'totalSpent' | 'orderCount' | 'lastOrderDate'>('totalSpent');
@@ -205,7 +206,7 @@ export default function CustomersPage() {
           </div>
           <p className="text-xs text-[#6C6C70] dark:text-[#A1A1AA]">متوسط قيمة الطلب</p>
           <p className="text-2xl font-bold mt-1 text-[#1C1C1E] dark:text-[#F4F4F5]">
-            {kpis.avgOrderValue.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+            {formatNumber(kpis.avgOrderValue, { decimals: 0 })}
           </p>
           <p className="text-xs text-[#AEAEB2] mt-1">د.ل / طلب</p>
         </div>
@@ -218,7 +219,7 @@ export default function CustomersPage() {
           <p className="text-xs text-[#6C6C70] dark:text-[#A1A1AA]">أعلى عميل إنفاقاً</p>
           <p className="text-base font-bold mt-1 text-[#1C1C1E] dark:text-[#F4F4F5] truncate">{kpis.topCustomerName}</p>
           <p className="text-xs text-[#AEAEB2] mt-1">
-            {kpis.topCustomerSpent.toLocaleString('en-US', { minimumFractionDigits: 0 })} د.ل
+            {formatNumber(kpis.topCustomerSpent, { decimals: 0 })} د.ل
           </p>
         </div>
       </div>
@@ -331,7 +332,7 @@ export default function CustomersPage() {
                       </div>
                       <div className="text-center">
                         <p className="text-sm font-bold text-[#E5302A]">
-                          {customer.totalSpent.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                          {formatNumber(customer.totalSpent, { decimals: 0 })}
                         </p>
                         <p className="text-xs text-[#AEAEB2]">د.ل</p>
                       </div>
@@ -344,7 +345,7 @@ export default function CustomersPage() {
                     {/* Mobile stats */}
                     <div className="sm:hidden text-left">
                       <p className="text-sm font-bold text-[#E5302A]">
-                        {customer.totalSpent.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} د.ل
+                        {formatNumber(customer.totalSpent, { decimals: 0 })} د.ل
                       </p>
                       <p className="text-xs text-[#AEAEB2]">{customer.orderCount} طلب</p>
                     </div>
@@ -385,10 +386,10 @@ export default function CustomersPage() {
                               <div className="flex items-center gap-3">
                                 <div className="text-left">
                                   <p className="text-sm font-bold text-[#1C1C1E] dark:text-[#F4F4F5]">
-                                    {order.customerTotal.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} د.ل
+                                    {formatNumber(order.customerTotal, { decimals: 0 })} د.ل
                                   </p>
                                   <p className="text-xs text-green-600">
-                                    +{order.netProfit.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} ربح
+                                    +{formatNumber(order.netProfit, { decimals: 0 })} ربح
                                   </p>
                                 </div>
                                 <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${st.color}`}>

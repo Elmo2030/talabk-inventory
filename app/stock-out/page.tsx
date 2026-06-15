@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { Plus, Trash2, Pencil, ArrowUpFromLine, SlidersHorizontal, X } from 'lucide-react';
-import { useStock } from '@/lib/StockContext';
+import { useItems, useMovements } from '@/lib/StockContext';
 import { StockOutMovement } from '@/lib/types';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
@@ -14,6 +14,7 @@ import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useKeyboardShortcuts } from '@/lib/useKeyboardShortcuts';
 import { STOCK_OUT_REASONS } from '@/lib/constants';
+import { formatNumber } from '@/lib/format';
 
 interface Filters {
   fromDate: string;
@@ -32,7 +33,8 @@ const emptyFilters: Filters = {
 };
 
 export default function StockOutPage() {
-  const { stockOut, deleteStockOut, items } = useStock();
+  const { items } = useItems();
+  const { stockOut, deleteStockOut } = useMovements();
   const toast = useToast();
   const { confirm } = useConfirm();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -170,7 +172,7 @@ export default function StockOutPage() {
         <div className="bg-white dark:bg-[#18181B] border border-slate-200 dark:border-[#27272A] rounded-xl p-4">
           <p className="text-sm text-slate-500 dark:text-[#71717A]">إجمالي قيمة المبيعات/الصرف</p>
           <p className="text-2xl font-bold text-brand-600 mt-1 font-mono">
-            {stats.totalValue.toLocaleString('en-US')}
+            {formatNumber(stats.totalValue)}
           </p>
         </div>
       </div>
@@ -288,7 +290,7 @@ export default function StockOutPage() {
                       {m.quantity}
                     </td>
                     <td className="px-3 py-3 font-mono font-bold text-slate-900 dark:text-[#F4F4F5]">
-                      {m.totalValue.toLocaleString('en-US')}
+                      {formatNumber(m.totalValue)}
                     </td>
                     <td className="px-3 py-3">
                       <Badge variant={getReasonVariant(m.reason)}>{m.reason}</Badge>

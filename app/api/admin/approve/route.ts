@@ -59,6 +59,51 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
+    // ── Idempotency guard ──────────────────────────────────────────────
+    // Trust ONLY the server-side row, not the client-supplied body. This
+    // prevents a double-click (or a replay attack) from creating two
+    // tenants for the same registration. We atomically flip the row from
+    // 'pending' → 'processing' so a concurrent second call sees nothing
+    // to claim and returns 409.
+    const { data: claimedRows, error: claimErr } = await supabaseAdmin
+      .from('registration_requests')
+      .update({ status: 'processing', reviewed_at: new Date().toISOString(), reviewed_by: user.id })
+      .eq('id', requestId)
+      .eq('status', 'pending')
+      .select('id, email, store_name, plan, status');
+
+    if (claimErr) {
+      return NextResponse.json({ error: 'Failed to claim request: ' + claimErr.message }, { status: 500 });
+    }
+    if (!claimedRows || claimedRows.length === 0) {
+      // Already processed (or never existed). Look up the current state
+      // so the UI can show "approved" vs "not found" instead of looping.
+      const { data: existingRow } = await supabaseAdmin
+        .from('registration_requests')
+        .select('status')
+        .eq('id', requestId)
+        .maybeSingle();
+      const currentStatus = (existingRow as { status?: string } | null)?.status ?? 'unknown';
+      return NextResponse.json(
+        { error: 'Request already processed', status: currentStatus },
+        { status: 409 }
+      );
+    }
+
+    // Cross-check: server-side email must match the body to guard against
+    // a stale request body referencing a different registration's id.
+    const claimed = claimedRows[0] as { id: string; email: string };
+    if (claimed.email !== email) {
+      // Roll back the status flip so a real admin can re-issue with the
+      // correct payload.
+      await supabaseAdmin
+        .from('registration_requests')
+        .update({ status: 'pending', reviewed_at: null, reviewed_by: null })
+        .eq('id', requestId);
+      return NextResponse.json({ error: 'Request body does not match server record' }, { status: 400 });
+    }
+    // ───────────────────────────────────────────────────────────────────
+
     // 1. Create slug from store name
     const slug = storeName
       .toLowerCase()
@@ -92,6 +137,11 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (tenantErr) {
+      // Revert the claim so the admin can retry.
+      await supabaseAdmin
+        .from('registration_requests')
+        .update({ status: 'pending', reviewed_at: null, reviewed_by: null })
+        .eq('id', requestId);
       return NextResponse.json(
         { error: 'Failed to create tenant: ' + tenantErr.message },
         { status: 500 }
@@ -116,8 +166,12 @@ export async function POST(req: NextRequest) {
     );
 
     if (inviteErr) {
-      // Rollback tenant creation
+      // Rollback tenant creation AND revert the claim so retries work.
       await supabaseAdmin.from('tenants').delete().eq('id', tenant.id);
+      await supabaseAdmin
+        .from('registration_requests')
+        .update({ status: 'pending', reviewed_at: null, reviewed_by: null })
+        .eq('id', requestId);
       return NextResponse.json(
         { error: 'Failed to invite user: ' + inviteErr.message },
         { status: 500 }
@@ -134,7 +188,8 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 6. Mark request as approved — log reviewer ID for audit trail
+    // 6. Mark request as approved — log reviewer ID for audit trail.
+    // We claimed the row earlier (pending → processing); now finalize.
     await supabaseAdmin
       .from('registration_requests')
       .update({

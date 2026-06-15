@@ -18,6 +18,7 @@ import {
 import Link from 'next/link';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import type { TenantStats, RegistrationRequest, SubscriptionPlan } from '@/lib/types';
+import { formatMoney, formatNumber } from '@/lib/format';
 
 // Defer the recharts bundle (~95 KB gzip) — the KPI cards and pending-requests
 // table paint immediately while the chart island streams in below. SSR is off
@@ -51,12 +52,9 @@ const PLAN_LABELS: Record<SubscriptionPlan, string> = {
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-function fmt(n: number) {
-  return n.toLocaleString('en-US', { maximumFractionDigits: 0 });
-}
-function fmtCurrency(n: number) {
-  return n.toLocaleString('en-US', { style: 'decimal', minimumFractionDigits: 0, maximumFractionDigits: 0 }) + ' د.ل';
-}
+// Delegate to the canonical formatters in lib/format.ts.
+function fmt(n: number) { return formatNumber(n, { decimals: 0 }); }
+function fmtCurrency(n: number) { return formatMoney(n, { decimals: 0 }); }
 
 // ── KPI Card ─────────────────────────────────────────────────────────────────
 function KPICard({

@@ -1,23 +1,35 @@
 import { getSupabaseClient } from '@/lib/supabase/client';
 import type { CurrentStock } from '@/lib/types';
+import type { Database } from '@/lib/supabase/database.types';
 
 const supabase = () => getSupabaseClient();
 
-function mapCurrentStock(row: any): CurrentStock {
+// Row shape is generated from the `current_stock_view` Postgres view.
+// PostgREST emits numerics as JS numbers when ≤ 15 digits, but some
+// rows arrive as strings (older PG versions). `toNum` normalizes both
+// shapes without a runtime cost on the happy path.
+type StockRow = Database['public']['Views']['current_stock_view']['Row'];
+
+function toNum(v: number | string | null | undefined): number {
+  if (v == null) return 0;
+  return typeof v === 'number' ? v : parseFloat(v);
+}
+
+function mapCurrentStock(row: StockRow): CurrentStock {
   return {
     itemId: row.item_id,
     itemCode: row.item_code,
     itemName: row.item_name,
     category: row.category,
     unit: row.unit,
-    openingQty: parseFloat(row.opening_qty),
-    totalIn: parseFloat(row.total_in),
-    totalOut: parseFloat(row.total_out),
-    currentBalance: parseFloat(row.current_balance),
-    minStockLevel: parseFloat(row.min_stock_level),
-    reorderLevel: parseFloat(row.reorder_level),
+    openingQty: toNum(row.opening_qty),
+    totalIn: toNum(row.total_in),
+    totalOut: toNum(row.total_out),
+    currentBalance: toNum(row.current_balance),
+    minStockLevel: toNum(row.min_stock_level),
+    reorderLevel: toNum(row.reorder_level),
     status: row.status,
-    stockValue: parseFloat(row.stock_value),
+    stockValue: toNum(row.stock_value),
   };
 }
 

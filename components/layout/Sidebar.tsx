@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -30,7 +30,7 @@ import {
   Calculator,
   CreditCard,
 } from 'lucide-react';
-import { useStock } from '@/lib/StockContext';
+import { useMovements } from '@/lib/StockContext';
 import { useAuth } from '@/lib/AuthContext';
 import { useTenant } from '@/lib/TenantContext';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
@@ -67,7 +67,9 @@ const navGroups: NavGroup[] = [
       { href: '/orders',     label: 'طلبات البيع',     icon: ShoppingBag },
       { href: '/returns',    label: 'المرتجعات',       icon: RotateCcw },
       { href: '/coupons',    label: 'الكوبونات',       icon: Tag },
-      { href: '/customers',  label: 'العملاء',         icon: UserCircle },
+      { href: '/customers',         label: 'تحليلات العملاء',  icon: UserCircle },
+      { href: '/customers/manage',  label: 'إدارة العملاء',    icon: UserCircle },
+      { href: '/sales-reps',        label: 'المندوبين',         icon: Users },
       { href: '/delivery',   label: 'لوحة التوصيل',    icon: Truck },
       { href: '/messages',   label: 'قوالب الرسائل',   icon: MessageSquare },
     ],
@@ -139,12 +141,20 @@ function TalabkLogo({ size = 40 }: { size?: number }) {
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { currentStock } = useStock();
+  const { currentStock } = useMovements();
   const { username, logout } = useAuth();
   const { tenant } = useTenant();
   const { confirm } = useConfirm();
   const toast = useToast();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  // BottomNav (mobile) opens the existing drawer via a window event so we
+  // don't need to lift state into a context. Keeps the integration local.
+  useEffect(() => {
+    const open = () => setMobileOpen(true);
+    window.addEventListener('talabk:open-sidebar', open);
+    return () => window.removeEventListener('talabk:open-sidebar', open);
+  }, []);
 
   const handleLogout = async () => {
     const ok = await confirm({

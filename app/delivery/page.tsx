@@ -10,7 +10,7 @@ import { useMemo, useState } from 'react';
 import {
   Truck, Phone, MapPin, CheckCircle, Clock, Package, Search, X,
 } from 'lucide-react';
-import { useStock } from '@/lib/StockContext';
+import { useOrders } from '@/lib/StockContext';
 import { SalesOrder } from '@/lib/types';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
@@ -20,7 +20,7 @@ const DELIVERY_TYPE_LABEL: Record<string, string> = {
 };
 
 export default function DeliveryPage() {
-  const { salesOrders, updateSalesOrder } = useStock();
+  const { salesOrders, updateSalesOrder } = useOrders();
   const toast = useToast();
   const { confirm } = useConfirm();
   const [search, setSearch] = useState('');

@@ -3,26 +3,21 @@
 import { useEffect, useRef, useState } from 'react';
 import { Printer } from 'lucide-react';
 import { SalesOrder } from '@/lib/types';
+import { formatMoney, formatDate as fmtDate } from '@/lib/format';
 
 interface OrderReceiptProps {
   order: SalesOrder;
   storeName?: string;
 }
 
+// Local thin wrappers so the JSX below reads the same as before, but
+// the actual formatting goes through the canonical helpers in lib/format.
 function fmt(n: number) {
-  return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return formatMoney(n, { withSuffix: false });
 }
 
 function formatDate(iso: string) {
-  try {
-    return new Date(iso).toLocaleDateString('ar-LY', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    });
-  } catch {
-    return iso;
-  }
+  return fmtDate(iso, { style: 'short' });
 }
 
 export default function OrderReceipt({ order, storeName: storeNameProp }: OrderReceiptProps) {

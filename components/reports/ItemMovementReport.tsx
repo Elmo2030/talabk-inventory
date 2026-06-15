@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useStock } from '@/lib/StockContext';
+import { useItems } from '@/lib/StockContext';
 import { useReports } from '@/lib/useReports';
 import { exportToCSV, printReport, formatCurrency } from '@/lib/exportUtils';
 import {
@@ -16,7 +16,7 @@ import Select from '@/components/ui/Select';
 import Badge from '@/components/ui/Badge';
 
 export default function ItemMovementReport() {
-  const { items } = useStock();
+  const { items } = useItems();
   const { getItemMovementHistory } = useReports();
   const [selectedItemId, setSelectedItemId] = useState(items[0]?.id ?? '');
 

@@ -12,6 +12,9 @@ import {
 import {
   Item,
   Supplier,
+  SalesRep,
+  Customer,
+  CustomerBalance,
   StockInMovement,
   StockOutMovement,
   CurrentStock,
@@ -20,6 +23,8 @@ import {
 } from '@/lib/types';
 import { computeInvoiceItems } from '@/lib/landedCost';
 import { suppliersService } from '@/lib/services/suppliersService';
+import { salesRepsService } from '@/lib/services/salesRepsService';
+import { customersService } from '@/lib/services/customersService';
 import { itemsService } from '@/lib/services/itemsService';
 import { stockInService } from '@/lib/services/stockInService';
 import { stockOutService } from '@/lib/services/stockOutService';
@@ -48,6 +53,7 @@ import { setCouponsTenantPrefix }  from '@/lib/storage/couponsStorage';
 import { setReturnsTenantPrefix }  from '@/lib/storage/returnsStorage';
 import { setAppointmentsTenantPrefix } from '@/lib/storage/appointmentsStorage';
 import { getSupabaseClient } from '@/lib/supabase/client';
+import { rpcPlaceSalesOrder, rpcReceivePurchaseInvoice } from '@/lib/supabase/rpc';
 
 // ── Service selector ──────────────────────────────────────────────────────────
 // Use mock mode when:
@@ -118,6 +124,20 @@ interface StockContextType {
   updateSupplier: (id: string, updates: Partial<Supplier>) => Promise<void>;
   deleteSupplier: (id: string) => Promise<void>;
 
+  // Sales reps (Wave G #1 — field sales attribution)
+  salesReps: SalesRep[];
+  addSalesRep: (rep: Omit<SalesRep, 'id' | 'createdAt'>) => Promise<void>;
+  updateSalesRep: (id: string, updates: Partial<SalesRep>) => Promise<void>;
+  deleteSalesRep: (id: string) => Promise<void>;
+
+  // Customers (Wave G #2 — credit + A/R)
+  customers: Customer[];
+  customerBalances: CustomerBalance[];
+  addCustomer: (c: Omit<Customer, 'id' | 'createdAt'>) => Promise<void>;
+  updateCustomer: (id: string, updates: Partial<Customer>) => Promise<void>;
+  deleteCustomer: (id: string) => Promise<void>;
+  refreshCustomerBalances: () => Promise<void>;
+
   // Purchase Invoices
   purchaseInvoices: PurchaseInvoice[];
   addPurchaseInvoice: (
@@ -167,6 +187,22 @@ export interface SuppliersContextType {
   deleteSupplier: StockContextType['deleteSupplier'];
 }
 
+export interface SalesRepsContextType {
+  salesReps:      SalesRep[];
+  addSalesRep:    StockContextType['addSalesRep'];
+  updateSalesRep: StockContextType['updateSalesRep'];
+  deleteSalesRep: StockContextType['deleteSalesRep'];
+}
+
+export interface CustomersContextType {
+  customers:               Customer[];
+  customerBalances:        CustomerBalance[];
+  addCustomer:             StockContextType['addCustomer'];
+  updateCustomer:          StockContextType['updateCustomer'];
+  deleteCustomer:          StockContextType['deleteCustomer'];
+  refreshCustomerBalances: StockContextType['refreshCustomerBalances'];
+}
+
 export interface MovementsContextType {
   stockIn:           StockInMovement[];
   stockOut:          StockOutMovement[];
@@ -204,12 +240,18 @@ export interface StockMetaContextType {
 
 const ItemsContext     = createContext<ItemsContextType | undefined>(undefined);
 const SuppliersContext = createContext<SuppliersContextType | undefined>(undefined);
+const SalesRepsContext = createContext<SalesRepsContextType | undefined>(undefined);
+const CustomersContext = createContext<CustomersContextType | undefined>(undefined);
 const MovementsContext = createContext<MovementsContextType | undefined>(undefined);
 const OrdersContext    = createContext<OrdersContextType | undefined>(undefined);
 const PurchasesContext = createContext<PurchasesContextType | undefined>(undefined);
 const StockMetaContext = createContext<StockMetaContextType | undefined>(undefined);
 
-const StockContext = createContext<StockContextType | undefined>(undefined);
+// `StockContextType` is kept ONLY as a type-derivation source for the
+// per-slice context interfaces above (they reference its fields via
+// indexed access types like `StockContextType['addItem']`). There is
+// intentionally no runtime context object for it anymore — every
+// consumer reads through a narrow per-slice context.
 
 // ============================================
 // Provider
@@ -217,6 +259,9 @@ const StockContext = createContext<StockContextType | undefined>(undefined);
 export function StockProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<Item[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [salesReps, setSalesReps] = useState<SalesRep[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [customerBalances, setCustomerBalances] = useState<CustomerBalance[]>([]);
   const [stockIn, setStockIn] = useState<StockInMovement[]>([]);
   const [stockOut, setStockOut] = useState<StockOutMovement[]>([]);
   const [currentStock, setCurrentStock] = useState<CurrentStock[]>([]);
@@ -249,11 +294,22 @@ export function StockProvider({ children }: { children: ReactNode }) {
       // Seed demo data on first run in mock mode
       if (USE_MOCK) seedMockDataIfNeeded();
 
-      // 2. Now safe to fetch — localStorage keys are correctly tenant-scoped
-      const [itemsData, suppliersData, stockInData, stockOutData, stockData, purchasesData, ordersData] =
+      // 2. Now safe to fetch — localStorage keys are correctly tenant-scoped.
+      // sales_reps is wrapped in `.catch(() => [])` because the table is
+      // added by migration 20260528 — older deployments won't have it yet
+      // and we don't want the whole context load to fail on a missing
+      // relation. After the migration runs the catch path never triggers.
+      // sales_reps, customers and vw_customer_balance live in migrations
+      // that older deployments may not have applied. Each fetch is wrapped
+      // in `.catch(() => [])` so a missing relation degrades gracefully —
+      // the context still loads, the related UI just shows empty state.
+      const [itemsData, suppliersData, salesRepsData, customersData, customerBalancesData, stockInData, stockOutData, stockData, purchasesData, ordersData] =
         await Promise.all([
           _items.getAll(),
           _suppliers.getAll(),
+          USE_MOCK ? Promise.resolve([] as SalesRep[]) : salesRepsService.getAll().catch(() => [] as SalesRep[]),
+          USE_MOCK ? Promise.resolve([] as Customer[]) : customersService.getAll().catch(() => [] as Customer[]),
+          USE_MOCK ? Promise.resolve([] as CustomerBalance[]) : customersService.getBalances().catch(() => [] as CustomerBalance[]),
           _stockIn.getAll(),
           _stockOut.getAll(),
           _stockView.getAll(),
@@ -263,6 +319,9 @@ export function StockProvider({ children }: { children: ReactNode }) {
 
       setItems(itemsData);
       setSuppliers(suppliersData);
+      setSalesReps(salesRepsData);
+      setCustomers(customersData);
+      setCustomerBalances(customerBalancesData);
       setStockIn(stockInData);
       setStockOut(stockOutData);
       setCurrentStock(stockData);
@@ -544,6 +603,107 @@ export function StockProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // ============================================
+  // Mutations - Sales Reps (Wave G #1)
+  // ============================================
+  // Optimistic insert/update/delete with rollback on failure, matching the
+  // pattern from suppliers. Mock-mode short-circuits to local state only.
+  const addSalesRep = useCallback(async (rep: Omit<SalesRep, 'id' | 'createdAt'>) => {
+    if (USE_MOCK) {
+      const newRep: SalesRep = {
+        ...rep,
+        id: `rep-${Date.now()}`,
+        createdAt: new Date().toISOString(),
+      };
+      setSalesReps((prev) => [newRep, ...prev]);
+      return;
+    }
+    const created = await salesRepsService.create(rep);
+    setSalesReps((prev) => [created, ...prev]);
+  }, []);
+
+  const updateSalesRep = useCallback(async (id: string, updates: Partial<SalesRep>) => {
+    let snapshot: SalesRep | undefined;
+    setSalesReps((prev) => {
+      snapshot = prev.find((r) => r.id === id);
+      return prev.map((r) => (r.id === id ? { ...r, ...updates } : r));
+    });
+    try {
+      if (!USE_MOCK) await salesRepsService.update(id, updates);
+    } catch (err) {
+      if (snapshot) setSalesReps((prev) => prev.map((r) => (r.id === id ? snapshot! : r)));
+      throw err;
+    }
+  }, []);
+
+  const deleteSalesRep = useCallback(async (id: string) => {
+    let snapshot: SalesRep | undefined;
+    setSalesReps((prev) => {
+      snapshot = prev.find((r) => r.id === id);
+      return prev.filter((r) => r.id !== id);
+    });
+    try {
+      if (!USE_MOCK) await salesRepsService.delete(id);
+    } catch (err) {
+      if (snapshot) setSalesReps((prev) => [...prev, snapshot!]);
+      throw err;
+    }
+  }, []);
+
+  // ============================================
+  // Mutations - Customers (Wave G #2)
+  // ============================================
+  const addCustomer = useCallback(async (c: Omit<Customer, 'id' | 'createdAt'>) => {
+    if (USE_MOCK) {
+      const newC: Customer = { ...c, id: `cust-${Date.now()}`, createdAt: new Date().toISOString() };
+      setCustomers((prev) => [newC, ...prev]);
+      return;
+    }
+    const created = await customersService.create(c);
+    setCustomers((prev) => [created, ...prev]);
+  }, []);
+
+  const updateCustomer = useCallback(async (id: string, updates: Partial<Customer>) => {
+    let snapshot: Customer | undefined;
+    setCustomers((prev) => {
+      snapshot = prev.find((x) => x.id === id);
+      return prev.map((x) => (x.id === id ? { ...x, ...updates } : x));
+    });
+    try {
+      if (!USE_MOCK) await customersService.update(id, updates);
+    } catch (err) {
+      if (snapshot) setCustomers((prev) => prev.map((x) => (x.id === id ? snapshot! : x)));
+      throw err;
+    }
+  }, []);
+
+  const deleteCustomer = useCallback(async (id: string) => {
+    let snapshot: Customer | undefined;
+    setCustomers((prev) => {
+      snapshot = prev.find((x) => x.id === id);
+      return prev.filter((x) => x.id !== id);
+    });
+    try {
+      if (!USE_MOCK) await customersService.delete(id);
+    } catch (err) {
+      if (snapshot) setCustomers((prev) => [...prev, snapshot!]);
+      throw err;
+    }
+  }, []);
+
+  // Pulled separately because the balance view is recomputed by the DB
+  // after every sales order / payment — UI calls this on success to
+  // refresh the running outstanding numbers without re-fetching everything.
+  const refreshCustomerBalances = useCallback(async () => {
+    if (USE_MOCK) return;
+    try {
+      const data = await customersService.getBalances();
+      setCustomerBalances(data);
+    } catch (err) {
+      console.error('refreshCustomerBalances error', err);
+    }
+  }, []);
+
+  // ============================================
   // Mutations - Purchase Invoices
   // ============================================
   const addPurchaseInvoice = useCallback(
@@ -582,47 +742,63 @@ export function StockProvider({ children }: { children: ReactNode }) {
   // ============================================
   const addSalesOrder = useCallback(
     async (order: Parameters<StockContextType['addSalesOrder']>[0]) => {
+      // Capture the function in scope so the side-effect refresh below is
+      // stable across renders. Declared as a local so the useCallback
+      // dependency list doesn't have to grow.
+      const _refreshBalances = refreshCustomerBalances;
       try {
         let data: SalesOrder;
 
         if (!USE_MOCK) {
-          // Non-mock: use atomic RPC so order + stock-out are one DB transaction
-          const { data: rpcData, error } = await (getSupabaseClient().rpc as any)(
-            'place_sales_order',
-            {
-              p_order: {
-                customerName: order.customerName,
-                customerPhone: order.customerPhone,
-                customerCity: order.customerCity,
-                deliveryType: order.deliveryType,
-                items: order.items,
-                shippingCost: order.shippingCost,
-                shippingOnStore: order.shippingOnStore,
-                subtotalProducts: order.subtotalProducts,
-                discountAmount: order.discountAmount,
-                discountType: order.discountType,
-                discountValue: order.discountValue,
-                couponCode: order.couponCode,
-                customerTotal: order.customerTotal,
-                totalCOGS: order.totalCOGS,
-                grossProfit: order.grossProfit,
-                netProfit: order.netProfit,
-                profitMargin: order.profitMargin,
-                vatRate: order.vatRate,
-                vatAmount: order.vatAmount,
-                status: order.status ?? 'PENDING',
-                trackingNumber: order.trackingNumber,
-                shippingCarrier: order.shippingCarrier,
-                notes: order.notes,
-                customerPaymentStatus: order.customerPaymentStatus,
-                customerPaidAmount: order.customerPaidAmount,
-                customerPayments: order.customerPayments ?? [],
-                shippedAt: order.shippedAt,
-              },
-            }
-          );
+          // Non-mock: use atomic RPC so order + stock-out are one DB transaction.
+          // Wrapped in a typed helper (lib/supabase/rpc.ts) to surface schema
+          // drift at compile time instead of as a silent runtime cast.
+          const { data: rpcData, error } = await rpcPlaceSalesOrder(getSupabaseClient(), {
+            p_order: {
+              customerName: order.customerName,
+              customerPhone: order.customerPhone,
+              customerCity: order.customerCity,
+              deliveryType: order.deliveryType,
+              items: order.items,
+              shippingCost: order.shippingCost,
+              shippingOnStore: order.shippingOnStore,
+              subtotalProducts: order.subtotalProducts,
+              discountAmount: order.discountAmount,
+              discountType: order.discountType,
+              discountValue: order.discountValue,
+              couponCode: order.couponCode,
+              customerTotal: order.customerTotal,
+              totalCOGS: order.totalCOGS,
+              grossProfit: order.grossProfit,
+              netProfit: order.netProfit,
+              profitMargin: order.profitMargin,
+              vatRate: order.vatRate,
+              vatAmount: order.vatAmount,
+              status: order.status ?? 'PENDING',
+              trackingNumber: order.trackingNumber,
+              shippingCarrier: order.shippingCarrier,
+              notes: order.notes,
+              customerPaymentStatus: order.customerPaymentStatus,
+              customerPaidAmount: order.customerPaidAmount,
+              customerPayments: order.customerPayments ?? [],
+              shippedAt: order.shippedAt,
+              // Wave G #1: sales rep attribution. The RPC server-side
+              // validates that the id belongs to this tenant + is ACTIVE.
+              repId: order.repId,
+              // Wave G #2: registered customer. RPC checks tenant + status,
+              // then evaluates credit_limit against current outstanding +
+              // this order's unpaid portion. Raises if the cap is breached.
+              customerId: order.customerId,
+            },
+          });
           if (error) throw new Error(error.message);
-          data = rpcData as SalesOrder;
+          if (!rpcData) throw new Error('place_sales_order returned no data');
+          data = rpcData;
+          // Refresh the customer balance view so the next render shows
+          // the updated outstanding without waiting for a full reload.
+          if (order.customerId) {
+            void _refreshBalances();
+          }
         } else {
           // Mock mode: keep existing multi-step logic
           data = await _orders.create(order);
@@ -773,15 +949,12 @@ export function StockProvider({ children }: { children: ReactNode }) {
 
         // 2. Create StockIn movements + update MACs + mark RECEIVED — atomically in non-mock mode
         if (!USE_MOCK) {
-          const { error } = await (getSupabaseClient().rpc as any)(
-            'receive_purchase_invoice',
-            {
-              p_invoice_id: id,
-              p_computed_items: computedItems,
-              p_invoice_number: invoice.invoiceNumber,
-              p_supplier_id: invoice.supplierId || null,
-            }
-          );
+          const { error } = await rpcReceivePurchaseInvoice(getSupabaseClient(), {
+            p_invoice_id: id,
+            p_computed_items: computedItems,
+            p_invoice_number: invoice.invoiceNumber,
+            p_supplier_id: invoice.supplierId || null,
+          });
           if (error) throw new Error(error.message);
         } else {
           // Mock mode: keep existing multi-step logic
@@ -853,6 +1026,19 @@ export function StockProvider({ children }: { children: ReactNode }) {
     [suppliers, addSupplier, updateSupplier, deleteSupplier],
   );
 
+  const salesRepsValue = useMemo<SalesRepsContextType>(
+    () => ({ salesReps, addSalesRep, updateSalesRep, deleteSalesRep }),
+    [salesReps, addSalesRep, updateSalesRep, deleteSalesRep],
+  );
+
+  const customersValue = useMemo<CustomersContextType>(
+    () => ({
+      customers, customerBalances,
+      addCustomer, updateCustomer, deleteCustomer, refreshCustomerBalances,
+    }),
+    [customers, customerBalances, addCustomer, updateCustomer, deleteCustomer, refreshCustomerBalances],
+  );
+
   const movementsValue = useMemo<MovementsContextType>(
     () => ({
       stockIn, stockOut, currentStock,
@@ -884,47 +1070,28 @@ export function StockProvider({ children }: { children: ReactNode }) {
     [loading, error, loadData],
   );
 
-  // Legacy barrel — preserved for back-compat. Migrated consumers should
-  // switch to a narrow per-slice hook to dodge unrelated re-renders.
-  const value = useMemo<StockContextType>(
-    () => ({
-      items, suppliers, stockIn, stockOut, currentStock,
-      loading, error,
-      getCurrentBalance, canIssueQuantity,
-      addStockIn, addStockOut, updateStockIn, updateStockOut, deleteStockIn, deleteStockOut,
-      addItem, updateItem, deleteItem,
-      addSupplier, updateSupplier, deleteSupplier,
-      purchaseInvoices, addPurchaseInvoice, updatePurchaseInvoice, deletePurchaseInvoice, receivePurchaseInvoice,
-      salesOrders, addSalesOrder, updateSalesOrder, deleteSalesOrder,
-      refresh: loadData,
-    }),
-    [
-      items, suppliers, stockIn, stockOut, currentStock,
-      loading, error,
-      getCurrentBalance, canIssueQuantity,
-      addStockIn, addStockOut, updateStockIn, updateStockOut, deleteStockIn, deleteStockOut,
-      addItem, updateItem, deleteItem,
-      addSupplier, updateSupplier, deleteSupplier,
-      purchaseInvoices, addPurchaseInvoice, updatePurchaseInvoice, deletePurchaseInvoice, receivePurchaseInvoice,
-      salesOrders, addSalesOrder, updateSalesOrder, deleteSalesOrder,
-      loadData,
-    ],
-  );
+  // Legacy barrel removed — every consumer now reads through a narrow
+  // per-slice hook (useItems/useSuppliers/useMovements/useOrders/
+  // usePurchases/useStockMeta). The barrel's value memo used to depend
+  // on every slice, so any single mutation re-rendered all 27 consumers;
+  // dropping it locks in the gain from the Phase 7 split.
 
   return (
     <ItemsContext.Provider value={itemsValue}>
       <SuppliersContext.Provider value={suppliersValue}>
-        <MovementsContext.Provider value={movementsValue}>
-          <OrdersContext.Provider value={ordersValue}>
-            <PurchasesContext.Provider value={purchasesValue}>
-              <StockMetaContext.Provider value={metaValue}>
-                <StockContext.Provider value={value}>
-                  {children}
-                </StockContext.Provider>
-              </StockMetaContext.Provider>
-            </PurchasesContext.Provider>
-          </OrdersContext.Provider>
-        </MovementsContext.Provider>
+        <SalesRepsContext.Provider value={salesRepsValue}>
+          <CustomersContext.Provider value={customersValue}>
+            <MovementsContext.Provider value={movementsValue}>
+              <OrdersContext.Provider value={ordersValue}>
+                <PurchasesContext.Provider value={purchasesValue}>
+                  <StockMetaContext.Provider value={metaValue}>
+                    {children}
+                  </StockMetaContext.Provider>
+                </PurchasesContext.Provider>
+              </OrdersContext.Provider>
+            </MovementsContext.Provider>
+          </CustomersContext.Provider>
+        </SalesRepsContext.Provider>
       </SuppliersContext.Provider>
     </ItemsContext.Provider>
   );
@@ -943,6 +1110,18 @@ export function useItems(): ItemsContextType {
 export function useSuppliers(): SuppliersContextType {
   const ctx = useContext(SuppliersContext);
   if (!ctx) throw new Error('useSuppliers must be used within StockProvider');
+  return ctx;
+}
+
+export function useSalesReps(): SalesRepsContextType {
+  const ctx = useContext(SalesRepsContext);
+  if (!ctx) throw new Error('useSalesReps must be used within StockProvider');
+  return ctx;
+}
+
+export function useCustomers(): CustomersContextType {
+  const ctx = useContext(CustomersContext);
+  if (!ctx) throw new Error('useCustomers must be used within StockProvider');
   return ctx;
 }
 
@@ -970,10 +1149,12 @@ export function useStockMeta(): StockMetaContextType {
   return ctx;
 }
 
-// Legacy barrel — still works, migrates at consumer's pace.
-export function useStock() {
-  const ctx = useContext(StockContext);
-  if (!ctx) throw new Error('useStock must be used within StockProvider');
-  return ctx;
+// Legacy `useStock()` barrel removed in Wave B. Use the narrow per-slice
+// hooks above. Kept as a build-time stub that throws so any forgotten
+// callers fail loudly with a useful pointer rather than silently.
+export function useStock(): never {
+  throw new Error(
+    'useStock() has been removed. Use a narrow hook: useItems, useSuppliers, useMovements, useOrders, usePurchases, or useStockMeta.'
+  );
 }
 

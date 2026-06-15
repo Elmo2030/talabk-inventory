@@ -17,7 +17,7 @@ import {
   RotateCcw, Tag, MessageSquare, BarChart2, FileText, Calculator,
   Settings, Store, BookOpen, CreditCard, UserCircle, ShoppingCart,
 } from 'lucide-react';
-import { useStock } from '@/lib/StockContext';
+import { useItems, useSuppliers, useOrders } from '@/lib/StockContext';
 import { useTenant } from '@/lib/TenantContext';
 
 interface PaletteItem {
@@ -63,7 +63,9 @@ const QUICK_ACTIONS: PaletteItem[] = [
 
 export default function CommandPalette() {
   const router = useRouter();
-  const { items, suppliers, salesOrders } = useStock();
+  const { items } = useItems();
+  const { suppliers } = useSuppliers();
+  const { salesOrders } = useOrders();
   const { tenant } = useTenant();
   const [open,  setOpen]  = useState(false);
   const [query, setQuery] = useState('');
@@ -94,14 +96,18 @@ export default function CommandPalette() {
   }, [open]);
 
   // ── Result list ─────────────────────────────────────────────────────────
-  const tenantHrefPrefix = tenant?.slug ? `/app/${tenant.slug}` : '';
-  const dashboardItem: PaletteItem = {
-    id: 'nav-dashboard',
-    label: 'لوحة التحكم',
-    href: tenantHrefPrefix ? `${tenantHrefPrefix}/dashboard` : '/',
-    icon: LayoutDashboard,
-    group: 'الانتقال',
-  };
+  // Memoize so the object's identity is stable across renders — feeds into
+  // the `filtered` useMemo deps below.
+  const dashboardItem: PaletteItem = useMemo(
+    () => ({
+      id: 'nav-dashboard',
+      label: 'لوحة التحكم',
+      href: tenant?.slug ? `/app/${tenant.slug}/dashboard` : '/',
+      icon: LayoutDashboard,
+      group: 'الانتقال',
+    }),
+    [tenant?.slug],
+  );
 
   const dataItems: PaletteItem[] = useMemo(() => {
     const itemMatches = items.slice(0, 5).map(i => ({

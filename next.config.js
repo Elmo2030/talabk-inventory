@@ -18,30 +18,9 @@ const securityHeaders = [
     key: 'Strict-Transport-Security',
     value: 'max-age=63072000; includeSubDomains; preload',
   },
-  // Content Security Policy
-  // nonce-based approach would be ideal for prod; this is a solid baseline.
-  {
-    key: 'Content-Security-Policy',
-    value: [
-      "default-src 'self'",
-      // Supabase API + realtime websocket
-      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.sentry.io https://o*.ingest.sentry.io",
-      // Scripts: self + Next.js inline chunks
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-      // Styles: self + Tailwind inline styles
-      "style-src 'self' 'unsafe-inline'",
-      // Images: self + data URIs (for print receipts)
-      "img-src 'self' data: blob:",
-      // Fonts
-      "font-src 'self'",
-      // Disallow framing entirely
-      "frame-ancestors 'none'",
-      // Disallow form submissions to external sites
-      "form-action 'self'",
-      // Block mixed content
-      'upgrade-insecure-requests',
-    ].join('; '),
-  },
+  // Content-Security-Policy is set per-request by middleware.ts using a
+  // nonce so we can drop 'unsafe-inline' / 'unsafe-eval' from script-src.
+  // Setting it as a static header here would conflict with the dynamic one.
 ];
 
 const nextConfig = {

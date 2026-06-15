@@ -8,10 +8,13 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { useStock } from '@/lib/StockContext';
+import { useItems, useSuppliers, useMovements, useOrders, usePurchases } from '@/lib/StockContext';
+import { useTenant } from '@/lib/TenantContext';
 import { useTheme } from '@/lib/ThemeContext';
 import { MONTHS } from '@/lib/constants';
 import OnboardingChecklist from '@/components/dashboard/OnboardingChecklist';
+import ShareStorefront from '@/components/dashboard/ShareStorefront';
+import { formatMoney, formatNumber } from '@/lib/format';
 
 // Defer the ~95 KB recharts bundle off the dashboard's critical paint
 // path. The KPI cards + onboarding checklist render immediately while
@@ -37,13 +40,19 @@ const DashboardCharts = dynamic(
 );
 
 export default function DashboardPage() {
-  const { items, currentStock, salesOrders, purchaseInvoices, stockIn, suppliers } = useStock();
+  const { items } = useItems();
+  const { suppliers } = useSuppliers();
+  const { currentStock, stockIn } = useMovements();
+  const { salesOrders } = useOrders();
+  const { purchaseInvoices } = usePurchases();
   // toggleTheme is intentionally not destructured — the visible toggle was
   // removed pending full dark-mode coverage across all pages. `isDark` is
   // still used for chart palette selection.
   const { isDark } = useTheme();
+  const { tenant } = useTenant();
   const params = useParams();
   const tenantSlug = params?.tenantSlug as string ?? '';
+  const storeName = tenant?.store_name ?? tenantSlug;
 
   // ── Last 30 days labels ───────────────────────────────────────────────────────
   const last30Days = useMemo(() => {
@@ -247,6 +256,17 @@ export default function DashboardPage() {
         />
       )}
 
+      {/* ── Share storefront — only when at least one item exists. ──────── */}
+      {/* Returns null internally when itemCount === 0, but the guard here */}
+      {/* keeps the dashboard top clean during onboarding.                  */}
+      {items.length > 0 && (
+        <ShareStorefront
+          tenantSlug={tenantSlug}
+          storeName={storeName}
+          itemCount={items.length}
+        />
+      )}
+
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -304,7 +324,7 @@ export default function DashboardPage() {
           </div>
           <p className="text-xs text-[#6C6C70] dark:text-[#A1A1AA]">إجمالي الإيرادات</p>
           <p className="text-2xl sm:text-3xl font-bold mt-1 text-[#1C1C1E] dark:text-[#F4F4F5]">
-            {kpis.totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 0 })}
+            {formatNumber(kpis.totalRevenue, { decimals: 0 })}
           </p>
           <p className="text-xs text-[#AEAEB2] mt-1">د.ل</p>
         </div>
@@ -318,7 +338,7 @@ export default function DashboardPage() {
           </div>
           <p className="text-xs text-[#6C6C70] dark:text-[#A1A1AA]">صافي الربح الحقيقي</p>
           <p className="text-2xl sm:text-3xl font-bold mt-1 text-green-600 dark:text-green-400">
-            {kpis.netProfit.toLocaleString('en-US', { minimumFractionDigits: 0 })}
+            {formatNumber(kpis.netProfit, { decimals: 0 })}
           </p>
           <p className="text-xs text-[#AEAEB2] mt-1">هامش {kpis.profitMargin.toFixed(1)}%</p>
         </div>
@@ -332,7 +352,7 @@ export default function DashboardPage() {
           </div>
           <p className="text-xs text-[#6C6C70] dark:text-[#A1A1AA]">قيمة المخزون</p>
           <p className="text-2xl sm:text-3xl font-bold mt-1 text-[#1C1C1E] dark:text-[#F4F4F5]">
-            {kpis.inventoryValue.toLocaleString('en-US', { minimumFractionDigits: 0 })}
+            {formatNumber(kpis.inventoryValue, { decimals: 0 })}
           </p>
           <p className="text-xs text-[#AEAEB2] mt-1">د.ل · {currentStock.length} صنف</p>
         </div>
@@ -363,7 +383,7 @@ export default function DashboardPage() {
           </div>
           <p className="text-xs text-[#6C6C70] dark:text-[#A1A1AA]">متوسط قيمة الطلب</p>
           <p className="text-2xl sm:text-3xl font-bold mt-1 text-[#1C1C1E] dark:text-[#F4F4F5]">
-            {extraKpis.aov.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+            {formatNumber(extraKpis.aov, { decimals: 0 })}
           </p>
           <p className="text-xs text-[#AEAEB2] mt-1">د.ل / طلب</p>
         </div>
@@ -455,7 +475,7 @@ export default function DashboardPage() {
                   </div>
                   <div className="text-left">
                     <p className="text-sm font-bold text-green-600 dark:text-green-400">
-                      +{p.profit.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                      +{formatMoney(p.profit, { withSuffix: false })}
                     </p>
                     <p className="text-xs text-[#AEAEB2]">
                       {p.revenue > 0 ? Math.round((p.profit / p.revenue) * 100) : 0}% هامش

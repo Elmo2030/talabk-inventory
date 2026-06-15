@@ -1,8 +1,9 @@
 'use client';
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { Plus, Minus, Trash2, Search, X, ShoppingCart, User, MapPin, Package, Tag, CheckCircle, AlertCircle } from 'lucide-react';
-import { useStock } from '@/lib/StockContext';
+import { useItems, useOrders, useMovements, useSalesReps, useCustomers } from '@/lib/StockContext';
 import { Item, Coupon } from '@/lib/types';
+import { formatMoney } from '@/lib/format';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { ShippingCalcResult } from '@/lib/data/talabkCities';
 import { SORTED_CITIES, DeliveryType, getBasePrice, TALABK_CITIES } from '@/lib/data/talabkCities';
@@ -38,11 +39,15 @@ const DELIVERY_TYPE_LABELS: Record<DeliveryType, string> = {
 };
 
 function fmt(n: number) {
-  return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return formatMoney(n, { withSuffix: false });
 }
 
 export default function SalesOrderForm({ onSuccess, onCancel }: Props) {
-  const { items, addSalesOrder, getCurrentBalance } = useStock();
+  const { items } = useItems();
+  const { addSalesOrder } = useOrders();
+  const { getCurrentBalance } = useMovements();
+  const { salesReps } = useSalesReps();
+  const { customers, customerBalances } = useCustomers();
   const { confirm } = useConfirm();
 
   // Customer
@@ -51,11 +56,23 @@ export default function SalesOrderForm({ onSuccess, onCancel }: Props) {
   const [customerCity, setCustomerCity] = useState('');
   const [deliveryType, setDeliveryType] = useState<DeliveryType>('home');
   const [notes, setNotes] = useState('');
+  // Sales rep attribution — empty string = no rep (walk-in / store sale).
+  const [repId, setRepId] = useState('');
+  // Registered customer attribution. Empty = walk-in; fields below stay
+  // editable. Selecting a registered customer pre-fills name/phone/city
+  // and surfaces their running balance + credit headroom.
+  const [customerId, setCustomerId] = useState('');
 
   // Cart
   const [cart, setCart] = useState<CartItem[]>([]);
   const [itemSearch, setItemSearch] = useState('');
   const [showItemPicker, setShowItemPicker] = useState(false);
+  // Barcode scan flow (Wave G #4). HID scanners type into the focused
+  // input and send Enter as the line terminator. We pre-bin items by
+  // barcode for O(1) lookup so even a 10k-item tenant scans instantly.
+  const [barcodeInput, setBarcodeInput] = useState('');
+  const [barcodeError, setBarcodeError] = useState('');
+  const barcodeInputRef = useRef<HTMLInputElement>(null);
 
   // Shipping
   const [shippingResult, setShippingResult] = useState<ShippingCalcResult | null>(null);
@@ -86,6 +103,8 @@ export default function SalesOrderForm({ onSuccess, onCancel }: Props) {
           shippingOnStore: boolean;
           packagingOnStore: boolean;
           couponInput: string;
+          repId: string;
+          customerId: string;
         }>;
         if (d.customerName)    setCustomerName(d.customerName);
         if (d.customerPhone)   setCustomerPhone(d.customerPhone);
@@ -96,6 +115,8 @@ export default function SalesOrderForm({ onSuccess, onCancel }: Props) {
         if (d.shippingOnStore !== undefined)  setShippingOnStore(d.shippingOnStore);
         if (d.packagingOnStore !== undefined) setPackagingOnStore(d.packagingOnStore);
         if (d.couponInput)     setCouponInput(d.couponInput);
+        if (d.repId)           setRepId(d.repId);
+        if (d.customerId)      setCustomerId(d.customerId);
       }
     } catch { /* corrupt JSON — ignore */ }
     isHydrated.current = true;
@@ -112,7 +133,7 @@ export default function SalesOrderForm({ onSuccess, onCancel }: Props) {
     try {
       localStorage.setItem(DRAFT_KEY, JSON.stringify({
         customerName, customerPhone, customerCity, deliveryType, notes, cart,
-        shippingOnStore, packagingOnStore, couponInput,
+        shippingOnStore, packagingOnStore, couponInput, repId, customerId,
       }));
     } catch { /* quota error — ignore */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -147,40 +168,110 @@ export default function SalesOrderForm({ onSuccess, onCancel }: Props) {
   const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
   const [couponError, setCouponError] = useState('');
 
-  // Active items
-  const activeItems = items.filter((i) => i.status === 'ACTIVE');
-
-  // Available delivery types for selected city
-  const selectedCity = TALABK_CITIES.find((c) => c.name === customerCity);
-  const availableDeliveryTypes: DeliveryType[] = selectedCity
-    ? (['home', 'office', 'female'] as DeliveryType[]).filter(
-        (t) => getBasePrice(selectedCity, t) !== null
-      )
-    : ['home', 'office', 'female'];
-
-  // Item picker filtered
-  const pickerItems = activeItems.filter(
-    (i) =>
-      !itemSearch ||
-      i.name.toLowerCase().includes(itemSearch.toLowerCase()) ||
-      i.code.toLowerCase().includes(itemSearch.toLowerCase())
+  // Active items — memoized so a 500-item tenant doesn't re-filter on every
+  // unrelated keystroke (customer name, phone, notes, etc.).
+  const activeItems = useMemo(
+    () => items.filter((i) => i.status === 'ACTIVE'),
+    [items]
   );
 
-  // ── Tier price helper ─────────────────────────────────────────────────────
-  const getBestTierPrice = (item: Item, qty: number): number | null => {
-    if (!item.priceTiers || item.priceTiers.length === 0) return null;
-    const eligible = item.priceTiers.filter((t) => qty >= t.minQty);
-    if (eligible.length === 0) return null;
-    return eligible.sort((a, b) => b.minQty - a.minQty)[0].price;
-  };
+  // Available delivery types for selected city.
+  const selectedCity = useMemo(
+    () => TALABK_CITIES.find((c) => c.name === customerCity),
+    [customerCity]
+  );
+  const availableDeliveryTypes: DeliveryType[] = useMemo(
+    () =>
+      selectedCity
+        ? (['home', 'office', 'female'] as DeliveryType[]).filter(
+            (t) => getBasePrice(selectedCity, t) !== null
+          )
+        : ['home', 'office', 'female'],
+    [selectedCity]
+  );
 
-  const getBestTierLabel = (item: Item, qty: number): string | null => {
+  // Item picker filtered — depends only on `activeItems` + `itemSearch`,
+  // not on cart / customer / discount state. Also searches barcode so a
+  // partial scan / manual barcode lookup works in the picker too.
+  const pickerItems = useMemo(() => {
+    if (!itemSearch) return activeItems;
+    const q = itemSearch.toLowerCase();
+    return activeItems.filter(
+      (i) =>
+        i.name.toLowerCase().includes(q) ||
+        i.code.toLowerCase().includes(q) ||
+        (i.barcode ?? '').toLowerCase().includes(q)
+    );
+  }, [activeItems, itemSearch]);
+
+  // Exact-match barcode index. Built once per items-change so the scan
+  // loop is O(1) regardless of catalog size.
+  const itemByBarcode = useMemo(() => {
+    const m = new Map<string, Item>();
+    for (const it of activeItems) if (it.barcode) m.set(it.barcode.trim(), it);
+    return m;
+  }, [activeItems]);
+
+  // Currently selected registered customer's type — empty string for
+  // walk-in sales (which means "no customer-type tier applies").
+  const activeCustomerType = useMemo(() => {
+    if (!customerId) return '' as const;
+    return customers.find((c) => c.id === customerId)?.customerType ?? '' as const;
+  }, [customerId, customers]);
+
+  // ── Tier price helpers — stable callbacks ────────────────────────────────
+  // Picker order (Wave G #3):
+  //   1. Tier with matching customerType AND qty >= minQty → wins.
+  //      Among matches we pick the one with the highest minQty (deepest
+  //      discount) so wholesale customers buying in bulk get the bulk
+  //      step too.
+  //   2. Tier without customerType AND qty >= minQty → fallback (legacy
+  //      quantity tier).
+  //   3. item.sellingPrice.
+  //
+  // Both helpers share the same selection logic so the price + label
+  // come from the same tier — no chance of "shows wholesale label, uses
+  // retail price".
+  function pickTier(item: Item, qty: number, custType: '' | 'retail' | 'wholesale' | 'vip') {
     if (!item.priceTiers || item.priceTiers.length === 0) return null;
-    const eligible = item.priceTiers.filter((t) => qty >= t.minQty);
-    if (eligible.length === 0) return null;
-    const best = eligible.sort((a, b) => b.minQty - a.minQty)[0];
-    return best.label ?? null;
-  };
+    let bestCustomerMin = -1;
+    let bestCustomer: NonNullable<Item['priceTiers']>[number] | null = null;
+    let bestQtyMin = -1;
+    let bestQty: NonNullable<Item['priceTiers']>[number] | null = null;
+    for (const t of item.priceTiers) {
+      if (qty < t.minQty) continue;
+      if (custType && t.customerType === custType) {
+        if (t.minQty > bestCustomerMin) {
+          bestCustomerMin = t.minQty;
+          bestCustomer = t;
+        }
+      } else if (!t.customerType) {
+        if (t.minQty > bestQtyMin) {
+          bestQtyMin = t.minQty;
+          bestQty = t;
+        }
+      }
+    }
+    return bestCustomer ?? bestQty;
+  }
+
+  const getBestTierPrice = useCallback((item: Item, qty: number): number | null => {
+    const t = pickTier(item, qty, activeCustomerType);
+    return t ? t.price : null;
+  }, [activeCustomerType]);
+
+  const getBestTierLabel = useCallback((item: Item, qty: number): string | null => {
+    const t = pickTier(item, qty, activeCustomerType);
+    if (!t) return null;
+    return t.label ?? null;
+  }, [activeCustomerType]);
+
+  // Whether the currently-applied tier is a customer-type tier (used for
+  // the "auto applied" badge next to the cart line).
+  const isCustomerTypeTierActive = useCallback((item: Item, qty: number): boolean => {
+    const t = pickTier(item, qty, activeCustomerType);
+    return !!(t && t.customerType);
+  }, [activeCustomerType]);
 
   const addToCart = (item: Item) => {
     const existing = cart.find((c) => c.itemId === item.id);
@@ -213,6 +304,51 @@ export default function SalesOrderForm({ onSuccess, onCancel }: Props) {
     }
     setItemSearch('');
   };
+
+  // Barcode scan: called on Enter inside the dedicated input. Looks up
+  // exact match in `itemByBarcode`, adds to cart, clears. Shows an
+  // inline error for 1.5s on miss so the cashier doesn't have to chase
+  // a toast across the screen.
+  const handleBarcodeScan = () => {
+    const code = barcodeInput.trim();
+    if (!code) return;
+    const hit = itemByBarcode.get(code);
+    if (hit) {
+      addToCart(hit);
+      setBarcodeInput('');
+      setBarcodeError('');
+      // Keep focus so the next scan works without clicking back.
+      requestAnimationFrame(() => barcodeInputRef.current?.focus());
+    } else {
+      setBarcodeError(`لا يوجد صنف بالباركود "${code}"`);
+      setBarcodeInput('');
+      requestAnimationFrame(() => barcodeInputRef.current?.focus());
+      window.setTimeout(() => setBarcodeError(''), 1500);
+    }
+  };
+
+  // When the active customer's type changes (or a customer is unselected),
+  // re-run the tier picker over every cart line so wholesale/vip prices
+  // auto-apply or revert. Manual price overrides are preserved: we only
+  // reprice a line whose current sellingPrice matches a price the picker
+  // would have produced under the *previous* state — i.e. the cashier
+  // didn't type a custom number.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    setCart((prev) => prev.map((c) => {
+      const item = items.find((i) => i.id === c.itemId);
+      if (!item) return c;
+      const newTierPrice = getBestTierPrice(item, c.quantity);
+      // Heuristic: if current price equals item.sellingPrice or any tier
+      // price for this item, treat it as auto-priced and replace it.
+      // Otherwise (custom typed value) leave alone.
+      const knownPrices = new Set<number>([item.sellingPrice]);
+      for (const t of item.priceTiers ?? []) knownPrices.add(t.price);
+      if (!knownPrices.has(c.sellingPrice)) return c;
+      const next = newTierPrice ?? item.sellingPrice;
+      return next === c.sellingPrice ? c : { ...c, sellingPrice: next };
+    }));
+  }, [activeCustomerType]);
 
   const updateQtyWithTier = (itemId: string, delta: number) => {
     const item = items.find((i) => i.id === itemId);
@@ -294,6 +430,22 @@ export default function SalesOrderForm({ onSuccess, onCancel }: Props) {
     if (!customerCity) errs.push('المدينة مطلوبة');
     if (cart.length === 0) errs.push('أضف منتجاً واحداً على الأقل');
     if (!shippingResult) errs.push('احسب تكلفة التوصيل أولاً');
+    // Credit-limit client-side check. The RPC enforces this server-side
+    // too — duplicating here gives the cashier instant feedback before
+    // the round-trip.
+    if (customerId) {
+      const cust = customers.find((c) => c.id === customerId);
+      const bal  = customerBalances.find((b) => b.customerId === customerId);
+      if (cust) {
+        const outstanding = bal?.outstanding ?? cust.openingBalance;
+        const proposed    = outstanding + customerTotal;
+        if (cust.creditLimit > 0 && proposed > cust.creditLimit) {
+          errs.push(`الطلب يتجاوز الحد الائتماني للعميل (${cust.creditLimit.toFixed(2)} د.ل)`);
+        } else if (cust.creditLimit === 0 && customerTotal > 0) {
+          errs.push('هذا العميل نقدي فقط — لا يمكن إصدار طلب بالأجل');
+        }
+      }
+    }
     return errs;
   };
 
@@ -362,6 +514,9 @@ export default function SalesOrderForm({ onSuccess, onCancel }: Props) {
       discountType: appliedCoupon?.type,
       discountValue: appliedCoupon?.value,
       discountAmount: discountAmount > 0 ? discountAmount : undefined,
+      repId: repId || undefined,
+      repName: repId ? salesReps.find((r) => r.id === repId)?.name : undefined,
+      customerId: customerId || undefined,
     });
 
     setSaving(false);
@@ -385,6 +540,76 @@ export default function SalesOrderForm({ onSuccess, onCancel }: Props) {
               <User className="w-4 h-4 text-[#E5302A]" />
               بيانات العميل
             </h2>
+
+            {/* Registered-customer picker. Hidden when no registered
+                customers exist so retail-only tenants don't see a
+                dead-end widget. */}
+            {customers.length > 0 && (
+              <div className="mb-4">
+                <label className={labelClass}>عميل مسجّل (اختياري)</label>
+                <select
+                  value={customerId}
+                  onChange={(e) => {
+                    const id = e.target.value;
+                    setCustomerId(id);
+                    // Pre-fill the walk-in fields from the registered
+                    // customer so the cashier doesn't retype anything.
+                    if (id) {
+                      const c = customers.find((x) => x.id === id);
+                      if (c) {
+                        setCustomerName(c.name);
+                        if (c.phone) setCustomerPhone(c.phone);
+                        if (c.city)  setCustomerCity(c.city);
+                      }
+                    }
+                  }}
+                  className={inputClass + ' appearance-none'}
+                  dir="rtl"
+                >
+                  <option value="">— عميل عابر —</option>
+                  {customers
+                    .filter((c) => c.status === 'ACTIVE' || c.id === customerId)
+                    .map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name} ({c.code})
+                      </option>
+                    ))}
+                </select>
+                {(() => {
+                  if (!customerId) return null;
+                  const cust = customers.find((c) => c.id === customerId);
+                  const bal  = customerBalances.find((b) => b.customerId === customerId);
+                  if (!cust) return null;
+                  const outstanding = bal?.outstanding ?? cust.openingBalance;
+                  const newUnpaid   = Math.max(0, customerTotal - 0); // assume fully unpaid at order time
+                  const proposed    = outstanding + newUnpaid;
+                  const over        = cust.creditLimit > 0 && proposed > cust.creditLimit;
+                  const cashOnly    = cust.creditLimit === 0;
+                  return (
+                    <div className={`mt-2 text-xs rounded-xl p-3 ${
+                      over
+                        ? 'bg-red-50 border border-red-200 text-red-700'
+                        : cashOnly
+                          ? 'bg-amber-50 border border-amber-200 text-amber-700'
+                          : 'bg-slate-50 border border-slate-200 text-slate-700'
+                    }`}>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-semibold">
+                          {cashOnly ? 'هذا العميل نقدي فقط' : `الحد الائتماني: ${cust.creditLimit.toFixed(2)} د.ل`}
+                        </span>
+                        {over && <span className="font-bold">تجاوز الحد!</span>}
+                      </div>
+                      <div className="flex flex-wrap gap-3 text-[11px]">
+                        <span>المستحق الحالي: <strong className="font-mono">{outstanding.toFixed(2)}</strong></span>
+                        <span>هذا الطلب: <strong className="font-mono">{newUnpaid.toFixed(2)}</strong></span>
+                        <span>الإجمالي المتوقع: <strong className="font-mono">{proposed.toFixed(2)}</strong></span>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className={labelClass}>اسم العميل *</label>
@@ -455,6 +680,31 @@ export default function SalesOrderForm({ onSuccess, onCancel }: Props) {
                   </select>
                 </div>
               </div>
+              {/* Sales rep attribution. Hidden when no reps are defined so
+                  tenants that don't use the field-sales model don't see a
+                  dead-end picker. */}
+              {salesReps.length > 0 && (
+                <div>
+                  <label className={labelClass}>المندوب</label>
+                  <div className="relative">
+                    <select
+                      value={repId}
+                      onChange={(e) => setRepId(e.target.value)}
+                      className={inputClass + ' appearance-none'}
+                      dir="rtl"
+                    >
+                      <option value="">— بدون مندوب —</option>
+                      {salesReps
+                        .filter((r) => r.status === 'ACTIVE' || r.id === repId)
+                        .map((r) => (
+                          <option key={r.id} value={r.id}>
+                            {r.name} {r.territory ? `· ${r.territory}` : ''}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                </div>
+              )}
               <div className="sm:col-span-2">
                 <label className={labelClass}>ملاحظات</label>
                 <textarea
@@ -484,6 +734,41 @@ export default function SalesOrderForm({ onSuccess, onCancel }: Props) {
                 إضافة منتج
               </button>
             </div>
+
+            {/* Barcode scan input. Visible only if at least one item in
+                the catalog has a barcode — otherwise the row is dead
+                space. HID scanners send Enter automatically. */}
+            {itemByBarcode.size > 0 && (
+              <div className="mb-4">
+                <label className="block text-xs text-[#6C6C70] mb-1">امسح الباركود</label>
+                <div className="relative">
+                  <input
+                    ref={barcodeInputRef}
+                    type="text"
+                    value={barcodeInput}
+                    onChange={(e) => setBarcodeInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleBarcodeScan();
+                      }
+                    }}
+                    placeholder="ضع المؤشر هنا ثم امسح بالماسح"
+                    className={`w-full px-3 py-2.5 rounded-xl border text-sm text-[#1C1C1E] placeholder-[#AEAEB2] focus:outline-none focus:ring-2 bg-white ${
+                      barcodeError
+                        ? 'border-red-400 focus:ring-red-500/20'
+                        : 'border-[#E5E5EA] focus:border-[#E5302A] focus:ring-[#E5302A]/20'
+                    }`}
+                    dir="ltr"
+                    inputMode="numeric"
+                    autoComplete="off"
+                  />
+                  {barcodeError && (
+                    <p className="absolute right-0 top-full mt-1 text-[11px] text-red-600">{barcodeError}</p>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Item picker modal */}
             {showItemPicker && (
@@ -583,10 +868,19 @@ export default function SalesOrderForm({ onSuccess, onCancel }: Props) {
                         const item = items.find((i) => i.id === c.itemId);
                         const tierLabel = item ? getBestTierLabel(item, c.quantity) : null;
                         const tierPrice = item ? getBestTierPrice(item, c.quantity) : null;
+                        const byCustomerType = item ? isCustomerTypeTierActive(item, c.quantity) : false;
                         if (!tierPrice) return null;
+                        const fallbackLabel = byCustomerType
+                          ? (activeCustomerType === 'wholesale' ? 'سعر الجملة'
+                            : activeCustomerType === 'vip' ? 'سعر VIP'
+                            : 'سعر التجزئة')
+                          : 'سعر الجملة';
                         return (
-                          <span className="inline-flex items-center gap-1 mt-0.5 px-1.5 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-semibold rounded-full">
-                            💰 {tierLabel ? tierLabel : 'سعر الجملة'} (×{c.quantity})
+                          <span className={`inline-flex items-center gap-1 mt-0.5 px-1.5 py-0.5 text-[10px] font-semibold rounded-full ${
+                            byCustomerType ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-700'
+                          }`}>
+                            {byCustomerType ? '⭐' : '💰'} {tierLabel || fallbackLabel}
+                            {byCustomerType ? ' — تطبيق تلقائي' : ` (×${c.quantity})`}
                           </span>
                         );
                       })()}

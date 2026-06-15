@@ -3,7 +3,8 @@
 import { use } from 'react';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
-import { useStock } from '@/lib/StockContext';
+import { usePurchases } from '@/lib/StockContext';
+import { formatMoney } from '@/lib/format';
 
 const STATUS_MAP = {
   DRAFT:     { label: 'مسودة',  color: 'bg-slate-100 text-slate-600' },
@@ -13,7 +14,7 @@ const STATUS_MAP = {
 
 export default function PurchaseDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { purchaseInvoices } = useStock();
+  const { purchaseInvoices } = usePurchases();
   const inv = purchaseInvoices.find((p) => p.id === id);
 
   if (!inv) return (
@@ -75,7 +76,7 @@ export default function PurchaseDetailPage({ params }: { params: Promise<{ id: s
             ].filter((f) => f.value > 0).map((f) => (
               <div key={f.label} className="bg-[#F2F2F7] rounded-lg p-3">
                 <p className="text-xs text-[#6C6C70]">{f.label}</p>
-                <p className="font-mono font-semibold text-[#1C1C1E]">{f.value.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+                <p className="font-mono font-semibold text-[#1C1C1E]">{formatMoney(f.value, { withSuffix: false })}</p>
               </div>
             ))}
           </div>
@@ -120,15 +121,15 @@ export default function PurchaseDetailPage({ params }: { params: Promise<{ id: s
           <div className="flex flex-wrap justify-end gap-6 text-sm">
             <div className="text-center">
               <p className="text-xs text-[#6C6C70]">قيمة الأصناف</p>
-              <p className="font-mono font-semibold text-[#1C1C1E]">{inv.subtotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+              <p className="font-mono font-semibold text-[#1C1C1E]">{formatMoney(inv.subtotal, { withSuffix: false })}</p>
             </div>
             <div className="text-center">
               <p className="text-xs text-[#6C6C70]">المصاريف الإضافية</p>
-              <p className="font-mono font-semibold text-amber-700">{inv.totalLandedCosts.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+              <p className="font-mono font-semibold text-amber-700">{formatMoney(inv.totalLandedCosts, { withSuffix: false })}</p>
             </div>
             <div className="text-center">
               <p className="text-xs text-[#6C6C70] font-semibold">الإجمالي الكلي</p>
-              <p className="font-mono font-bold text-lg text-[#E5302A]">{inv.grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+              <p className="font-mono font-bold text-lg text-[#E5302A]">{formatMoney(inv.grandTotal, { withSuffix: false })}</p>
             </div>
           </div>
         </div>

@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import type { TenantStats, TenantStatus, SubscriptionPlan } from '@/lib/types';
+import { formatNumber } from '@/lib/format';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const PLAN_LABELS: Record<SubscriptionPlan, string> = {
@@ -37,7 +38,7 @@ const PLAN_COLORS: Record<SubscriptionPlan, string> = {
 };
 
 function fmt(n: number) {
-  return n.toLocaleString('en-US', { maximumFractionDigits: 0 });
+  return formatNumber(n, { decimals: 0 });
 }
 
 // ── Tenant Row ────────────────────────────────────────────────────────────────

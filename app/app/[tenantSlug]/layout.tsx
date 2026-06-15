@@ -13,6 +13,7 @@ import { TenantProvider } from '@/lib/TenantContext';
 import Sidebar from '@/components/layout/Sidebar';
 import LoadingGate from '@/components/layout/LoadingGate';
 import TenantStatusGate from '@/components/layout/TenantStatusGate';
+import TenantBottomNav from '@/components/layout/TenantBottomNav';
 import type { ReactNode } from 'react';
 
 interface Props {
@@ -75,10 +76,11 @@ export default async function TenantAppLayout({ children, params }: Props) {
       <TenantStatusGate tenant={tenantTyped}>
         <div className="flex min-h-screen">
           <Sidebar />
-          <main className="flex-1 md:mr-64 pt-14 md:pt-0 p-4 md:p-8">
+          <main className="flex-1 md:mr-64 pt-14 md:pt-0 p-4 md:p-8 pb-20 md:pb-8">
             <LoadingGate>{children}</LoadingGate>
           </main>
         </div>
+        <TenantBottomNav tenantSlug={tenantSlug} />
       </TenantStatusGate>
     </TenantProvider>
   );

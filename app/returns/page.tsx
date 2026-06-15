@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { RotateCcw, Plus, Trash2, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { ReturnOrder, SalesOrder } from '@/lib/types';
 import { returnsStorage } from '@/lib/storage/returnsStorage';
-import { useStock } from '@/lib/StockContext';
+import { useOrders } from '@/lib/StockContext';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import Badge from '@/components/ui/Badge';
@@ -208,7 +208,7 @@ const STATUS_CONFIG = {
 };
 
 export default function ReturnsPage() {
-  const { salesOrders } = useStock();
+  const { salesOrders } = useOrders();
   const toast = useToast();
   const { confirm } = useConfirm();
   const [returns, setReturns] = useState<ReturnOrder[]>([]);

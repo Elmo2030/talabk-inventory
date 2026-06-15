@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import TalabkLogo from '@/components/ui/TalabkLogo';
+import { BRAND, whatsappLink } from '@/lib/brand';
 
 // ── Feature Card ──────────────────────────────────────────────────────────────
 function FeatureCard({
@@ -428,14 +429,14 @@ export default function LandingPage() {
             <span className="text-[#E5302A]">talabk.ly</span>
           </p>
           <p className="text-white/40 text-xs w-full sm:w-auto text-center sm:text-right">
-            📞 تواصل معنا: <a href="https://wa.me/218910000000" target="_blank" rel="noopener noreferrer" className="text-[#25D366] hover:underline">wa.me/218910000000</a>
+            📞 تواصل معنا: <a href={whatsappLink()} target="_blank" rel="noopener noreferrer" className="text-[#25D366] hover:underline">{BRAND.publicWhatsAppDisplay}</a>
           </p>
         </div>
       </footer>
 
       {/* WhatsApp Floating Button */}
       <a
-        href="https://wa.me/218910000000"
+        href={whatsappLink()}
         target="_blank"
         rel="noopener noreferrer"
         className="fixed bottom-6 left-6 z-50 w-14 h-14 bg-[#25D366] hover:bg-[#1da851] rounded-full flex items-center justify-center shadow-lg shadow-[#25D366]/30 hover:shadow-[#25D366]/50 transition-all hover:scale-110"

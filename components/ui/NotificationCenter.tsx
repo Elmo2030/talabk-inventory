@@ -2,7 +2,8 @@
 
 import { useState, useMemo } from 'react';
 import { Bell, X, AlertTriangle, Package, ShoppingBag, CheckCircle } from 'lucide-react';
-import { useStock } from '@/lib/StockContext';
+import { useMovements, useOrders, usePurchases } from '@/lib/StockContext';
+import { formatMoney } from '@/lib/format';
 
 type Notification = {
   id: string;
@@ -16,7 +17,9 @@ type Notification = {
 };
 
 export default function NotificationCenter() {
-  const { currentStock, salesOrders, purchaseInvoices } = useStock();
+  const { currentStock } = useMovements();
+  const { salesOrders } = useOrders();
+  const { purchaseInvoices } = usePurchases();
   const [open, setOpen] = useState(false);
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
 
@@ -70,7 +73,7 @@ export default function NotificationCenter() {
         id,
         type: 'new_order',
         title: 'طلب جديد',
-        message: `${o.orderNumber} — ${o.customerName} — ${o.customerTotal.toFixed(2)} د.ل`,
+        message: `${o.orderNumber} — ${o.customerName} — ${formatMoney(o.customerTotal)}`,
         icon: ShoppingBag,
         color: 'text-brand-600',
         bg: 'bg-brand-50',

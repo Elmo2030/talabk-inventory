@@ -9,14 +9,15 @@ import {
   AlertCircle,
   Download,
 } from 'lucide-react';
-import { useStock } from '@/lib/StockContext';
+import { useMovements } from '@/lib/StockContext';
 import SearchBar from '@/components/ui/SearchBar';
 import Badge from '@/components/ui/Badge';
 import Select from '@/components/ui/Select';
 import { StockStatus } from '@/lib/types';
+import { formatNumber } from '@/lib/format';
 
 export default function CurrentStockPage() {
-  const { currentStock } = useStock();
+  const { currentStock } = useMovements();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<StockStatus | 'ALL'>('ALL');
 
@@ -134,7 +135,7 @@ export default function CurrentStockPage() {
         <div className="bg-white dark:bg-[#18181B] border border-slate-200 dark:border-[#27272A] rounded-xl p-4">
           <p className="text-xs text-slate-500 dark:text-[#71717A]">قيمة المخزون</p>
           <p className="text-xl font-bold text-brand-600 mt-1 font-mono">
-            {stats.totalValue.toLocaleString('en-US')}
+            {formatNumber(stats.totalValue)}
           </p>
         </div>
         <div
@@ -265,7 +266,7 @@ export default function CurrentStockPage() {
                         </div>
                       </td>
                       <td className="px-3 py-3 font-mono font-semibold text-slate-900 dark:text-[#F4F4F5]">
-                        {s.stockValue.toLocaleString('en-US')}
+                        {formatNumber(s.stockValue)}
                       </td>
                     </tr>
                   );
