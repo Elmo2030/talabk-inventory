@@ -69,12 +69,27 @@ export function getDefaultPermissions(role: UserRole): Record<Permission, boolea
 // ── Plan-based feature flags ──────────────────────────────────────────────────
 
 export type PlanFeature =
-  | 'api_access'
-  | 'multi_store'
-  | 'advanced_reports'
-  | 'custom_domain'
-  | 'priority_support';
+  | 'api_access'        // وصول API خارجي (تكاملات)
+  | 'multi_store'       // إدارة أكثر من متجر واحد
+  | 'advanced_reports'  // تقارير تحليلية متقدمة
+  | 'custom_domain'     // نطاق مخصص للمتجر
+  | 'priority_support'; // دعم فني بالأولوية
 
+/**
+ * Feature matrix per subscription plan.
+ *
+ * | plan       | api_access | multi_store | advanced_reports | custom_domain | priority_support |
+ * |------------|:----------:|:-----------:|:----------------:|:-------------:|:----------------:|
+ * | trial      |     ✗      |      ✗      |        ✗         |       ✗       |        ✗         |
+ * | starter    |     ✗      |      ✗      |        ✗         |       ✗       |        ✗         |
+ * | pro        |     ✓      |      ✗      |        ✓         |       ✗       |        ✗         |
+ * | enterprise |     ✓      |      ✓      |        ✓         |       ✓       |        ✓         |
+ *
+ * Usage:
+ *   planHasFeature(tenant.subscription_plan, 'api_access')
+ *
+ * Add a feature by appending it to the relevant plan arrays below.
+ */
 const PLAN_FEATURES: Record<string, PlanFeature[]> = {
   trial:      [],
   starter:    [],

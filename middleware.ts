@@ -28,13 +28,13 @@ import { NextRequest, NextResponse } from 'next/server';
 // we ship (currently: the theme boot script in app/layout.tsx). Using
 // `'strict-dynamic'` means a nonced script can load further scripts at
 // runtime — necessary for Next.js's chunk loader to work.
-function generateNonce(): string {
+export function generateNonce(): string {
   const bytes = new Uint8Array(16);
   crypto.getRandomValues(bytes);
   return Buffer.from(bytes).toString('base64');
 }
 
-function buildCspHeader(nonce: string, isDev: boolean): string {
+export function buildCspHeader(nonce: string, isDev: boolean): string {
   // Dev mode keeps `'unsafe-eval'` because React Refresh / Next dev tools
   // require it. Production strips it entirely.
   const scriptSrc = [
