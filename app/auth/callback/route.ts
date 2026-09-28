@@ -19,21 +19,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import type { Database } from '@/lib/supabase/database.types';
 import type { EmailOtpType } from '@supabase/supabase-js';
-
-// ── Safe-redirect helper ─────────────────────────────────────────────────────
-// Prevents open-redirect via `?next=https://evil.example.com`. We only
-// allow same-origin paths that start with `/` and reject protocol-relative
-// (`//host`) or absolute URLs. Falls back to `/` when the input is unsafe.
-function safeRedirectPath(next: string | null | undefined): string {
-  if (!next) return '/';
-  // Reject protocol-relative and absolute URLs outright.
-  if (next.startsWith('//') || /^[a-z][a-z0-9+.-]*:/i.test(next)) return '/';
-  // Must start with a single slash.
-  if (!next.startsWith('/')) return '/';
-  // Reject backslashes (some browsers normalize \ to / in URLs).
-  if (next.includes('\\')) return '/';
-  return next;
-}
+import { safeRedirectPath } from '@/lib/safeRedirect';
 
 // ── Supabase SSR client ───────────────────────────────────────────────────────
 function buildSupabase() {
