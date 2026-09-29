@@ -1,7 +1,6 @@
 'use client';
 
 import {
-  employees as defaultEmployees,
   recipientDepartments as defaultDepartments,
   issueReasons as defaultIssueReasons,
   itemCategories as defaultCategories,
@@ -37,7 +36,8 @@ export interface SystemSettings {
 const STORAGE_KEY = 'inventory_system_settings';
 
 export const defaults: SystemSettings = {
-  employees: defaultEmployees,
+  // Staff names are tenant data: start empty, never ship sample names.
+  employees: [],
   departments: defaultDepartments,
   issueReasons: defaultIssueReasons,
   categories: defaultCategories,

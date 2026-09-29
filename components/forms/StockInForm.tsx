@@ -8,7 +8,7 @@ import Select from '@/components/ui/Select';
 import Button from '@/components/ui/Button';
 import { Save, AlertCircle, Loader2, Pencil } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
-import { employees } from '@/data/mock-data';
+import { settingsService } from '@/lib/settingsService';
 
 interface StockInFormProps {
   onSuccess: () => void;
@@ -24,6 +24,7 @@ export default function StockInForm({
   editId,
   initialData,
 }: StockInFormProps) {
+  const [employees] = useState<string[]>(() => settingsService.getList('employees'));
   const { items } = useItems();
   const { suppliers } = useSuppliers();
   const { stockIn, addStockIn, updateStockIn } = useMovements();
@@ -219,6 +220,7 @@ export default function StockInForm({
           onChange={(e) => handleChange('responsibleEmployee', e.target.value)}
           placeholder="اختر المسؤول"
           options={employees.map((emp) => ({ value: emp, label: emp }))}
+          error={employees.length === 0 ? 'أضف أسماء الموظفين من الإعدادات أولًا' : undefined}
         />
         <Input
           label="ملاحظات"

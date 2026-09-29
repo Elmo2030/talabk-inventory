@@ -12,7 +12,6 @@ import StockInForm from '@/components/forms/StockInForm';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useKeyboardShortcuts } from '@/lib/useKeyboardShortcuts';
-import { employees } from '@/data/mock-data';
 import EmptyState from '@/components/ui/EmptyState';
 import Pagination from '@/components/ui/Pagination';
 import { formatNumber } from '@/lib/format';
@@ -31,6 +30,13 @@ const emptyFilters: Filters = { fromDate: '', toDate: '', itemId: '', employee: 
 export default function StockInPage() {
   const { items } = useItems();
   const { stockIn, deleteStockIn } = useMovements();
+
+  // Filter options come from recorded movements, not a sample list.
+  const employees = useMemo(() => {
+    const set = new Set<string>();
+    stockIn.forEach(m => { if (m.responsibleEmployee) set.add(m.responsibleEmployee); });
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'ar'));
+  }, [stockIn]);
   const toast = useToast();
   const { confirm } = useConfirm();
   const searchInputRef = useRef<HTMLInputElement>(null);

@@ -1,5 +1,6 @@
 'use client';
 
+import { safeRedirectPath } from '@/lib/safeRedirect';
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getSupabaseClient } from '@/lib/supabase/client';
@@ -25,12 +26,7 @@ function SuperAdminLoginInner() {
   const [forgotLoading, setForgotLoading] = useState(false);
 
   // Allow only same-origin relative paths to prevent open-redirect attacks.
-  const safeRedirect = (raw: string | null): string => {
-    if (!raw) return '/superadmin';
-    // Reject anything starting with `//`, a protocol, or whitespace.
-    if (!/^\/[^/]/.test(raw)) return '/superadmin';
-    return raw;
-  };
+  const safeRedirect = (raw: string | null): string => safeRedirectPath(raw, '/superadmin');
 
   // Redirect if already logged in as super_admin
   useEffect(() => {

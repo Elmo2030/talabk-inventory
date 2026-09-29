@@ -8,7 +8,8 @@ import Select from '@/components/ui/Select';
 import Button from '@/components/ui/Button';
 import { Save, AlertTriangle, CheckCircle2, Loader2, Pencil } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
-import { employees, recipientDepartments } from '@/data/mock-data';
+import { recipientDepartments } from '@/data/mock-data';
+import { settingsService } from '@/lib/settingsService';
 import { STOCK_OUT_REASONS as issueReasons } from '@/lib/constants';
 
 interface StockOutFormProps {
@@ -25,6 +26,7 @@ export default function StockOutForm({
   editId,
   initialData,
 }: StockOutFormProps) {
+  const [employees] = useState<string[]>(() => settingsService.getList('employees'));
   const { items } = useItems();
   const { addStockOut, updateStockOut, getCurrentBalance } = useMovements();
   const toast = useToast();
@@ -179,6 +181,7 @@ export default function StockOutForm({
           onChange={(e) => handleChange('responsibleEmployee', e.target.value)}
           placeholder="اختر المسؤول"
           options={employees.map((emp) => ({ value: emp, label: emp }))}
+          error={employees.length === 0 ? 'أضف أسماء الموظفين من الإعدادات أولًا' : undefined}
         />
       </div>
 
